@@ -6,12 +6,12 @@ import Data.Maybe (isNothing
                   , isJust
                   , catMaybes)
 import Data.List (intercalate)
--- import Data.Time.Clock.System
+import Data.Array
 
 import Scrabble.Types
 
 newBoard :: Board
-newBoard = replicate 15 (replicate 15 Nothing)
+newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
 
 newBag :: Bag
 newBag = concatMap (\(c, n, m) -> replicate n (Tile c m)) tiles
@@ -49,9 +49,8 @@ scorePlayer :: Player -> Int
 scorePlayer (Player _ ws) = sum (map scoreWord ws)
   
 
-move :: Player -> WordPut -> Board -> Either String (Board, Player)
-move (Player r ws) w b = --let newWs = newWords w b in
-                         if legalMove (Player r ws) w b
+move :: Board -> Player -> WordPut -> Either String (Board, Player)
+move b (Player r ws) w = if legalMove (Player r ws) w b
                          then Right (updateBoard w b, Player r ws)
                          else Left "Can't play this word"
 
@@ -131,7 +130,7 @@ connects (w:ws) b = let (pos,_) = w in
       
 getSquare :: Board -> Pos -> Maybe Tile
 getSquare b (r,c) = if onBoard (r,c)
-                    then (b !! r) !! c
+                    then (b ! r) ! c
                     else Nothing
 
 updateRow :: Int -> Tile -> [Maybe Tile] -> [Maybe Tile]
@@ -140,16 +139,16 @@ updateRow 0 m (t:ts) = Just m :ts
 updateRow n m (t:ts) = t : updateRow (n-1) m ts
 
 updateSquare :: Board -> (Pos, Tile) -> Board
-updateSquare b ((r,c),t) = let row = b !! r in
-                           take r b ++ [updateRow c t row] ++ drop (r+1) b
+updateSquare b ((r,c),t) = let row = (b ! r) // [(c, Just t)] in
+                           b // [(r, row)]
 
 updateBoard :: WordPut -> Board -> Board
 updateBoard ws b = foldl updateSquare b ws
 
 showBoard :: Bool -> Board -> String
-showBoard printBonuses board = top ++ showRows ++ bottom where
-  showRows      = intercalate "\n" (zipWith showRow [0..14] board) ++ "\n"
-  showRow     i r = "|" ++ concat (zipWith (showSquare i) [0..14] r) 
+showBoard printBonuses b = top ++ showRows ++ bottom where
+  showRows      = intercalate "\n" (zipWith showRow [0..14] (elems b)) ++ "\n"
+  showRow     i r = "|" ++ concat (zipWith (showSquare i) [0..14] (elems r)) 
   showSquare i c s = case s of
                        Nothing -> if printBonuses
                                   then case lookup (i,c) bonusSquares of

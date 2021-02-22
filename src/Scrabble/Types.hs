@@ -1,6 +1,8 @@
 module Scrabble.Types
   where
 
+import Data.Array
+
 data Tile = Tile Char Int deriving (Show, Eq)
 
 type Pos = (Int, Int)
@@ -19,7 +21,7 @@ type Turn = Player
 
 type Bag = [Tile]
 
-type Board = [[Maybe Tile]]
+type Board = Array Int (Array Int (Maybe Tile))
 
 type Game = (Board, Bag, Player, Player)
 
