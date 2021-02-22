@@ -55,16 +55,17 @@ move (Player r ws) w b = --let newWs = newWords w b in
                          then Right (updateBoard w b, Player r ws)
                          else Left "Can't play this word"
 
-newWords :: Board -> WordPut -> [WordPut]
-newWords _ [] = []
-newWords b (wp:wps) = let (r,c) = fst wp
-                          h = if empty b (r,c) && hNeighbour b (fst wp)
-                              then wordOnRow b (fst wp)
-                              else Nothing
-                          v = if empty b (r,c) && vNeighbour b (fst wp)
-                              then wordOnCol b (fst wp)
-                              else Nothing in
-  catMaybes [h, v] ++ newWords b wps
+additionalWords :: Board -> WordPut -> [WordPut]
+additionalWords _ [] = []
+additionalWords b (wp:wps) =
+  let (r,c) = fst wp
+      h = if empty b (r,c) && hNeighbour b (r,c)
+          then wordOnRow (updateSquare b wp) (r,c)
+          else Nothing
+      v = if empty b (r,c) && vNeighbour b (r,c)
+          then wordOnCol (updateSquare b wp) (r,c)
+          else Nothing in
+  filter ((>1) . length) $ catMaybes [h, v] ++ additionalWords b wps
 
 empty :: Board -> (Int, Int) -> Bool
 empty b pos = isNothing (getSquare b pos)
