@@ -67,54 +67,54 @@ additionalWords b (wp:wps) =
           else Nothing in
   filter ((>1) . length) $ catMaybes [h, v] ++ additionalWords b wps
 
-empty :: Board -> (Int, Int) -> Bool
+empty :: Board -> Pos -> Bool
 empty b pos = isNothing (getSquare b pos)
 
-hNeighbour :: Board -> (Int, Int) -> Bool
+hNeighbour :: Board -> Pos -> Bool
 hNeighbour b (r,c) = isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
 
-vNeighbour :: Board -> (Int, Int) -> Bool
+vNeighbour :: Board -> Pos -> Bool
 vNeighbour b (r,c) = isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
 
-wordFromSquare :: Board -> ((Int, Int) -> (Int, Int)) -> (Int, Int) -> WordPut
+wordFromSquare :: Board -> (Pos -> Pos) -> Pos -> WordPut
 wordFromSquare b f pos = case getSquare b pos of
     Nothing -> []
     Just t  -> (pos, t) : wordFromSquare b f (f pos)
 
-startOfWord :: Board -> ((Int, Int) -> (Int, Int)) -> (Int, Int) -> (Int, Int)
+startOfWord :: Board -> (Pos -> Pos) -> Pos -> Pos
 startOfWord b f pos = let pos' = f pos in
   if not (onBoard pos') || isNothing (getSquare b pos')
   then pos
   else startOfWord b f pos'
 
-onBoard :: (Int, Int) -> Bool
+onBoard :: Pos -> Bool
 onBoard (r,c) = r >= 0 && r < 15 && c >= 0 && c < 15
 
-incRow :: (Int, Int) -> (Int, Int)
+incRow :: Pos -> Pos
 incRow (r,c) = (r+1,c)
 
-incCol :: (Int, Int) -> (Int, Int)
+incCol :: Pos -> Pos
 incCol (r,c) = (r,c+1)
 
-decRow :: (Int, Int) -> (Int, Int)
+decRow :: Pos -> Pos
 decRow (r,c) = (r-1,c)
 
-decCol :: (Int, Int) -> (Int, Int)
+decCol :: Pos -> Pos
 decCol (r,c) = (r,c-1)
 
-neighbours :: (Int, Int) -> [(Int, Int)]
+neighbours :: Pos -> [Pos]
 neighbours (r,c) = filter (\(x,y) -> x >= 0 && x < 15 && y >= 0 && y < 15)
   [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
 
-occupiedNeighbours :: Board -> (Int, Int) -> [(Int, Int)]
+occupiedNeighbours :: Board -> Pos -> [Pos]
 occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
 
-wordOnRow :: Board -> (Int, Int) -> Maybe WordPut
+wordOnRow :: Board -> Pos -> Maybe WordPut
 wordOnRow b (r,c) = if isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
                     then Just (wordFromSquare b incCol (startOfWord b decCol (r,c)))
                     else Nothing
 
-wordOnCol :: Board -> (Int, Int) -> Maybe WordPut
+wordOnCol :: Board -> Pos -> Maybe WordPut
 wordOnCol b (r,c) = if isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
                     then Just (wordFromSquare b incRow (startOfWord b decRow (r,c)))
                     else Nothing
@@ -127,9 +127,9 @@ legalMove p w b = connects w b && all (\(pos,t) -> case getSquare b pos of
 connects :: WordPut -> Board -> Bool
 connects [] _     = True
 connects (w:ws) b = let (pos,_) = w in
-  or (map (isJust . getSquare b) (neighbours pos))
+  any (isJust . getSquare b) (neighbours pos)
       
-getSquare :: Board -> (Int, Int) -> Maybe Tile
+getSquare :: Board -> Pos -> Maybe Tile
 getSquare b (r,c) = if onBoard (r,c)
                     then (b !! r) !! c
                     else Nothing
@@ -139,7 +139,7 @@ updateRow _ _ []     = []
 updateRow 0 m (t:ts) = Just m :ts
 updateRow n m (t:ts) = t : updateRow (n-1) m ts
 
-updateSquare :: Board -> ((Int, Int), Tile) -> Board
+updateSquare :: Board -> (Pos, Tile) -> Board
 updateSquare b ((r,c),t) = let row = b !! r in
                            take r b ++ [updateRow c t row] ++ drop (r+1) b
 

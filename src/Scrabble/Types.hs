@@ -3,11 +3,13 @@ module Scrabble.Types
 
 data Tile = Tile Char Int deriving (Show, Eq)
 
+type Pos = (Int, Int)
+
 type Rack = [Tile]
 
 type Score = Int
 
-type WordPut = [((Int, Int), Tile)]
+type WordPut = [(Pos, Tile)]
 
 data Player = Player { rack :: Rack
                      , words :: [WordPut]
