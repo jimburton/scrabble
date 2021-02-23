@@ -1,13 +1,18 @@
 module Scrabble.Game
   where
 
-import System.Random
-import Data.Maybe (isNothing
-                  , isJust
-                  , catMaybes)
-import Data.List (intercalate)
-import Data.Array
-import Prelude hiding (words)
+import           System.Random
+import           Data.Maybe       (isNothing
+                                  , isJust
+                                  , catMaybes
+                                  , fromJust)
+import           Data.List        (intercalate)
+import           Data.Array
+import           Prelude hiding   (words)
+import qualified Prelude  as P    (words)
+import           Data.Map         (Map)
+import qualified Data.Map as Map
+import           Control.Monad.ST 
 
 import Scrabble.Types
 import Scrabble.Dict
@@ -16,7 +21,7 @@ newBoard :: Board
 newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
 
 newBag :: Bag
-newBag = concatMap (\(c, n, m) -> replicate n (Tile c m)) tiles
+newBag = concatMap (\(c, n, m) -> replicate n (Tile c m)) tilesData
 
 tileScore :: Tile -> Int
 tileScore (Tile _ s) = s
@@ -24,12 +29,78 @@ tileScore (Tile _ s) = s
 tileChar :: Tile -> Char
 tileChar (Tile c _) = c
 
-fillRack :: Rack -> Bag -> IO (Rack, Bag, StdGen)
-fillRack r b = do fillRack' (7 - length r) r b <$> getStdGen 
-                  where fillRack' 0 r' b' g = (r', b', g)
-                        fillRack' _ r' [] g = (r', [], g)
-                        fillRack' n r' b' g = let (t, b'', g') = getTile b' g in
-                                                fillRack' (n-1) (t:r') b'' g'             
+startGame :: String -- ^ Name of Player 1
+          -> String -- ^ Name of Player 2
+          -> IO Game
+startGame p1Name p2Name = do
+  theGen <- getStdGen
+  let (rack1, bag1, gen') = fillRack [] newBag theGen
+      p1 = Player { name = p1Name
+                  , rack = rack1
+                  , score = 0 }
+      (rack2, bag2, gen'') = fillRack [] bag1 gen'
+      p2 = Player { name = p2Name
+                  , rack = rack2
+                  , score = 0 }
+      g  = Game { board = newBoard
+                , bag = bag2
+                , player1 = p1
+                , player2 = p2
+                , turn = P1
+                , gen = gen'' }
+  playGame g
+
+playGame :: Game -> IO Game
+playGame g = do
+  printBoard True $ board g
+  printPlayer $ player1 g
+  printPlayer $ player2 g
+  takeTurn g True
+
+takeTurn :: Game -- ^ The game
+         -> Bool -- ^ Is first move
+         -> IO Game
+takeTurn g fm = do
+  let r      = rack (getPlayer g)
+      theBag = bag g
+  printBoardAndTurn g
+  [word,rowStr,colStr,dirStr] <- fmap P.words getLine
+  let row = read rowStr :: Int
+      col = read colStr :: Int
+      dir = if dirStr == "H" then HZ else VT
+      wp  = mkWP word (row,col) dir
+  m <- takeMove g wp fm
+  case m of
+    Right g' -> do let theGen = gen g'
+                       theRack = takeFromRack r wp
+                       (filledRack, bag', gen') = fillRack theRack theBag theGen
+                       p'   = (getPlayer g') { rack = filledRack }
+                       g''  = setPlayer g' p'
+                       g''' = toggleTurn g''
+                   takeTurn g''' { bag = bag', gen = gen' } False
+    Left e   -> do putStrLn e
+                   takeTurn g False
+
+setPlayer :: Game -> Player -> Game
+setPlayer g p = if turn g == P1 then g { player1 = p } else g { player2 = p }
+
+takeFromRack :: Rack -> WordPut -> Rack
+takeFromRack r = filter (not . (`elem` r)) . map snd 
+
+toggleTurn :: Game -> Game
+toggleTurn g = g { turn = if turn g == P1 then P2 else P1 }
+
+mkWP :: String -> Pos -> Dir -> WordPut
+mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
+  zip (iterate f pos) (map (\c -> fromJust (Map.lookup c tilesMap)) w) 
+
+fillRack :: Rack -> Bag -> StdGen -> (Rack, Bag, StdGen)
+fillRack r = fillRack' (7 - length r) r
+    where fillRack' 0 r' b' g' = (r', b', g')
+          fillRack' _ r' [] g' = (r', [], g')
+          fillRack' n r' b' g' =
+            let (t, b'', g'') = getTile b' g' in
+            fillRack' (n-1) (t:r') b'' g''             
 
 getTile :: RandomGen g => Bag -> g -> (Tile, Bag, g)
 getTile b g = let (i, g') = randomR (0, length b -1) g
@@ -51,35 +122,72 @@ scoreWord = scoreWord' 0 1 where
                    (Word i)   -> scoreWord' (tileScore t + s) (i*b) ws
                    (Letter i) -> scoreWord' ((tileScore t * i) + s) b ws
 
-takeMove :: Game -> WordPut -> IO Bool
-takeMove g w = do d <- englishDictionary
-                  let p = getPlayer g
-                      r = rack p
-                  if validateRack r w
-                  then return True
-                  else return False
+takeMove :: Game    -- ^ The game
+         -> WordPut -- ^ The word to play
+         -> Bool    -- ^ Is first move
+         -> IO (Either String Game)
+takeMove g w fm = do
+  d <- englishDictionary
+  let p = getPlayer g
+      b = board g
+      r = rack p
+  case validateRack b r w of
+    Right _ -> return $ move d g w fm
+    Left e -> return $ Left e
 
-validateRack :: Rack -> WordPut -> Bool
-validateRack r = all ((`elem` r) . snd)
+validateRack :: Board
+             -> Rack
+             -> WordPut
+             -> Either String Bool
+validateRack b r w = case someNewTiles b w of
+  Right _ -> if all (\(pos,t) -> t `elem` r
+                      || (not (empty b pos) && (fromJust . getSquare b) pos == t)) w
+             then Right True
+             else Left "Not all tiles in rack or on board"
+  Left e -> Left e
 
-move :: Dict -> Game -> WordPut -> Either String Game
-move d g w =
+someNewTiles :: Board
+             -> WordPut
+             -> Either String Bool
+someNewTiles b w = if any (empty b . fst) w
+                   then Right True
+                   else Left "You didn't play any new tiles"
+  
+move :: Dict    -- ^ The dictionary
+     -> Game    -- ^ The game
+     -> WordPut -- ^ The word to play
+     -> Bool    -- ^ Is first move
+     -> Either String Game
+move d g w fm =
   let b   = board g
       p   = getPlayer g
       aw  = additionalWords b w
       sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
       sc  = sum $ map scoreWord sws in
-  if validateMove b p w && all (inDict d . wordString) (w:aw)
-  then let g' = setScore g sc in
-       Right g' {board = updateBoard w b}
-  else Left "Can't play this word"
+  case validateMove b p w fm of
+    Right _ -> case wordsInDict d (w:aw) of
+      Right _ -> let g' = setScore g sc in
+                 Right g' {board = updateBoard w b}
+      Left e -> Left e
+    Left e -> Left e
 
-setScore :: Game -> Int -> Game
+wordsInDict :: Dict
+            -> [WordPut]
+            -> Either String Bool
+wordsInDict _ []     = Right True
+wordsInDict d (w:ws) = let wStr = wordString w in
+                       if inDict d (wordString w)
+                       then wordsInDict d ws
+                       else Left ("Not in dictionary: "++wStr) 
+
+setScore :: Game
+         -> Int
+         -> Game
 setScore g s = if turn g == P1
                then let s' = score (player1 g) in
-                    g {player1 = (player1 g) {score = s' + s}}
+                    g { player1 = (player1 g) {score = s' + s} }
                else let s' = score (player2 g) in
-                    g {player2 = (player2 g) {score = s' + s}}
+                    g { player2 = (player2 g) {score = s' + s} }
   
 getPlayer :: Game -> Player
 getPlayer g = if turn g == P1 then player1 g else player2 g
@@ -157,28 +265,51 @@ wordOnCol b (r,c) = if isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,
 Validation
 -}
 
-validateMove :: Board -> Player -> WordPut -> Bool
-validateMove b p w = connects w b
-  && straight w
-  && all (\(pos,t) -> case getSquare b pos of
-                        Just (Tile c _) -> c == tileChar t
-                        Nothing         -> t `elem` rack p) w
+validateMove :: Board   -- ^ The board
+             -> Player  -- ^ The player making the move
+             -> WordPut -- ^ The word to play
+             -> Bool    -- ^ Is first move
+             -> Either String Bool
+validateMove b p w fm = case connects w b fm of
+  Right _ -> case straight w of
+               Right _ -> if all (\(pos,t) -> case getSquare b pos of
+                                     Just (Tile c _) -> c == tileChar t
+                                     Nothing         -> t `elem` rack p) w
+                          then if fmGood
+                               then Right True
+                               else Left "First move must touch centre square"
+                          else Left "Letters not in rack or not on board"
+               Left e -> Left e
+  Left e -> Left e
+  where fmGood = not fm || touches (7,7) w 
 
 
-connects :: WordPut -> Board -> Bool
-connects [] _     = True
-connects (w:ws) b = let (pos,_) = w in
-  (not . all null) (occupiedNeighbours b pos) || connects ws b
+touches :: Pos -> WordPut -> Bool
+touches p = any ((==p) .  fst)
+
+connects :: WordPut -- ^ The word to play
+         -> Board   -- ^ The board
+         -> Bool    -- ^ Is first move
+         -> Either String Bool
+connects [] _ fm     = if fm then Right True else Left "Not touching any other tile"
+connects (w:ws) b fm = let (pos,_) = w in
+  if (not . all null) (occupiedNeighbours b pos)
+  then Right True
+  else connects ws b fm
 
 -- | WordPuts must have at least two elements 
-straight :: WordPut -> Bool
+straight :: WordPut -> Either String Bool
 straight (w:x:xs) = let (r,_)  = fst w
                         (r',_) = fst x
                         ps     = map fst xs in 
                     if r == r' - 1
-                    then all (\(x',y') -> fst x' == fst y' - 1) . zip ps $ tail ps
-                    else all (\(x',y') -> snd x' == snd y' - 1) . zip ps $ tail ps
-straight _         = False
+                    then if all (\(x',y') -> fst x' == fst y' - 1) . zip ps $ tail ps
+                         then Right True
+                         else Left "Not in a straight lin"
+                    else if all (\(x',y') -> snd x' == snd y' - 1) . zip ps $ tail ps
+                         then Right True
+                         else Left "Not in a straight line"
+straight _         = Left "Too few letters"
 
 getSquare :: Board -> Pos -> Maybe Tile
 getSquare b (r,c) = if onBoard (r,c)
@@ -223,41 +354,60 @@ showPlayer p = top ++ playerLine ++ rackLine ++ bottom where
   line     c = replicate 46 c ++ "\n"
   top        = "\n" ++ line '*'
   playerLine = name p ++ " (" ++ show (score p) ++ ")\n"
-  rackLine   = intercalate ", " (map show (rack p)) ++ "\n"
+  rackLine   = let strs = map show (rack p) in
+                 intercalate ", " (take 5 strs) ++ "\n"
+                 ++ intercalate ", " (drop 5 strs) ++ "\n"
   bottom     = line '*'
+
+printPlayer :: Player -> IO ()
+printPlayer p = putStrLn $ showPlayer p
+
+showTurn :: Game -> String
+showTurn g = let p = getPlayer g in
+  showPlayer p ++ "Enter WORD ROW COL DIR[H/V]:\n"
+
+printTurn :: Game -> IO ()
+printTurn g = putStrLn $ showTurn g
+
+printBoardAndTurn :: Game -> IO ()
+printBoardAndTurn g = do printBoard True (board g)
+                         printTurn g
 
 wordString :: WordPut -> String
 wordString = map (tileChar . snd)
 
 {-- Data for the board. --}
 
-tiles :: [(Char, Int, Int)]
-tiles = [ ('A', 9,  1) -- (Letter, NumTiles, Score)
-        , ('B', 2,  3)
-        , ('C', 2,  3)
-        , ('D', 4,  2)
-        , ('E', 12, 1)
-        , ('F', 2,  4)
-        , ('G', 3,  2)
-        , ('H', 2,  4)
-        , ('I', 9,  1)
-        , ('J', 1,  8)
-        , ('K', 1,  5)
-        , ('L', 4,  1)
-        , ('M', 2,  3)
-        , ('N', 6,  1)
-        , ('O', 8,  1)
-        , ('P', 2,  3)
-        , ('Q', 1,  10)
-        , ('R', 6,  1)
-        , ('S', 4,  1)
-        , ('T', 6,  1)
-        , ('U', 4,  1)
-        , ('V', 2,  4)
-        , ('W', 2,  4)
-        , ('X', 1,  8)
-        , ('Y', 2,  4)
-        , ('Z', 1,  10)]
+tilesData :: [(Char, Int, Int)]
+tilesData = [ ('A', 9,  1) -- (Letter, NumTiles, Score)
+            , ('B', 2,  3)
+            , ('C', 2,  3)
+            , ('D', 4,  2)
+            , ('E', 12, 1)
+            , ('F', 2,  4)
+            , ('G', 3,  2)
+            , ('H', 2,  4)
+            , ('I', 9,  1)
+            , ('J', 1,  8)
+            , ('K', 1,  5)
+            , ('L', 4,  1)
+            , ('M', 2,  3)
+            , ('N', 6,  1)
+            , ('O', 8,  1)
+            , ('P', 2,  3)
+            , ('Q', 1,  10)
+            , ('R', 6,  1)
+            , ('S', 4,  1)
+            , ('T', 6,  1)
+            , ('U', 4,  1)
+            , ('V', 2,  4)
+            , ('W', 2,  4)
+            , ('X', 1,  8)
+            , ('Y', 2,  4)
+            , ('Z', 1,  10)]
+
+tilesMap :: Map Char Tile
+tilesMap = Map.fromList (map (\(c,_,s) -> (c, Tile c s)) tilesData)
 
 bonusSquares :: [((Int, Int), Bonus)] -- ((Row, Column), Bonus)
 bonusSquares = [((0, 0),   Word 3)

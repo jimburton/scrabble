@@ -1,6 +1,7 @@
 module Scrabble.Types
   where
 
+import System.Random (StdGen)
 import Data.Array
 import Prelude hiding (words)
 
@@ -32,11 +33,14 @@ data Game = Game { board   :: Board
                  , bag     :: Bag
                  , player1 :: Player
                  , player2 :: Player
-                 , turn    :: Turn }
+                 , turn    :: Turn
+                 , gen     :: StdGen }
 
 data Bonus = Word Int | Letter Int
 
 instance Show Bonus where
   show (Word i)   = 'W' : show i
   show (Letter i) = 'L' : show i
+
+data Dir = HZ | VT deriving (Show, Read, Eq)
 
