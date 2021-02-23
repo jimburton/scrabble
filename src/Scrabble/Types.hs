@@ -19,16 +19,20 @@ type WordPut = [(Pos, Tile)]
 
 data Player = Player { name :: String
                      , rack :: Rack
-                     , words :: [WordPut]
+                     , score :: Int
                      } deriving (Show, Eq)
-
-type Turn = Player
 
 type Bag = [Tile]
 
 type Board = Array Int (Array Int (Maybe Tile))
 
-type Game = (Board, Bag, Player, Player)
+data Turn = P1 | P2 deriving (Show, Eq)
+
+data Game = Game { board   :: Board
+                 , bag     :: Bag
+                 , player1 :: Player
+                 , player2 :: Player
+                 , turn    :: Turn }
 
 data Bonus = Word Int | Letter Int
 

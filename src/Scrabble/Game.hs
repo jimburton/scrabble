@@ -37,26 +37,53 @@ getTile b g = let (i, g') = randomR (0, length b -1) g
                   b' = take i b ++ drop (i+1) b in
               (t, b', g')
 
-scoreWord :: WordPut -> Int
+-- | The Bool argument is whether any bonus should be applied to this
+--   Pos and Tile, i.e. whether this is the first time it has been
+--   counted.
+scoreWord :: [(Pos, Tile, Bool)] -> Int
 scoreWord = scoreWord' 0 1 where
   scoreWord' s b [] = s * b
-  scoreWord' s b ((pos,t):ws) =
-    case lookup pos bonusSquares of
+  scoreWord' s b ((pos,t,p):ws) =
+    if not p then scoreWord' (tileScore t + s) b ws
+    else case lookup pos bonusSquares of
       Nothing -> scoreWord' (tileScore t + s) b ws
       Just b'  -> case b' of
                    (Word i)   -> scoreWord' (tileScore t + s) (i*b) ws
                    (Letter i) -> scoreWord' ((tileScore t * i) + s) b ws
 
-scorePlayer :: Player -> Int
-scorePlayer = sum . (map scoreWord) . words
+takeMove :: Game -> WordPut -> IO Bool
+takeMove g w = do d <- englishDictionary
+                  let p = getPlayer g
+                      r = rack p
+                  if validateRack r w
+                  then return True
+                  else return False
+
+validateRack :: Rack -> WordPut -> Bool
+validateRack r = all ((`elem` r) . snd)
+
+move :: Dict -> Game -> WordPut -> Either String Game
+move d g w =
+  let b   = board g
+      p   = getPlayer g
+      aw  = additionalWords b w
+      sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
+      sc  = sum $ map scoreWord sws in
+  if validateMove b p w && all (inDict d . wordString) (w:aw)
+  then let g' = setScore g sc in
+       Right g' {board = updateBoard w b}
+  else Left "Can't play this word"
+
+setScore :: Game -> Int -> Game
+setScore g s = if turn g == P1
+               then let s' = score (player1 g) in
+                    g {player1 = (player1 g) {score = s' + s}}
+               else let s' = score (player2 g) in
+                    g {player2 = (player2 g) {score = s' + s}}
   
-
-move :: Dict -> Board -> Player -> WordPut -> Either String (Board, Player)
-move d b p w = if legalMove b p w
-                  && all (inDict d . wordString) (w : additionalWords b w)
-               then Right (updateBoard w b, p)
-               else Left "Can't play this word"
-
+getPlayer :: Game -> Player
+getPlayer g = if turn g == P1 then player1 g else player2 g
+  
 inDict :: Dict -> String -> Bool
 inDict d str = case wordFromString str of
                  Nothing -> False
@@ -126,12 +153,17 @@ wordOnCol b (r,c) = if isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,
                     then Just (wordFromSquare b incRow (startOfWord b decRow (r,c)))
                     else Nothing
 
-legalMove :: Board -> Player -> WordPut -> Bool
-legalMove b p w = connects w b
+{-
+Validation
+-}
+
+validateMove :: Board -> Player -> WordPut -> Bool
+validateMove b p w = connects w b
   && straight w
   && all (\(pos,t) -> case getSquare b pos of
                         Just (Tile c _) -> c == tileChar t
                         Nothing         -> t `elem` rack p) w
+
 
 connects :: WordPut -> Board -> Bool
 connects [] _     = True
@@ -161,29 +193,37 @@ updateBoard :: WordPut -> Board -> Board
 updateBoard ws b = foldl updateSquare b ws
 
 showBoard :: Bool -> Board -> String
-showBoard printBonuses b = top ++ showRows ++ bottom where
+showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
   showRows      = intercalate "\n" (zipWith showRow [0..14] (elems b)) ++ "\n"
-  showRow     i r = "|" ++ concat (zipWith (showSquare i) [0..14] (elems r)) 
+  showRow     i r = showI i ++ "|" ++ concat (zipWith (showSquare i) [0..14] (elems r)) 
   showSquare i c s = case s of
                        Nothing -> if printBonuses
                                   then case lookup (i,c) bonusSquares of
                                          Nothing -> "  |"
-                                         Just b  -> show b ++ "|"
+                                         Just b' -> show b' ++ "|"
                                   else "  |"
                        Just t -> [' ', tileChar t, '|']
-  top           = line '_'
+  topNumbers    = "  |" ++ concatMap (\i -> showI i ++ "|") [0..14] ++ "\n"
+  showI i       = if i < 10 then " " ++ show i else show i
+  top           = line '-'
   bottom        = line '-'
-  line        c = replicate 46 c ++ "\n"
+  line        c = replicate 48 c ++ "\n"
+
+printBoard :: Bool -> Board -> IO ()
+printBoard printBonuses b = putStrLn $ showBoard printBonuses b
 
 showGame :: Bool -> Board -> Player -> String
 showGame printBonuses b p = showBoard printBonuses b ++ showPlayer p
 
+printGame :: Bool -> Board -> Player -> IO ()
+printGame printBonuses b p = putStrLn $ showGame printBonuses b p
+
 showPlayer :: Player -> String
-showPlayer p = top ++ playerLine ++ bottom where
+showPlayer p = top ++ playerLine ++ rackLine ++ bottom where
   line     c = replicate 46 c ++ "\n"
   top        = "\n" ++ line '*'
-  playerLine = name p ++ ": " ++ showRack ++ "\n"
-  showRack   = intercalate ", " $ map show (rack p)
+  playerLine = name p ++ " (" ++ show (score p) ++ ")\n"
+  rackLine   = intercalate ", " (map show (rack p)) ++ "\n"
   bottom     = line '*'
 
 wordString :: WordPut -> String
