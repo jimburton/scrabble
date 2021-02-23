@@ -9,6 +9,7 @@ import Data.List (intercalate)
 import Data.Array
 
 import Scrabble.Types
+import Scrabble.Dict
 
 newBoard :: Board
 newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
@@ -24,10 +25,10 @@ tileChar (Tile c _) = c
 
 fillRack :: Rack -> Bag -> IO (Rack, Bag, StdGen)
 fillRack r b = do fillRack' (7 - length r) r b <$> getStdGen 
-                  where fillRack' 0 r b g = (r, b, g)
-                        fillRack' n r [] g = (r, [], g)
-                        fillRack' n r b g = let (t, b', g') = getTile b g in
-                                                fillRack' (n-1) (t:r) b' g'             
+                  where fillRack' 0 r' b' g = (r', b', g)
+                        fillRack' _ r' [] g = (r', [], g)
+                        fillRack' n r' b' g = let (t, b'', g') = getTile b' g in
+                                                fillRack' (n-1) (t:r') b'' g'             
 
 getTile :: RandomGen g => Bag -> g -> (Tile, Bag, g)
 getTile b g = let (i, g') = randomR (0, length b -1) g
@@ -49,10 +50,14 @@ scorePlayer :: Player -> Int
 scorePlayer (Player _ ws) = sum (map scoreWord ws)
   
 
-move :: Board -> Player -> WordPut -> Either String (Board, Player)
-move b (Player r ws) w = if legalMove (Player r ws) w b
+move :: Dict -> Board -> Player -> WordPut -> Either String (Board, Player)
+move d b (Player r ws) w = if legalMove b (Player r ws) w
+                            && all (inDict d . wordString) (w : additionalWords b w)
                          then Right (updateBoard w b, Player r ws)
                          else Left "Can't play this word"
+
+inDict :: Dict -> String -> Bool
+inDict d str = undefined
 
 additionalWords :: Board -> WordPut -> [WordPut]
 additionalWords _ [] = []
@@ -118,25 +123,32 @@ wordOnCol b (r,c) = if isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,
                     then Just (wordFromSquare b incRow (startOfWord b decRow (r,c)))
                     else Nothing
 
-legalMove :: Player -> WordPut -> Board -> Bool
-legalMove p w b = connects w b && all (\(pos,t) -> case getSquare b pos of
-                                          Just (Tile c _) -> c == tileChar t
-                                          Nothing -> t `elem` rack p) w
+legalMove :: Board -> Player -> WordPut -> Bool
+legalMove b p w = connects w b
+  && straight w
+  && all (\(pos,t) -> case getSquare b pos of
+                        Just (Tile c _) -> c == tileChar t
+                        Nothing         -> t `elem` rack p) w
 
 connects :: WordPut -> Board -> Bool
 connects [] _     = True
 connects (w:ws) b = let (pos,_) = w in
-  any (isJust . getSquare b) (neighbours pos)
-      
+  (not . all null) (occupiedNeighbours b pos) || connects ws b
+
+-- | WordPuts must have at least two elements 
+straight :: WordPut -> Bool
+straight (w:x:xs) = let (r,_)  = fst w
+                        (r',_) = fst x
+                        ps     = map fst xs in 
+                    if r == r' - 1
+                    then all (\(x',y') -> fst x' == fst y' - 1) . zip ps $ tail ps
+                    else all (\(x',y') -> snd x' == snd y' - 1) . zip ps $ tail ps
+straight _         = False
+
 getSquare :: Board -> Pos -> Maybe Tile
 getSquare b (r,c) = if onBoard (r,c)
                     then (b ! r) ! c
                     else Nothing
-
-updateRow :: Int -> Tile -> [Maybe Tile] -> [Maybe Tile]
-updateRow _ _ []     = []
-updateRow 0 m (t:ts) = Just m :ts
-updateRow n m (t:ts) = t : updateRow (n-1) m ts
 
 updateSquare :: Board -> (Pos, Tile) -> Board
 updateSquare b ((r,c),t) = let row = (b ! r) // [(c, Just t)] in
@@ -159,6 +171,9 @@ showBoard printBonuses b = top ++ showRows ++ bottom where
   top           = line '_'
   bottom        = line '-'
   line        c = replicate 46 c ++ "\n"
+
+wordString :: WordPut -> String
+wordString = map (tileChar . snd)
 
 {-- Data for the board. --}
 
