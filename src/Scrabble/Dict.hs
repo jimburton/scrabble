@@ -1,4 +1,6 @@
-module Scrabble.Dict
+module Scrabble.Dict ( Letter(..)
+                     , letterFromChar
+                     , toChar)
   where
 
 import Data.Char        (toUpper)
@@ -71,6 +73,16 @@ instance Show Dict where
   show d = concat ["(Dict ", nrWords, ", ", nrPrefixes, ")"] where
     nrWords    = "words: "    ++ show (length $ dictWords d)
     nrPrefixes = "prefixes: " ++ show (length $ dictPrefixes d)
+
+wordsInDict :: Dict
+            -> [Word]
+            -> Either String Bool
+wordsInDict _ []     = Right True
+wordsInDict d (w:ws) = let wStr = wordToString w in
+                       if dictContainsWord d w
+                       then wordsInDict d ws
+                       else Left ("Not in dictionary: "++wStr) 
+
 
 -- | Returns true if the dict contains the given word
 dictContainsWord :: Dict -> Word -> Bool
