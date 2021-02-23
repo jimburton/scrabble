@@ -7,6 +7,7 @@ import Data.Maybe (isNothing
                   , catMaybes)
 import Data.List (intercalate)
 import Data.Array
+import Prelude hiding (words)
 
 import Scrabble.Types
 import Scrabble.Dict
@@ -47,17 +48,19 @@ scoreWord = scoreWord' 0 1 where
                    (Letter i) -> scoreWord' ((tileScore t * i) + s) b ws
 
 scorePlayer :: Player -> Int
-scorePlayer (Player _ ws) = sum (map scoreWord ws)
+scorePlayer = sum . (map scoreWord) . words
   
 
 move :: Dict -> Board -> Player -> WordPut -> Either String (Board, Player)
-move d b (Player r ws) w = if legalMove b (Player r ws) w
-                            && all (inDict d . wordString) (w : additionalWords b w)
-                         then Right (updateBoard w b, Player r ws)
-                         else Left "Can't play this word"
+move d b p w = if legalMove b p w
+                  && all (inDict d . wordString) (w : additionalWords b w)
+               then Right (updateBoard w b, p)
+               else Left "Can't play this word"
 
 inDict :: Dict -> String -> Bool
-inDict d str = undefined
+inDict d str = case wordFromString str of
+                 Nothing -> False
+                 (Just w) -> dictContainsWord d w
 
 additionalWords :: Board -> WordPut -> [WordPut]
 additionalWords _ [] = []
@@ -171,6 +174,17 @@ showBoard printBonuses b = top ++ showRows ++ bottom where
   top           = line '_'
   bottom        = line '-'
   line        c = replicate 46 c ++ "\n"
+
+showGame :: Bool -> Board -> Player -> String
+showGame printBonuses b p = showBoard printBonuses b ++ showPlayer p
+
+showPlayer :: Player -> String
+showPlayer p = top ++ playerLine ++ bottom where
+  line     c = replicate 46 c ++ "\n"
+  top        = "\n" ++ line '*'
+  playerLine = name p ++ ": " ++ showRack ++ "\n"
+  showRack   = intercalate ", " $ map show (rack p)
+  bottom     = line '*'
 
 wordString :: WordPut -> String
 wordString = map (tileChar . snd)

@@ -2,8 +2,12 @@ module Scrabble.Types
   where
 
 import Data.Array
+import Prelude hiding (words)
 
-data Tile = Tile Char Int deriving (Show, Eq)
+data Tile = Tile Char Int deriving Eq
+
+instance Show Tile where
+  show (Tile c i) = show c ++ " (" ++ show i ++ ")"
 
 type Pos = (Int, Int)
 
@@ -13,7 +17,8 @@ type Score = Int
 
 type WordPut = [(Pos, Tile)]
 
-data Player = Player { rack :: Rack
+data Player = Player { name :: String
+                     , rack :: Rack
                      , words :: [WordPut]
                      } deriving (Show, Eq)
 
