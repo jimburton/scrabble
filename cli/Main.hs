@@ -1,13 +1,27 @@
 module Main
   where
 
-import           System.Random  ( getStdGen )
-import           Scrabble.Game  ( takeFromRack
-                                , fillRack )
-import           Scrabble.Types ( Dir )
-import           Scrabble.Show  ( showGame
-                                , showPlayer
-                                , showTurn )
+import  System.Random  ( getStdGen )
+import  Scrabble.Game  ( Game(..)
+                       , Turn(..)
+                       , takeFromRack
+                       , fillRack
+                       , newBag
+                       , newBoard
+                       , getPlayer
+                       , setPlayer
+                       , toggleTurn
+                       , takeMove
+                       , mkWP )
+import Scrabble.Board  ( Player(..)
+                       , Board
+                       , Dir(..) )
+import Scrabble.Show   ( showGame
+                       , showPlayer
+                       , showTurn
+                       , showBoard )
+import Scrabble.Dict   ( Dict
+                       , englishDictionary )
 
 startGame :: String -- ^ Name of Player 1
           -> String -- ^ Name of Player 2
@@ -35,21 +49,23 @@ playGame g = do
   printBoard True $ board g
   printPlayer $ player1 g
   printPlayer $ player2 g
-  takeTurn g True
+  d <- englishDictionary
+  takeTurn d g True
 
-takeTurn :: Game -- ^ The game
+takeTurn :: Dict -- ^ The dictionary
+         -> Game -- ^ The game
          -> Bool -- ^ Is first move
          -> IO Game
-takeTurn g fm = do
+takeTurn d g fm = do
   let r      = rack (getPlayer g)
       theBag = bag g
   printBoardAndTurn g
-  [word,rowStr,colStr,dirStr] <- fmap P.words getLine
+  [word,rowStr,colStr,dirStr] <- fmap words getLine
   let row = read rowStr :: Int
       col = read colStr :: Int
       dir = if dirStr == "H" then HZ else VT
       wp  = mkWP word (row,col) dir
-  m <- takeMove g wp fm
+      m   = takeMove d g wp fm 
   case m of
     Right g' -> do let theGen = gen g'
                        theRack = takeFromRack r wp
@@ -57,9 +73,9 @@ takeTurn g fm = do
                        p'   = (getPlayer g') { rack = filledRack }
                        g''  = setPlayer g' p'
                        g''' = toggleTurn g''
-                   takeTurn g''' { bag = bag', gen = gen' } False
+                   takeTurn d (g''' { bag = bag', gen = gen' }) False
     Left e   -> do putStrLn e
-                   takeTurn g False
+                   takeTurn d g False
 
 printBoard :: Bool -> Board -> IO ()
 printBoard printBonuses b = putStrLn $ showBoard printBonuses b
@@ -77,4 +93,6 @@ printBoardAndTurn :: Game -> IO ()
 printBoardAndTurn g = do printBoard True (board g)
                          printTurn g
 
+main :: IO ()
+main = putStrLn "Hello, world!"
 

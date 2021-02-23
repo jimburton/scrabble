@@ -5,9 +5,14 @@ module Scrabble.Show ( showBoard
   where
 
 import Data.List      ( intercalate )
+import Data.Array
+import qualified Data.Map as Map
 import Scrabble.Game  ( Game
-                      , Player )
-import Scrabble.Board ( Board )
+                      , getPlayer )
+import Scrabble.Board ( Board
+                      , Player(..)
+                      , bonusMap )
+import Scrabble.Dict  ( toChar )
 
 showBoard :: Bool -> Board -> String
 showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
@@ -15,11 +20,11 @@ showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
   showRow     i r = showI i ++ "|" ++ concat (zipWith (showSquare i) [0..14] (elems r)) 
   showSquare i c s = case s of
                        Nothing -> if printBonuses
-                                  then case lookup (i,c) bonusSquares of
+                                  then case Map.lookup (i,c) bonusMap of
                                          Nothing -> "  |"
                                          Just b' -> show b' ++ "|"
                                   else "  |"
-                       Just t -> [' ', tileChar t, '|']
+                       Just t -> [' ', toChar t, '|']
   topNumbers    = "  |" ++ concatMap (\i -> showI i ++ "|") [0..14] ++ "\n"
   showI i       = if i < 10 then " " ++ show i else show i
   top           = line '-'

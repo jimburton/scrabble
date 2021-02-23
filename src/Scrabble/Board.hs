@@ -1,8 +1,10 @@
-module Scrabble.Board ( Board(..)
-                      , Tile(..)
-                      , Score
+module Scrabble.Board ( Board
                       , WordPut
                       , Dir(..)
+                      , Player(..)
+                      , Rack
+                      , Pos
+                      , Bonus(..)
                       , validateMove
                       , touches
                       , connects
@@ -12,21 +14,34 @@ module Scrabble.Board ( Board(..)
                       , updateBoard
                       , newBoard
                       , scoreLetter
-                      , tiles
                       , bonusMap
                       , scoreWord
-                      , validateRack )
+                      , validateRack
+                      , charToLetterMap
+                      , numTilesList
+                      , incCol
+                      , incRow
+                      , empty
+                      , additionalWords )
   where
 
 import qualified Data.Map as Map
 import Data.Maybe                ( fromJust
-                                 , isNothing )
-import           Data.Array
-import           Data.Map        (Map)
+                                 , isNothing
+                                 , catMaybes
+                                 , isJust )
+import Data.Array
+import Data.Map                  ( Map )
+import Data.Tuple                ( swap )
 import Scrabble.Dict             ( Letter(..)
                                  , toChar )
 
-type Board = Array Int (Array Int (Maybe Tile))
+type Board = Array Int (Array Int (Maybe Letter))
+
+data Player = Player { name :: String
+                     , rack :: Rack
+                     , score :: Int
+                     } deriving (Show, Eq)
 
 newBoard :: Board
 newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
@@ -40,13 +55,12 @@ letterToScoreList = [
   (V, 4), (W, 4), (X, 8), (Y, 4), (Z, 10), (Blank, 0) ]
 
 -- private value.
-letterToScoreMap :: Map Letter Char
-letterToScoreMap = Map.fromList letterToCharList
+letterToScoreMap :: Map Letter Int
+letterToScoreMap = Map.fromList letterToScoreList
 
 scoreLetter :: Letter -> Int
-scoreLetter = fromJust . Map.lookup letterToScoreMap
+scoreLetter = fromJust . flip Map.lookup letterToScoreMap
 
--- private value.
 numTilesList :: [(Letter,Int)]
 numTilesList = [
   (A, 9), (B, 2), (C, 2), (D, 4), (E, 12), (F, 2), (G, 3),
@@ -54,14 +68,22 @@ numTilesList = [
   (O, 8), (P, 2), (Q, 1), (R, 6), (S, 4), (T, 6), (U, 4),
   (V, 2), (W, 2), (X, 1), (Y, 2), (Z, 1), (Blank, 2) ]
 
-tiles :: Map Letter Char
-tiles = Map.fromList letterToCharList
+-- private value.
+letterToCharList :: [(Letter,Char)]
+letterToCharList = [
+  (A, 'A'), (B, 'B'), (C, 'C'), (D, 'D'), (E, 'E'), (F, 'F'), (G, 'G'),
+  (H, 'H'), (I, 'I'), (J, 'J'), (K, 'K'), (L, 'L'), (M, 'M'), (N, 'N'),
+  (O, 'O'), (P, 'P'), (Q, 'Q'), (R, 'R'), (S, 'S'), (T, 'T'), (U, 'U'),
+  (V, 'V'), (W, 'W'), (X, 'X'), (Y, 'Y'), (Z, 'Z'), (Blank, '_') ]
 
-scoreLetter :: Letter -> Int
-scoreLetter = fromJust . Map.lookup letterToScoreMap
+letterToCharMap :: Map Letter Char
+letterToCharMap = Map.fromList letterToCharList
+
+charToLetterMap :: Map Char Letter
+charToLetterMap = Map.fromList (swap <$> letterToCharList)
 
 showTile :: Letter -> String
-showTile l = toChar l : " (" ++ show $ scoreLetter l ++ ")"
+showTile l = [toChar l] ++  " (" ++ (show $ scoreLetter l) ++ ")"
 
 type Pos = (Int, Int)
 
@@ -74,13 +96,13 @@ data Dir = HZ | VT deriving (Show, Read, Eq)
 -- | The Bool argument is whether any bonus should be applied to this
 --   Pos and Tile, i.e. whether this is the first time it has been
 --   counted.
-scoreWord :: [(Pos, Tile, Bool)] -> Int
+scoreWord :: [(Pos, Letter, Bool)] -> Int
 scoreWord = scoreWord' 0 1 where
   scoreWord' s b [] = s * b
   scoreWord' s b ((pos,t,p):ws) =
     if not p then scoreWord' (scoreLetter t + s) b ws
-    else case Map.lookup pos bonusSquares of
-      Nothing -> scoreWord' (tileScore t + s) b ws
+    else case Map.lookup pos bonusMap of
+      Nothing -> scoreWord' (scoreLetter t + s) b ws
       Just b'  -> case b' of
                    (Word i)   -> scoreWord' (scoreLetter t + s) (i*b) ws
                    (Letter i) -> scoreWord' ((scoreLetter t * i) + s) b ws
@@ -98,8 +120,8 @@ validateMove :: Board   -- ^ The board
 validateMove b p w fm = case connects w b fm of
   Right _ -> case straight w of
                Right _ -> if all (\(pos,t) -> case getSquare b pos of
-                                     Just (Tile c _) -> c == tileChar t
-                                     Nothing         -> t `elem` rack p) w
+                                     Just l  -> l == t
+                                     Nothing -> t `elem` rack p) w
                           then if fmGood
                                then Right True
                                else Left "First move must touch centre square"
@@ -158,20 +180,20 @@ someNewTiles b w = if any (empty b . fst) w
 Manipulating and querying the board
 -}
 
-getSquare :: Board -> Pos -> Maybe Tile
+getSquare :: Board -> Pos -> Maybe Letter
 getSquare b (r,c) = if onBoard (r,c)
                     then (b ! r) ! c
                     else Nothing
 
-updateSquare :: Board -> (Pos, Tile) -> Board
-updateSquare b ((r,c),t) = let row = (b ! r) // [(c, Just t)] in
-                           b // [(r, row)]
+updateSquare :: Board -> (Pos, Letter) -> Board
+updateSquare b ((r,c),l) = let row = (b ! r) // [(c, Just l)] in
+                             b // [(r, row)]
 
 updateBoard :: WordPut -> Board -> Board
 updateBoard ws b = foldl updateSquare b ws
 
 wordString :: WordPut -> String
-wordString = map (tileChar . snd)
+wordString = map (toChar . snd)
 
 additionalWords :: Board -> WordPut -> [WordPut]
 additionalWords _ [] = []

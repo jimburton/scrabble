@@ -1,9 +1,15 @@
-module Scrabble.Game ( Game
+module Scrabble.Game ( Game(..)
+                     , Turn(..)
                      , newBoard
                      , newBag
                      , takeTurn
                      , takeFromRack
-                     , fillRack )
+                     , fillRack
+                     , getPlayer
+                     , setPlayer
+                     , toggleTurn
+                     , takeMove
+                     , mkWP )
   where
 
 import           System.Random
@@ -18,21 +24,27 @@ import           Data.Map         (Map)
 import qualified Data.Map as Map
 import           Control.Monad.ST 
 
-import Scrabble.Board ( Board
-                      , Rack
-                      , WordPut
-                      , Pos
-                      , Dir(..)
-                      , Bonus(..)
-                      , tiles
-                      , scoreWord
-                      , validateRack )
-import Scrabble.Dict 
-
-data Player = Player { name :: String
-                     , rack :: Rack
-                     , score :: Int
-                     } deriving (Show, Eq)
+import Scrabble.Board  ( Board
+                       , Rack
+                       , WordPut
+                       , Pos
+                       , Dir(..)
+                       , Bonus(..)
+                       , Player(..)
+                       , charToLetterMap 
+                       , scoreWord
+                       , validateRack
+                       , validateMove
+                       , newBoard
+                       , incCol
+                       , incRow
+                       , updateBoard
+                       , empty
+                       , additionalWords
+                       , numTilesList )
+import Scrabble.Dict   ( Dict
+                       , Letter
+                       , wordsInDict )
 
 type Bag = [Letter]
 
@@ -50,14 +62,14 @@ instance Show Bonus where
   show (Letter i) = 'L' : show i
 
 newBag :: Bag
-newBag = concatMap (uncurry replicate) (swap $ elems tiles)
+newBag = concatMap (\(l,n) -> replicate n l) numTilesList
 
 newGame :: String -- ^ Name of Player 1
         -> String -- ^ Name of Player 2
         -> StdGen -- ^ The random generator
         -> Game
 newGame p1Name p2Name gen = 
-  let (rack1, bag1, gen') = fillRack [] newBag theGen
+  let (rack1, bag1, gen') = fillRack [] newBag gen
       p1 = Player { name = p1Name
                   , rack = rack1
                   , score = 0 }
@@ -73,22 +85,22 @@ newGame p1Name p2Name gen =
                 , gen = gen'' } in
     g
 
-takeTurn :: Game    -- ^ The game
+takeTurn :: Dict    -- ^ The dictionary
+         -> Game    -- ^ The game
          -> Bool    -- ^ Is first move
          -> WordPut -- ^ The word to play
          -> StdGen  -- ^ The random generator
          -> Either String Game
-takeTurn g fm =
+takeTurn d g fm wp gen =
   let r      = rack (getPlayer g)
       theBag = bag g in
-  case m of
-    Right g' -> let theGen = gen g'
-                    theRack = takeFromRack r wp
-                    (filledRack, bag', gen') = fillRack theRack theBag theGen
+  case takeMove d g wp fm of
+    Right g' -> let theRack = takeFromRack r wp
+                    (filledRack, bag', gen') = fillRack theRack theBag gen
                     p'   = (getPlayer g') { rack = filledRack }
                     g''  = setPlayer g' p'
                     g''' = toggleTurn g'' in
-                  Right $ takeTurn g''' { bag = bag', gen = gen' } False
+                  Right g''' { bag = bag', gen = gen' }
     Left e   -> Left e
 
 takeMove :: Dict    -- ^ The dictionary
@@ -117,7 +129,7 @@ toggleTurn g = g { turn = if turn g == P1 then P2 else P1 }
 
 mkWP :: String -> Pos -> Dir -> WordPut
 mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
-  zip (iterate f pos) (map (\c -> fromJust (Map.lookup c tilesMap)) w) 
+  zip (iterate f pos) (map (\c -> fromJust (Map.lookup c charToLetterMap)) w) 
 
 fillRack :: Rack -> Bag -> StdGen -> (Rack, Bag, StdGen)
 fillRack r = fillRack' (7 - length r) r
@@ -127,7 +139,7 @@ fillRack r = fillRack' (7 - length r) r
             let (t, b'', g'') = getTile b' g' in
             fillRack' (n-1) (t:r') b'' g''             
 
-getTile :: RandomGen g => Bag -> g -> (Tile, Bag, g)
+getTile :: RandomGen g => Bag -> g -> (Letter, Bag, g)
 getTile b g = let (i, g') = randomR (0, length b -1) g
                   t = b !! i
                   b' = take i b ++ drop (i+1) b in
@@ -143,9 +155,10 @@ move d g w fm =
       p   = getPlayer g
       aw  = additionalWords b w
       sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
+      waw = map (map snd) (w:aw)
       sc  = sum $ map scoreWord sws in
   case validateMove b p w fm of
-    Right _ -> case wordsInDict d (w:aw) of
+    Right _ -> case wordsInDict d waw of
       Right _ -> let g' = setScore g sc in
                  Right g' {board = updateBoard w b}
       Left e -> Left e

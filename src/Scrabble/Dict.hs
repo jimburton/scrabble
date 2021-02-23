@@ -1,6 +1,9 @@
 module Scrabble.Dict ( Letter(..)
+                     , Dict
                      , letterFromChar
-                     , toChar)
+                     , toChar
+                     , wordsInDict
+                     , englishDictionary )
   where
 
 import Data.Char        (toUpper)
