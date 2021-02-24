@@ -10,21 +10,20 @@ module Scrabble.Dict.Dict ( Letter(..)
 
 import Data.Char        ( toUpper )
 import Data.List        ( inits )
-import Data.Map         ( Map )
 import Data.Set         ( Set )
-import Data.Tuple       ( swap )
 import Prelude hiding   ( Word )
 import System.IO.Unsafe
 
 import qualified Data.Maybe as Maybe
-import qualified Data.Map   as Map
 import qualified Data.Set   as Set
 
-import Scrabble.Letter  ( Letter
-                        , letterFromChar
-                        , toChar )
-import Scrabble.Word    ( Word 
-                        , wordToString)
+import Scrabble.Dict.Letter
+  ( Letter
+  , letterFromChar
+  , toChar )
+import Scrabble.Dict.Word
+  ( Word 
+  , wordToString)
 
 {- ===== Dictionary ===== -}
 

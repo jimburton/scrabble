@@ -1,11 +1,13 @@
-module Scrabble.Word ( Word
-                     , wordToString
-                     , wordFromString )
+module Scrabble.Dict.Word
+  ( Word
+  , wordToString
+  , wordFromString )
   where
 
-import Scrabble.Letter ( Letter
-                       , letterFromChar
-                       , toChar )
+import Scrabble.Dict.Letter
+  ( Letter
+  , letterFromChar
+  , toChar )
 import Prelude hiding  ( Word )
 {- ===== Words ===== -}
 

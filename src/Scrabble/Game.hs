@@ -1,14 +1,15 @@
-module Scrabble.Game ( Game(..)
-                     , Turn(..)
-                     , newBoard
-                     , newBag
-                     , takeTurn
-                     , takeFromRack
-                     , fillRack
-                     , getPlayer
-                     , setPlayer
-                     , toggleTurn
-                     , takeMove )
+module Scrabble.Game
+  ( Game(..)
+  , Turn(..)
+  , newBoard
+  , newBag
+  , takeTurn
+  , takeFromRack
+  , fillRack
+  , getPlayer
+  , setPlayer
+  , toggleTurn
+  , takeMove )
   where
 
 import           System.Random
@@ -23,31 +24,35 @@ import           Data.Map         ( Map )
 import qualified Data.Map as Map
 import           Control.Monad.ST 
 
-import Scrabble.Board.Board  ( Board
-                       , Rack
-                       , WordPut
-                       , Pos
-                       , Dir(..)
-                       , Bonus(..)
-                       , Player(..)
-                       , scoreWord
-                       , validateRack
-                       , validateMove
-                       , newBoard
-                       , incCol
-                       , incRow
-                       , updateBoard
-                       , empty
-                       , additionalWords
-                       , numTilesList )
-import Scrabble.Letter ( charToLetterMap )
-import Scrabble.Bag    ( Bag
-                       , newBag
-                       , fillRack )
-import Scrabble.Dict.Dict   ( Dict
-                            , Letter
-                            , wordsInDict )
-
+import Scrabble.Board.Board
+  ( Board
+  , Rack
+  , WordPut
+  , Pos
+  , Dir(..)
+  , Bonus(..)
+  , Player(..)
+  , scoreWord
+  , validateRack
+  , validateMove
+  , newBoard
+  , incCol
+  , incRow
+  , updateBoard
+  , empty
+  , additionalWords
+  , numTilesList )
+import Scrabble.Dict.Letter
+  ( charToLetterMap )
+import Scrabble.Board.Bag
+  ( Bag
+  , newBag
+  , fillRack )
+import Scrabble.Dict.Dict
+  ( Dict
+  , Letter
+  , wordsInDict )
+  
 data Turn = P1 | P2 deriving (Show, Eq)
 
 data Game = Game { board   :: Board

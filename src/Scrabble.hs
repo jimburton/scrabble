@@ -1,22 +1,22 @@
 module Scrabble (
-   module Scrabble.Board.Board
+   module Scrabble.Game
+ , module Scrabble.Show
+ , module Scrabble.Board.Board
+ , module Scrabble.Board.Bag
+ , module Scrabble.Board.Rack
  , module Scrabble.Dict.Dict
  , module Scrabble.Dict.Search
- , module Scrabble.Game
- , module Scrabble.Show
- , module Scrabble.Letter
- , module Scrabble.Word
- , module Scrabble.Bag
- , module Scrabble.Rack
+ , module Scrabble.Dict.Letter
+ , module Scrabble.Dict.Word
 ) where
 
-import Scrabble.Board.Board
-import Scrabble.Dict.Dict
-import Scrabble.Dict.Search
-import Scrabble.Letter
-import Scrabble.Word
+
 import Scrabble.Game
 import Scrabble.Show
-import Scrabble.Bag
-import Scrabble.Rack
-
+import Scrabble.Board.Board
+import Scrabble.Board.Bag
+import Scrabble.Board.Rack
+import Scrabble.Dict.Dict
+import Scrabble.Dict.Search
+import Scrabble.Dict.Letter
+import Scrabble.Dict.Word

@@ -1,41 +1,44 @@
-module Scrabble.Board.Board ( Board
-                            , WordPut
-                            , Dir(..)
-                            , Player(..)
-                            , Rack
-                            , Pos
-                            , Bonus(..)
-                            , validateMove
-                            , touches
-                            , connects
-                            , straight
-                            , getSquare
-                            , updateSquare
-                            , updateBoard
-                            , newBoard
-                            , scoreLetter
-                            , bonusMap
-                            , scoreWord
-                            , validateRack
-                            , numTilesList
-                            , incCol
-                            , incRow
-                            , empty
-                            , additionalWords
-                            , mkWP )
+module Scrabble.Board.Board
+  ( Board
+  , WordPut
+  , Dir(..)
+  , Player(..)
+  , Rack
+  , Pos
+  , Bonus(..)
+  , validateMove
+  , touches
+  , connects
+  , straight
+  , getSquare
+  , updateSquare
+  , updateBoard
+  , newBoard
+  , scoreLetter
+  , bonusMap
+  , scoreWord
+  , validateRack
+  , numTilesList
+  , incCol
+  , incRow
+  , empty
+  , additionalWords
+  , mkWP )
   where
 
 import qualified Data.Map as Map
-import Data.Maybe                ( fromJust
-                                 , isNothing
-                                 , catMaybes
-                                 , isJust )
+import Data.Maybe
+  ( fromJust
+  , isNothing
+  , catMaybes
+  , isJust )
 import Data.Array
 import Data.Map                  ( Map )
-import Scrabble.Letter           ( Letter(..)
-                                 , toChar
-                                 , charToLetterMap )
-import Scrabble.Rack             ( Rack )
+import Scrabble.Dict.Letter
+  ( Letter(..)
+  , toChar
+  , charToLetterMap )
+import Scrabble.Board.Rack       ( Rack )
 
 type Board = Array Int (Array Int (Maybe Letter))
 

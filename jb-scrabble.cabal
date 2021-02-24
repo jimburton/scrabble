@@ -31,12 +31,12 @@ library
       Scrabble.Board.Board
       Scrabble.Game
       Scrabble.Show
-      Scrabble.Letter
-      Scrabble.Word
+      Scrabble.Dict.Letter
+      Scrabble.Dict.Word
       Scrabble.Dict.Dict
       Scrabble.Dict.Search
-      Scrabble.Bag
-      Scrabble.Rack
+      Scrabble.Board.Bag
+      Scrabble.Board.Rack
 
   default-language: Haskell2010
 
@@ -46,11 +46,11 @@ executable scrabble
                      , Scrabble.Board.Board
                      , Scrabble.Show
                      , Scrabble.Dict.Dict
-                     , Scrabble.Letter
-                     , Scrabble.Word
+                     , Scrabble.Dict.Letter
+                     , Scrabble.Dict.Word
                      , Scrabble.Dict.Search
-                     , Scrabble.Bag
-                     , Scrabble.Rack
+                     , Scrabble.Board.Bag
+                     , Scrabble.Board.Rack
   -- ghc-options: -Wall -Werror -fno-warn-name-shadowing
   build-depends:       base >=4.12 && <4.13
                      , random

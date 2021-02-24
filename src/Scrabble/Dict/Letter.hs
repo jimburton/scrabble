@@ -1,7 +1,8 @@
-module Scrabble.Letter ( Letter(..)
-                       , toChar
-                       , letterFromChar
-                       , charToLetterMap )
+module Scrabble.Dict.Letter
+  ( Letter(..)
+  , toChar
+  , letterFromChar
+  , charToLetterMap )
   where
 
 import qualified Data.Map as Map

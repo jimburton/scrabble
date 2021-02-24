@@ -1,18 +1,21 @@
-module Scrabble.Show ( showBoard
-                     , showGame
-                     , showPlayer
-                     , showTurn )
+module Scrabble.Show
+  ( showBoard
+  , showGame
+  , showPlayer
+  , showTurn )
   where
 
 import Data.List      ( intercalate )
 import Data.Array
 import qualified Data.Map as Map
-import Scrabble.Game   ( Game
-                       , getPlayer )
-import Scrabble.Board.Board  ( Board
-                       , Player(..)
-                       , bonusMap )
-import Scrabble.Letter ( toChar )
+import Scrabble.Game
+  ( Game
+  , getPlayer )
+import Scrabble.Board.Board
+  ( Board
+  , Player(..)
+  , bonusMap )
+import Scrabble.Dict.Letter ( toChar )
 
 showBoard :: Bool -> Board -> String
 showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
