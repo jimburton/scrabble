@@ -1,5 +1,4 @@
-module Scrabble.Dict.Dict ( Letter(..)
-                          , Dict
+module Scrabble.Dict.Dict ( Dict
                           , letterFromChar
                           , toChar
                           , wordsInDict
@@ -18,8 +17,7 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Set   as Set
 
 import Scrabble.Dict.Letter
-  ( Letter
-  , letterFromChar
+  ( letterFromChar
   , toChar )
 import Scrabble.Dict.Word
   ( Word 
@@ -37,6 +35,7 @@ instance Show Dict where
     nrWords    = "words: "    ++ show (length $ dictWords d)
     nrPrefixes = "prefixes: " ++ show (length $ dictPrefixes d)
 
+-- | Check whether a list of words are all in the dictionary.
 wordsInDict :: Dict
             -> [Word]
             -> Either String Bool
@@ -45,7 +44,6 @@ wordsInDict d (w:ws) = let wStr = wordToString w in
                        if dictContainsWord d w
                        then wordsInDict d ws
                        else Left ("Not in dictionary: "++wStr) 
-
 
 -- | Returns true if the dict contains the given word
 dictContainsWord :: Dict -> Word -> Bool

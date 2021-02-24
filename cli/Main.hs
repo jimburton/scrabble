@@ -18,7 +18,6 @@ import Scrabble.Board.Board  ( Player(..)
                        , mkWP )
 import Scrabble.Show   ( showGame
                        , showPlayer
-                       , showTurn
                        , showBoard )
 import Scrabble.Dict.Dict   ( Dict
                             , englishDictionary )
@@ -92,6 +91,12 @@ printTurn g = putStrLn $ showTurn g
 printBoardAndTurn :: Game -> IO ()
 printBoardAndTurn g = do printBoard True (board g)
                          printTurn g
+
+
+showTurn :: Game -> String
+showTurn g = let p = getPlayer g in
+  showPlayer p ++ "Enter WORD ROW COL DIR[H/V]:\n"
+
 
 main :: IO ()
 main = putStrLn "Hello, world!"

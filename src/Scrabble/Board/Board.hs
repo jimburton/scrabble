@@ -18,7 +18,6 @@ module Scrabble.Board.Board
   , bonusMap
   , scoreWord
   , validateRack
-  , numTilesList
   , incCol
   , incRow
   , empty
@@ -37,7 +36,8 @@ import Data.Map                  ( Map )
 import Scrabble.Dict.Letter
   ( Letter(..)
   , toChar
-  , charToLetterMap )
+  , charToLetterMap
+  , scoreLetter )
 import Scrabble.Board.Rack       ( Rack )
 
 type Board = Array Int (Array Int (Maybe Letter))
@@ -49,31 +49,6 @@ data Player = Player { name :: String
 
 newBoard :: Board
 newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
-
--- private value.
-letterToScoreList :: [(Letter,Int)]
-letterToScoreList = [
-  (A, 1), (B, 3), (C, 3), (D, 2), (E, 1), (F, 4), (G, 2),
-  (H, 4), (I, 1), (J, 8), (K, 5), (L, 1), (M, 3), (N, 1),
-  (O, 1), (P, 3), (Q, 10), (R, 1), (S, 1), (T, 1), (U, 1),
-  (V, 4), (W, 4), (X, 8), (Y, 4), (Z, 10), (Blank, 0) ]
-
--- private value.
-letterToScoreMap :: Map Letter Int
-letterToScoreMap = Map.fromList letterToScoreList
-
-scoreLetter :: Letter -> Int
-scoreLetter = fromJust . flip Map.lookup letterToScoreMap
-
-showTile :: Letter -> String
-showTile l = [toChar l] ++  " (" ++ show (scoreLetter l) ++ ")"
-
-numTilesList :: [(Letter,Int)]
-numTilesList = [
-  (A, 9), (B, 2), (C, 2), (D, 4), (E, 12), (F, 2), (G, 3),
-  (H, 2), (I, 9), (J, 1), (K, 1), (L, 4), (M, 2), (N, 6),
-  (O, 8), (P, 2), (Q, 1), (R, 6), (S, 4), (T, 6), (U, 4),
-  (V, 2), (W, 2), (X, 1), (Y, 2), (Z, 1), (Blank, 2) ]
 
 type Pos = (Int, Int)
 
@@ -88,7 +63,7 @@ scoreWord :: [(Pos, Letter, Bool)] -> Int
 scoreWord = scoreWord' 0 1 where
   scoreWord' s b [] = s * b
   scoreWord' s b ((pos,t,p):ws) =
-    if not p then scoreWord' (scoreLetter t + s) b ws
+    if not p then scoreWord' (scoreLetter t + s) b ws 
     else case Map.lookup pos bonusMap of
       Nothing -> scoreWord' (scoreLetter t + s) b ws
       Just b'  -> case b' of
@@ -97,6 +72,10 @@ scoreWord = scoreWord' 0 1 where
 
 -- ================= Validation ===============--
 
+-- | Check that a move is valid: it touches at least one existing word (unless
+--   it is the first move, in which case check that it touches the centre square),
+--   it is in a straight and continuous line, and is made
+--   up of letters that either in the rack or on the board.
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
@@ -115,10 +94,11 @@ validateMove b p w fm = case connects w b fm of
   Left e -> Left e
   where fmGood = not fm || touches (7,7) w 
 
-
+-- | Does the word touch the pos on the board?
 touches :: Pos -> WordPut -> Bool
 touches p = any ((==p) .  fst)
 
+-- | New words must touch another (apart from the first one to be played)
 connects :: WordPut -- ^ The word to play
          -> Board   -- ^ The board
          -> Bool    -- ^ Is first move
@@ -129,7 +109,7 @@ connects (w:ws) b fm = let (pos,_) = w in
   then Right True
   else connects ws b fm
 
--- | WordPuts must have at least two elements 
+-- | Words must contain at least two tiles and must be in a straight line on the board
 straight :: WordPut -> Either String Bool
 straight (w:x:xs) = let (r,_)  = fst w
                         (r',_) = fst x
@@ -143,6 +123,8 @@ straight (w:x:xs) = let (r,_)  = fst w
                          else Left "Not in a straight line"
 straight _         = Left "Too few letters"
 
+-- | Check that a word to be played is made of tiles that are either in the player's
+--   rack or are already on the board.
 validateRack :: Board
              -> Rack
              -> WordPut
@@ -154,6 +136,7 @@ validateRack b r w = case someNewTiles b w of
              else Left "Not all tiles in rack or on board"
   Left e -> Left e
 
+-- | Check that a word to be played incudes some tiles that aren't on the board.
 someNewTiles :: Board
              -> WordPut
              -> Either String Bool
@@ -163,21 +146,27 @@ someNewTiles b w = if any (empty b . fst) w
 
 -- ==================== Manipulating and querying the board =================--
 
+-- | Retrieve a position on the board.
 getSquare :: Board -> Pos -> Maybe Letter
 getSquare b (r,c) = if onBoard (r,c)
                     then (b ! r) ! c
                     else Nothing
 
+-- | Place a tile onto the board.
 updateSquare :: Board -> (Pos, Letter) -> Board
 updateSquare b ((r,c),l) = let row = (b ! r) // [(c, Just l)] in
                              b // [(r, row)]
 
-updateBoard :: WordPut -> Board -> Board
-updateBoard ws b = foldl updateSquare b ws
 
+-- | Place a word onto the board.
+updateBoard :: Board -> WordPut -> Board
+updateBoard = foldl updateSquare
+
+-- | Stringify a set of tiles on the board.
 wordString :: WordPut -> String
 wordString = map (toChar . snd)
 
+-- | Find the additional words that are created by placing a word on the board.
 additionalWords :: Board -> WordPut -> [WordPut]
 additionalWords _ [] = []
 additionalWords b (wp:wps) =
@@ -190,66 +179,101 @@ additionalWords b (wp:wps) =
           else Nothing in
   filter ((>1) . length) $ catMaybes [h, v] ++ additionalWords b wps
 
+-- | Is a square empty?
 empty :: Board -> Pos -> Bool
 empty b pos = isNothing (getSquare b pos)
 
+-- | The occupied horizontal neighbour of a position on the board.
 hNeighbour :: Board -> Pos -> Bool
 hNeighbour b (r,c) = isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
 
+-- | The occupied vertical neighbour of a position on the board.
 vNeighbour :: Board -> Pos -> Bool
 vNeighbour b (r,c) = isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
 
-wordFromSquare :: Board -> (Pos -> Pos) -> Pos -> WordPut
+-- | TODO Do I need this?
+wordFromSquare :: Board
+               -> (Pos -> Pos) -- ^ The function that moves to the start of the word (up rows or left along columns)
+               -> Pos
+               -> WordPut
 wordFromSquare b f pos = case getSquare b pos of
     Nothing -> []
     Just t  -> (pos, t) : wordFromSquare b f (f pos)
 
-startOfWord :: Board -> (Pos -> Pos) -> Pos -> Pos
+-- | Find the starting position of a word that crosses a position on the board.
+startOfWord :: Board        -- The board.
+            -> (Pos -> Pos) -- ^ The function that moves to the start of the word (up rows or left along columns)
+            -> Pos          -- ^ The position
+            -> Pos
 startOfWord b f pos = let pos' = f pos in
   if not (onBoard pos') || isNothing (getSquare b pos')
   then pos
   else startOfWord b f pos'
 
+-- | Is a position on the board?
 onBoard :: Pos -> Bool
 onBoard (r,c) = r >= 0 && r < 15 && c >= 0 && c < 15
 
+-- | Increment the row within a position.
 incRow :: Pos -> Pos
 incRow (r,c) = (r+1,c)
 
+-- | Increment the column within a position.
 incCol :: Pos -> Pos
 incCol (r,c) = (r,c+1)
 
+-- | Decrement the row within a position.
 decRow :: Pos -> Pos
 decRow (r,c) = (r-1,c)
 
+-- | Decrement the column within a position.
 decCol :: Pos -> Pos
 decCol (r,c) = (r,c-1)
 
+-- | Find neighbouring squares to a position on the board.
 neighbours :: Pos -> [Pos]
 neighbours (r,c) = filter (\(x,y) -> x >= 0 && x < 15 && y >= 0 && y < 15)
   [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
 
-occupiedNeighbours :: Board -> Pos -> [Pos]
+-- | Find neighbouring squares to a position on the board that are occupied.
+occupiedNeighbours :: Board -- ^ The board
+                   -> Pos   -- ^ The position on the board.
+                   -> [Pos]
 occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
 
-wordOnRow :: Board -> Pos -> Maybe WordPut
+-- | Retrieve the word that crosses a position on the board horizontally.
+wordOnRow :: Board -- ^ The board.
+          -> Pos   -- ^ The position on the board.
+          -> Maybe WordPut
 wordOnRow b (r,c) = if isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
                     then Just (wordFromSquare b incCol (startOfWord b decCol (r,c)))
                     else Nothing
 
-wordOnCol :: Board -> Pos -> Maybe WordPut
+-- | Retrieve the word that crosses a position on the board vertically.
+wordOnCol :: Board -- ^ The board.
+          -> Pos   -- ^ The position on the board.
+          -> Maybe WordPut
 wordOnCol b (r,c) = if isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
                     then Just (wordFromSquare b incRow (startOfWord b decRow (r,c)))
                     else Nothing
 
-mkWP :: String -> Pos -> Dir -> WordPut
+-- | Make a WordPut from a string.
+mkWP :: String -- ^ The string.
+     -> Pos    -- ^ The starting position on the board.
+     -> Dir    -- ^ The direction in which the word is to be placed.
+     -> WordPut
 mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
   zip (iterate f pos) (map (\c -> fromJust (Map.lookup c charToLetterMap)) w) 
 
 -- ========== Bonuses ============ --
 
-data Bonus = Word Int | Letter Int
+data Bonus = Word Int | Letter Int -- ^ The datatype of bonuses
 
+instance Show Bonus where
+  show (Word i)   = 'W' : show i
+  show (Letter i) = 'L' : show i
+
+-- | Data for the bonus map.
 bonusSquaresList :: [((Int, Int), Bonus)] -- ^ ((Row, Column), Bonus)
 bonusSquaresList = [((0, 0),   Word 3),    ((0, 3),   Letter 2)
                    , ((0, 7),   Word 3),   ((0, 11),  Letter 2)
@@ -283,5 +307,6 @@ bonusSquaresList = [((0, 0),   Word 3),    ((0, 3),   Letter 2)
                    , ((14, 7),  Word 3),   ((14, 11), Letter 2)
                    , ((14, 14), Word 3)]
 
+-- | Map containing the bonus squares on the board.
 bonusMap :: Map Pos Bonus
 bonusMap = Map.fromList bonusSquaresList

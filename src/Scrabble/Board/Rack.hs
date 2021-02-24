@@ -3,6 +3,8 @@ module Scrabble.Board.Rack ( Rack )
 
 import Scrabble.Dict.Letter ( Letter )
 
+-- ============ Functions relating to racks. Remove if there aren't any! ========= --
+
 type Rack = [Letter]
 
 

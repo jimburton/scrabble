@@ -1,23 +1,25 @@
 module Scrabble.Show
   ( showBoard
   , showGame
-  , showPlayer
-  , showTurn )
+  , showPlayer )
   where
 
 import Data.List      ( intercalate )
 import Data.Array
 import qualified Data.Map as Map
-import Scrabble.Game
-  ( Game
-  , getPlayer )
+import Scrabble.Game  ( getPlayer )
 import Scrabble.Board.Board
   ( Board
   , Player(..)
   , bonusMap )
 import Scrabble.Dict.Letter ( toChar )
 
-showBoard :: Bool -> Board -> String
+-- =============== Functions for turning boards into strings =========== --
+
+-- | Stringify a board.
+showBoard :: Bool  -- ^ Whether to show bonus squares.
+          -> Board -- ^ The board.
+          -> String
 showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
   showRows      = intercalate "\n" (zipWith showRow [0..14] (elems b)) ++ "\n"
   showRow     i r = showI i ++ "|" ++ concat (zipWith (showSquare i) [0..14] (elems r)) 
@@ -34,10 +36,16 @@ showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
   bottom        = line '-'
   line        c = replicate 48 c ++ "\n"
 
-showGame :: Bool -> Board -> Player -> String
+-- | Stringify the board and the current player.
+showGame :: Bool   -- ^ Whether to show bonus squares.
+         -> Board  -- ^ The board.
+         -> Player -- ^ The player.
+         -> String
 showGame printBonuses b p = showBoard printBonuses b ++ showPlayer p
 
-showPlayer :: Player -> String
+-- | Stringify a player.
+showPlayer :: Player -- ^ The player.
+           -> String
 showPlayer p = top ++ playerLine ++ rackLine ++ bottom where
   line     c = replicate 46 c ++ "\n"
   top        = "\n" ++ line '*'
@@ -46,8 +54,4 @@ showPlayer p = top ++ playerLine ++ rackLine ++ bottom where
                  intercalate ", " (take 5 strs) ++ "\n"
                  ++ intercalate ", " (drop 5 strs) ++ "\n"
   bottom     = line '*'
-
-showTurn :: Game -> String
-showTurn g = let p = getPlayer g in
-  showPlayer p ++ "Enter WORD ROW COL DIR[H/V]:\n"
 
