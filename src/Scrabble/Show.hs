@@ -7,12 +7,12 @@ module Scrabble.Show ( showBoard
 import Data.List      ( intercalate )
 import Data.Array
 import qualified Data.Map as Map
-import Scrabble.Game  ( Game
-                      , getPlayer )
-import Scrabble.Board ( Board
-                      , Player(..)
-                      , bonusMap )
-import Scrabble.Dict  ( toChar )
+import Scrabble.Game   ( Game
+                       , getPlayer )
+import Scrabble.Board.Board  ( Board
+                       , Player(..)
+                       , bonusMap )
+import Scrabble.Letter ( toChar )
 
 showBoard :: Bool -> Board -> String
 showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where

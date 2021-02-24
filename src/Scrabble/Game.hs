@@ -8,8 +8,7 @@ module Scrabble.Game ( Game(..)
                      , getPlayer
                      , setPlayer
                      , toggleTurn
-                     , takeMove
-                     , mkWP )
+                     , takeMove )
   where
 
 import           System.Random
@@ -18,20 +17,19 @@ import           Data.Maybe       ( isNothing
                                   , catMaybes
                                   , fromJust)
 import           Data.Array
-import           Prelude hiding   (words)
-import qualified Prelude  as P    (words)
-import           Data.Map         (Map)
+import           Prelude hiding   ( words )
+import qualified Prelude  as P    ( words )
+import           Data.Map         ( Map )
 import qualified Data.Map as Map
 import           Control.Monad.ST 
 
-import Scrabble.Board  ( Board
+import Scrabble.Board.Board  ( Board
                        , Rack
                        , WordPut
                        , Pos
                        , Dir(..)
                        , Bonus(..)
                        , Player(..)
-                       , charToLetterMap 
                        , scoreWord
                        , validateRack
                        , validateMove
@@ -42,11 +40,13 @@ import Scrabble.Board  ( Board
                        , empty
                        , additionalWords
                        , numTilesList )
-import Scrabble.Dict   ( Dict
-                       , Letter
-                       , wordsInDict )
-
-type Bag = [Letter]
+import Scrabble.Letter ( charToLetterMap )
+import Scrabble.Bag    ( Bag
+                       , newBag
+                       , fillRack )
+import Scrabble.Dict.Dict   ( Dict
+                            , Letter
+                            , wordsInDict )
 
 data Turn = P1 | P2 deriving (Show, Eq)
 
@@ -60,9 +60,6 @@ data Game = Game { board   :: Board
 instance Show Bonus where
   show (Word i)   = 'W' : show i
   show (Letter i) = 'L' : show i
-
-newBag :: Bag
-newBag = concatMap (\(l,n) -> replicate n l) numTilesList
 
 newGame :: String -- ^ Name of Player 1
         -> String -- ^ Name of Player 2
@@ -126,24 +123,6 @@ takeFromRack r = filter (not . (`elem` r)) . map snd
 
 toggleTurn :: Game -> Game
 toggleTurn g = g { turn = if turn g == P1 then P2 else P1 }
-
-mkWP :: String -> Pos -> Dir -> WordPut
-mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
-  zip (iterate f pos) (map (\c -> fromJust (Map.lookup c charToLetterMap)) w) 
-
-fillRack :: Rack -> Bag -> StdGen -> (Rack, Bag, StdGen)
-fillRack r = fillRack' (7 - length r) r
-    where fillRack' 0 r' b' g' = (r', b', g')
-          fillRack' _ r' [] g' = (r', [], g')
-          fillRack' n r' b' g' =
-            let (t, b'', g'') = getTile b' g' in
-            fillRack' (n-1) (t:r') b'' g''             
-
-getTile :: RandomGen g => Bag -> g -> (Letter, Bag, g)
-getTile b g = let (i, g') = randomR (0, length b -1) g
-                  t = b !! i
-                  b' = take i b ++ drop (i+1) b in
-              (t, b', g')
   
 move :: Dict    -- ^ The dictionary
      -> Game    -- ^ The game

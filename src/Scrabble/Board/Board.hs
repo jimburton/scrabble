@@ -1,28 +1,28 @@
-module Scrabble.Board ( Board
-                      , WordPut
-                      , Dir(..)
-                      , Player(..)
-                      , Rack
-                      , Pos
-                      , Bonus(..)
-                      , validateMove
-                      , touches
-                      , connects
-                      , straight
-                      , getSquare
-                      , updateSquare
-                      , updateBoard
-                      , newBoard
-                      , scoreLetter
-                      , bonusMap
-                      , scoreWord
-                      , validateRack
-                      , charToLetterMap
-                      , numTilesList
-                      , incCol
-                      , incRow
-                      , empty
-                      , additionalWords )
+module Scrabble.Board.Board ( Board
+                            , WordPut
+                            , Dir(..)
+                            , Player(..)
+                            , Rack
+                            , Pos
+                            , Bonus(..)
+                            , validateMove
+                            , touches
+                            , connects
+                            , straight
+                            , getSquare
+                            , updateSquare
+                            , updateBoard
+                            , newBoard
+                            , scoreLetter
+                            , bonusMap
+                            , scoreWord
+                            , validateRack
+                            , numTilesList
+                            , incCol
+                            , incRow
+                            , empty
+                            , additionalWords
+                            , mkWP )
   where
 
 import qualified Data.Map as Map
@@ -32,9 +32,10 @@ import Data.Maybe                ( fromJust
                                  , isJust )
 import Data.Array
 import Data.Map                  ( Map )
-import Data.Tuple                ( swap )
-import Scrabble.Dict             ( Letter(..)
-                                 , toChar )
+import Scrabble.Letter           ( Letter(..)
+                                 , toChar
+                                 , charToLetterMap )
+import Scrabble.Rack             ( Rack )
 
 type Board = Array Int (Array Int (Maybe Letter))
 
@@ -61,6 +62,9 @@ letterToScoreMap = Map.fromList letterToScoreList
 scoreLetter :: Letter -> Int
 scoreLetter = fromJust . flip Map.lookup letterToScoreMap
 
+showTile :: Letter -> String
+showTile l = [toChar l] ++  " (" ++ show (scoreLetter l) ++ ")"
+
 numTilesList :: [(Letter,Int)]
 numTilesList = [
   (A, 9), (B, 2), (C, 2), (D, 4), (E, 12), (F, 2), (G, 3),
@@ -68,26 +72,7 @@ numTilesList = [
   (O, 8), (P, 2), (Q, 1), (R, 6), (S, 4), (T, 6), (U, 4),
   (V, 2), (W, 2), (X, 1), (Y, 2), (Z, 1), (Blank, 2) ]
 
--- private value.
-letterToCharList :: [(Letter,Char)]
-letterToCharList = [
-  (A, 'A'), (B, 'B'), (C, 'C'), (D, 'D'), (E, 'E'), (F, 'F'), (G, 'G'),
-  (H, 'H'), (I, 'I'), (J, 'J'), (K, 'K'), (L, 'L'), (M, 'M'), (N, 'N'),
-  (O, 'O'), (P, 'P'), (Q, 'Q'), (R, 'R'), (S, 'S'), (T, 'T'), (U, 'U'),
-  (V, 'V'), (W, 'W'), (X, 'X'), (Y, 'Y'), (Z, 'Z'), (Blank, '_') ]
-
-letterToCharMap :: Map Letter Char
-letterToCharMap = Map.fromList letterToCharList
-
-charToLetterMap :: Map Char Letter
-charToLetterMap = Map.fromList (swap <$> letterToCharList)
-
-showTile :: Letter -> String
-showTile l = [toChar l] ++  " (" ++ (show $ scoreLetter l) ++ ")"
-
 type Pos = (Int, Int)
-
-type Rack = [Letter]
 
 type WordPut = [(Pos, Letter)]
 
@@ -107,10 +92,7 @@ scoreWord = scoreWord' 0 1 where
                    (Word i)   -> scoreWord' (scoreLetter t + s) (i*b) ws
                    (Letter i) -> scoreWord' ((scoreLetter t * i) + s) b ws
 
-
-{-
-Validation
--}
+-- ================= Validation ===============--
 
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
@@ -176,9 +158,7 @@ someNewTiles b w = if any (empty b . fst) w
                    then Right True
                    else Left "You didn't play any new tiles"
 
-{--
-Manipulating and querying the board
--}
+-- ==================== Manipulating and querying the board =================--
 
 getSquare :: Board -> Pos -> Maybe Letter
 getSquare b (r,c) = if onBoard (r,c)
@@ -259,9 +239,12 @@ wordOnCol b (r,c) = if isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,
                     then Just (wordFromSquare b incRow (startOfWord b decRow (r,c)))
                     else Nothing
 
-{--
-Bonuses.
---}
+mkWP :: String -> Pos -> Dir -> WordPut
+mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
+  zip (iterate f pos) (map (\c -> fromJust (Map.lookup c charToLetterMap)) w) 
+
+-- ========== Bonuses ============ --
+
 data Bonus = Word Int | Letter Int
 
 bonusSquaresList :: [((Int, Int), Bonus)] -- ^ ((Row, Column), Bonus)

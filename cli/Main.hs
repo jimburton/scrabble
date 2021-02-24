@@ -11,17 +11,17 @@ import  Scrabble.Game  ( Game(..)
                        , getPlayer
                        , setPlayer
                        , toggleTurn
-                       , takeMove
-                       , mkWP )
-import Scrabble.Board  ( Player(..)
+                       , takeMove )
+import Scrabble.Board.Board  ( Player(..)
                        , Board
-                       , Dir(..) )
+                       , Dir(..)
+                       , mkWP )
 import Scrabble.Show   ( showGame
                        , showPlayer
                        , showTurn
                        , showBoard )
-import Scrabble.Dict   ( Dict
-                       , englishDictionary )
+import Scrabble.Dict.Dict   ( Dict
+                            , englishDictionary )
 
 startGame :: String -- ^ Name of Player 1
           -> String -- ^ Name of Player 2
