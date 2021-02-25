@@ -167,29 +167,51 @@ wordString :: WordPut -> String
 wordString = map (toChar . snd)
 
 -- | Find the additional words that are created by placing a word on the board.
-additionalWords :: Board -> WordPut -> [WordPut]
-additionalWords _ [] = []
-additionalWords b (wp:wps) =
-  let (r,c) = fst wp
-      h = if empty b (r,c) && hNeighbour b (r,c)
-          then wordOnRow (updateSquare b wp) (r,c)
-          else Nothing
-      v = if empty b (r,c) && vNeighbour b (r,c)
-          then wordOnCol (updateSquare b wp) (r,c)
-          else Nothing in
-  filter ((>1) . length) $ catMaybes [h, v] ++ additionalWords b wps
+additionalWords :: Board   -- ^ The board.
+                -> WordPut -- ^ The new word.
+                -> [WordPut]
+additionalWords b w = additionalWords' w
+  where additionalWords' []       = []
+        additionalWords' (wp:wps) =
+          let (r,c) = fst wp
+              h = if empty b (r,c) && (any (not . flip touches w) (hNeighbours b (r,c)))
+                  then wordOnRow (updateSquare b wp) (r,c)
+                  else Nothing
+              v = if empty b (r,c) && (any (not . flip touches w) (vNeighbours b (r,c)))
+                  then wordOnCol (updateSquare b wp) (r,c)
+                  else Nothing in
+            filter ((>1) . length) $ catMaybes [h, v] ++ additionalWords' wps
 
+-- | Get direction of a word on the board. WordPuts must be at least two tiles
+--   long.
+-- getDirection :: WordPut -> Dir
+-- getDirection w = let r1 = fst $ head w
+--                     r2 = fst $ head (tail w) in
+--                   if  r1<r2 then HZ else VT
+  
 -- | Is a square empty?
 empty :: Board -> Pos -> Bool
 empty b pos = isNothing (getSquare b pos)
 
--- | The occupied horizontal neighbour of a position on the board.
-hNeighbour :: Board -> Pos -> Bool
-hNeighbour b (r,c) = isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
+-- | The occupied horizonal neighbours of a position on the board.
+hNeighbours :: Board -> Pos -> [Pos]
+hNeighbours b (r,c) = let west = [(r-1,c) | isJust (getSquare b (r-1,c))]
+                          east = [(r+1,c) | isJust (getSquare b (r+1,c))] in
+                        east ++ west
 
--- | The occupied vertical neighbour of a position on the board.
+-- | The occupied vertical neighbours of a position on the board.
+vNeighbours :: Board -> Pos -> [Pos]
+vNeighbours b (r,c) = let north = [(r,c-1) | isJust (getSquare b (r,c-1))]
+                          south = [(r,c+1) | isJust (getSquare b (r,c+1))] in
+                        north ++ south
+
+-- | Is there an occupied horizontal neighbour of a position on the board.
+hNeighbour :: Board -> Pos -> Bool
+hNeighbour b (r,c) = isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
+
+-- | Is there an occupied vertical neighbour of a position on the board.
 vNeighbour :: Board -> Pos -> Bool
-vNeighbour b (r,c) = isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
+vNeighbour b (r,c) = isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
 
 -- | TODO Do I need this?
 wordFromSquare :: Board

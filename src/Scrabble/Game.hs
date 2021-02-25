@@ -1,6 +1,7 @@
 module Scrabble.Game
   ( Game(..)
   , Turn(..)
+  , newGame
   , newBoard
   , newBag
   , takeTurn
@@ -113,7 +114,7 @@ move :: Dict    -- ^ The dictionary
 move d g w fm =
   let b   = board g
       p   = getPlayer g
-      aw  = additionalWords b w
+      aw  = additionalWords b w 
       sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
       waw = map (map snd) (w:aw)
       sc  = sum $ map scoreWord sws in

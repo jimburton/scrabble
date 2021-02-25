@@ -4,6 +4,7 @@ module Main
 import  System.Random  ( getStdGen )
 import  Scrabble.Game  ( Game(..)
                        , Turn(..)
+                       , newGame
                        , takeFromRack
                        , fillRack
                        , newBag
@@ -27,21 +28,7 @@ startGame :: String -- ^ Name of Player 1
           -> IO Game
 startGame p1Name p2Name = do
   theGen <- getStdGen
-  let (rack1, bag1, gen') = fillRack [] newBag theGen
-      p1 = Player { name = p1Name
-                  , rack = rack1
-                  , score = 0 }
-      (rack2, bag2, gen'') = fillRack [] bag1 gen'
-      p2 = Player { name = p2Name
-                  , rack = rack2
-                  , score = 0 }
-      g  = Game { board = newBoard
-                , bag = bag2
-                , player1 = p1
-                , player2 = p2
-                , turn = P1
-                , gen = gen'' }
-  playGame g
+  playGame (newGame p1Name p2Name theGen)
 
 playGame :: Game -> IO Game
 playGame g = do

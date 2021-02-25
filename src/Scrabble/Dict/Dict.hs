@@ -1,10 +1,11 @@
-module Scrabble.Dict.Dict ( Dict
-                          , letterFromChar
-                          , toChar
-                          , wordsInDict
-                          , englishDictionary
-                          , dictContainsWord
-                          , dictContainsPrefix )
+module Scrabble.Dict.Dict
+  ( Dict
+  , letterFromChar
+  , toChar
+  , wordsInDict
+  , englishDictionary
+  , dictContainsWord
+  , dictContainsPrefix )
   where
 
 import Data.Char        ( toUpper )
