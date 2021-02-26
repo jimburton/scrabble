@@ -70,32 +70,33 @@ newGame p1Name p2Name theGen =
     g
 
 -- | Take a turn in the game. Play a word onto the board then reset the current
---   player's rack and pass the turn to the next player.
+--   player's rack and pass the turn to the next player. Returns the new game
+--   and the score of this turn.
 takeTurn :: Dict    -- ^ The dictionary
          -> Game    -- ^ The game
          -> Bool    -- ^ Is first move
          -> WordPut -- ^ The word to play
-         -> Either String Game
+         -> Either String (Game, Int)
 takeTurn d g fm wp =
   let theGen = gen g
       r      = rack (getPlayer g)
       theBag = bag g in
   case takeMove d g wp fm of
-    Right g' -> let theRack = takeFromRack r wp
-                    (filledRack, bag', gen') = fillRack theRack theBag theGen
-                    p'   = (getPlayer g') { rack = filledRack }
-                    g''  = setPlayer g' p'
-                    g''' = toggleTurn g'' in
-                  Right g''' { bag = bag', gen = gen' }
+    Right (g',sc) -> let theRack = takeFromRack r wp
+                         (filledRack, bag', gen') = fillRack theRack theBag theGen
+                         p'   = (getPlayer g') { rack = filledRack }
+                         g''  = setPlayer g' p'
+                         g''' = toggleTurn g'' in
+                       Right (g''' { bag = bag', gen = gen' }, sc)
     Left e   -> Left e
 
 -- | Take a move. Checks that this word is in the player's rack then calls the
---   move function.
+--   move function. Returns the new game and the score of this move.
 takeMove :: Dict    -- ^ The dictionary
          -> Game    -- ^ The game
          -> WordPut -- ^ The word to play
          -> Bool    -- ^ Is first move
-         -> Either String Game
+         -> Either String (Game, Int)
 takeMove d g w fm = 
   let p = getPlayer g
       b = board g
@@ -105,12 +106,13 @@ takeMove d g w fm =
     Left e  -> Left e
 
 -- | Play a word onto a board, updating the score of the current player
---   and resetting their rack. The word is validated as being in the dictionary.
+--   and resetting their rack. Returns the new game and the score of this move.
+--   The word is validated as being in the dictionary.
 move :: Dict    -- ^ The dictionary
      -> Game    -- ^ The game
      -> WordPut -- ^ The word to play
      -> Bool    -- ^ Is first move
-     -> Either String Game
+     -> Either String (Game, Int)
 move d g w fm =
   let b   = board g
       p   = getPlayer g
@@ -121,16 +123,17 @@ move d g w fm =
   case validateMove b p w fm of
     Right _ -> case wordsInDict d waw of
       Right _ -> let g' = setScore g sc in
-                 Right g' {board = updateBoard b w}
+                 Right (g' {board = updateBoard b w}, sc)
       Left e -> Left e
     Left e -> Left e
 
 -- | Play a sequence of letters onto a board, updating the score of the current player.
---   The word is NOT validated as being in the dictionary.
+--   Returns the new game and the score of this move. The word is NOT validated as
+--   being in the dictionary.
 move' :: Game    -- ^ The game
       -> WordPut -- ^ The word to play
       -> Bool    -- ^ Is first move
-      -> Either String Game
+      -> Either String (Game, Int)
 move' g w fm =
   let b   = board g
       p   = getPlayer g
@@ -140,7 +143,7 @@ move' g w fm =
       sc  = sum $ map scoreWord sws in
   case validateMove b p w fm of
     Right _ -> let g' = setScore g sc in
-                 Right g' {board = updateBoard b w}
+                 Right (g' {board = updateBoard b w}, sc)
     Left e -> Left e
 
 -- | Update the current player in the game. 

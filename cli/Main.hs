@@ -62,13 +62,14 @@ takeTurn d g fm = runInputT defaultSettings loop
              wp  = mkWP word (row,col) dir
              m   = takeMove d g wp fm 
          case m of
-           Right g' -> do let theGen = gen g'
-                              theRack = takeFromRack r wp
-                              (filledRack, bag', gen') = fillRack theRack theBag theGen
-                              p'   = (getPlayer g') { rack = filledRack }
-                              g''  = setPlayer g' p'
-                              g''' = toggleTurn g''
-                          liftIO $ takeTurn d (g''' { bag = bag', gen = gen' }) False
+           Right (g',sc) -> do liftIO $ putStrLn (word  ++ ": " ++ show sc)
+                               let theGen = gen g'
+                                   theRack = takeFromRack r wp
+                                   (filledRack, bag', gen') = fillRack theRack theBag theGen
+                                   p'   = (getPlayer g') { rack = filledRack }
+                                   g''  = setPlayer g' p'
+                                   g''' = toggleTurn g''
+                               liftIO $ takeTurn d (g''' { bag = bag', gen = gen' }) False
            Left e   -> do liftIO $ putStrLn e
                           liftIO $ takeTurn d g False
 
