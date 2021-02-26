@@ -3,7 +3,9 @@ module Main
 
 import  System.Random  ( getStdGen )
 import  System.Console.Haskeline
-import Control.Monad.IO.Class
+import Data.Maybe (isNothing)
+import Data.Foldable   ( forM_ )
+import  Control.Monad.IO.Class
 import  Scrabble.Game  ( Game(..)
                        , Turn(..)
                        , newGame
@@ -38,19 +40,20 @@ playGame g = do
   printPlayer $ player1 g
   printPlayer $ player2 g
   d <- englishDictionary
-  takeTurn d g True
+  takeTurn d g Nothing
 
 takeTurn :: Dict -- ^ The dictionary
          -> Game -- ^ The game
-         -> Bool -- ^ Is first move
+         -> Maybe String -- ^ Previous score as a string
          -> IO Game
-takeTurn d g fm = runInputT defaultSettings loop
+takeTurn d g msc = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
-     let r      = rack (getPlayer g)
+     let fm     = isNothing msc
+         r      = rack (getPlayer g)
          theBag = bag g
-     liftIO $ printBoardAndTurn g
+     liftIO $ printBoardAndTurn g msc
      mLn <- getInputLine (showTurn g)
      case mLn of
        Nothing -> loop
@@ -62,16 +65,16 @@ takeTurn d g fm = runInputT defaultSettings loop
              wp  = mkWP word (row,col) dir
              m   = takeMove d g wp fm 
          case m of
-           Right (g',sc) -> do liftIO $ putStrLn (word  ++ ": " ++ show sc)
-                               let theGen = gen g'
+           Right (g',sc) -> do let theGen = gen g'
                                    theRack = takeFromRack r wp
                                    (filledRack, bag', gen') = fillRack theRack theBag theGen
                                    p'   = (getPlayer g') { rack = filledRack }
                                    g''  = setPlayer g' p'
                                    g''' = toggleTurn g''
-                               liftIO $ takeTurn d (g''' { bag = bag', gen = gen' }) False
+                                   msc  = Just (word  ++ ": " ++ show sc)
+                               liftIO $ takeTurn d (g''' { bag = bag', gen = gen' }) msc
            Left e   -> do liftIO $ putStrLn e
-                          liftIO $ takeTurn d g False
+                          liftIO $ takeTurn d g $ Just (word  ++ ": NO SCORE")
 
 printBoard :: Bool -> Board -> IO ()
 printBoard printBonuses b = putStrLn $ showBoard printBonuses b
@@ -85,9 +88,10 @@ printPlayer p = putStrLn $ showPlayer p
 printTurn :: Game -> IO ()
 printTurn g = putStrLn $ showTurn g
 
-printBoardAndTurn :: Game -> IO ()
-printBoardAndTurn g = do printBoard True (board g)
-                         printTurn g
+printBoardAndTurn :: Game -> Maybe String -> IO ()
+printBoardAndTurn g msc = do printBoard True (board g)
+                             forM_ msc putStrLn
+                             printTurn g
 
 
 showTurn :: Game -> String

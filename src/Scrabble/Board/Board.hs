@@ -33,6 +33,7 @@ import Data.Maybe
   , isJust )
 import Data.Array
 import Data.Map                  ( Map )
+import Data.Char                 ( toUpper )
 import Scrabble.Dict.Letter
   ( Letter(..)
   , toChar
@@ -285,7 +286,7 @@ mkWP :: String -- ^ The string.
      -> Dir    -- ^ The direction in which the word is to be placed.
      -> WordPut
 mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
-  zip (iterate f pos) (map (\c -> fromJust (Map.lookup c charToLetterMap)) w) 
+  zip (iterate f pos) (map (\c -> fromJust (Map.lookup (toUpper c) charToLetterMap)) w) 
 
 -- ========== Bonuses ============ --
 
