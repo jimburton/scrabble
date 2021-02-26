@@ -56,6 +56,7 @@ executable scrabble
                      , random
                      , array
                      , containers
+                     , haskeline
   hs-source-dirs:      cli
                      , src
   default-language:    Haskell2010

@@ -2,6 +2,8 @@ module Main
   where
 
 import  System.Random  ( getStdGen )
+import  System.Console.Haskeline
+import Control.Monad.IO.Class
 import  Scrabble.Game  ( Game(..)
                        , Turn(..)
                        , newGame
@@ -42,26 +44,33 @@ takeTurn :: Dict -- ^ The dictionary
          -> Game -- ^ The game
          -> Bool -- ^ Is first move
          -> IO Game
-takeTurn d g fm = do
-  let r      = rack (getPlayer g)
-      theBag = bag g
-  printBoardAndTurn g
-  [word,rowStr,colStr,dirStr] <- fmap words getLine
-  let row = read rowStr :: Int
-      col = read colStr :: Int
-      dir = if dirStr == "H" then HZ else VT
-      wp  = mkWP word (row,col) dir
-      m   = takeMove d g wp fm 
-  case m of
-    Right g' -> do let theGen = gen g'
-                       theRack = takeFromRack r wp
-                       (filledRack, bag', gen') = fillRack theRack theBag theGen
-                       p'   = (getPlayer g') { rack = filledRack }
-                       g''  = setPlayer g' p'
-                       g''' = toggleTurn g''
-                   takeTurn d (g''' { bag = bag', gen = gen' }) False
-    Left e   -> do putStrLn e
-                   takeTurn d g False
+takeTurn d g fm = runInputT defaultSettings loop
+ where
+   loop :: InputT IO Game
+   loop  = do
+     let r      = rack (getPlayer g)
+         theBag = bag g
+     liftIO $ printBoardAndTurn g
+     mLn <- getInputLine (showTurn g)
+     case mLn of
+       Nothing -> loop
+       Just wds -> do
+         let [word,rowStr,colStr,dirStr] = words wds
+         let row = read rowStr :: Int
+             col = read colStr :: Int
+             dir = if dirStr == "H" then HZ else VT
+             wp  = mkWP word (row,col) dir
+             m   = takeMove d g wp fm 
+         case m of
+           Right g' -> do let theGen = gen g'
+                              theRack = takeFromRack r wp
+                              (filledRack, bag', gen') = fillRack theRack theBag theGen
+                              p'   = (getPlayer g') { rack = filledRack }
+                              g''  = setPlayer g' p'
+                              g''' = toggleTurn g''
+                          liftIO $ takeTurn d (g''' { bag = bag', gen = gen' }) False
+           Left e   -> do liftIO $ putStrLn e
+                          liftIO $ takeTurn d g False
 
 printBoard :: Bool -> Board -> IO ()
 printBoard printBonuses b = putStrLn $ showBoard printBonuses b
