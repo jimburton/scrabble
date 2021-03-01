@@ -18,6 +18,7 @@ import Scrabble.Game  ( newGame
                        , getPlayer
                        , setPlayer
                        , toggleTurn
+                       , moveM
                        , moveM' ) -- moveM
 import Scrabble.Board.Board  ( mkWP )
 import Scrabble.Show   ( showGame
@@ -63,7 +64,7 @@ takeTurn d g msc = runInputT defaultSettings loop
              col = read colStr :: Int
              dir = if map toUpper dirStr == "H" then HZ else VT
              wp  = mkWP wd (row,col) dir
-         case moveM' d g wp >>= \(g',sc) -> do 
+         case moveM d g wp >>= \(g',sc) -> do 
            let theGen = gen g'
                theRack = takeFromRack r wp
                (filledRack, bag', gen') = fillRack theRack theBag theGen

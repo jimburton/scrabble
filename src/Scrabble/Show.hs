@@ -11,7 +11,8 @@ import Scrabble.Board.Board
   ( bonusMap )
 import Scrabble.Types ( Board
                       , Player(..))
-import Scrabble.Dict.Letter ( toChar ) 
+import Scrabble.Dict.Letter ( toChar
+                            , scoreLetter ) 
 
 -- =============== Functions for turning boards into strings =========== --
 
@@ -50,8 +51,9 @@ showPlayer p = top ++ playerLine ++ rackLine ++ bottom where
   line     c = replicate 46 c ++ "\n"
   top        = "\n" ++ line '*'
   playerLine = name p ++ " (" ++ show (score p) ++ ")\n"
-  rackLine   = let strs = map show (rack p) in
-                 intercalate ", " (take 5 strs) ++ "\n"
-                 ++ intercalate ", " (drop 5 strs) ++ "\n"
+  rackLine   = let strs   = map show (rack p)
+                   scores = map (show . scoreLetter) (rack p) in
+                 intercalate ", " strs ++ "\n"
+                 ++ intercalate ", " scores ++ "\n"
   bottom     = line '*'
 

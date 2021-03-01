@@ -3,3 +3,5 @@
   + Pass a move
   + Swap tiles
 * Bugs
+
+  + fillRack
