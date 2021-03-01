@@ -1,17 +1,17 @@
 module Scrabble.Board.Bag
-  ( Bag
-  , newBag
-  , fillRack )
+  ( newBag
+  , fillRack
+  , takeFromRack )
   where
 
 import System.Random         ( StdGen
                              , randomR )
+import Scrabble.Types ( Bag
+                      , Rack
+                      , WordPut )
 import Scrabble.Dict.Letter  ( Letter(..) )
-import Scrabble.Board.Rack   ( Rack )
 
 -- ============ Functions relating to a bag of tiles ============= --
-
-type Bag = [Letter]
 
 -- | The number of each tile that is in a new bag.
 numTilesList :: [(Letter,Int)]
@@ -37,7 +37,14 @@ fillRack r = fillRack' (7 - length r) r
           fillRack' _ r' [] g' = (r', [], g')
           fillRack' n r' b' g' =
             let (t, b'', g'') = getTile b' g' in
-            fillRack' (n-1) (t:r') b'' g''             
+            fillRack' (n-1) (t:r') b'' g''
+
+-- | Take some letters from a rack.
+takeFromRack :: Rack    -- ^ The rack to take from
+             -> WordPut -- ^ The letters to take from the rack
+             -> Rack
+takeFromRack r = filter (not . (`elem` r)) . map snd 
+
 
 -- | Get a single tile from a bag.
 getTile :: Bag    -- ^ The bag to take the tile from.

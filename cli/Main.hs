@@ -7,23 +7,24 @@ import Data.Maybe     ( isNothing )
 import Data.Foldable  ( forM_ )
 import Data.Char      ( toUpper ) 
 import Control.Monad.IO.Class ( liftIO )
-import Scrabble.Game  ( Game(..)
-                       , newGame
+import Scrabble.Types
+  ( Game(..)
+  , Dict
+  , Dir(..)
+  , Player(..)
+  , Board )
+import Scrabble.Game  ( newGame
                        , takeFromRack
                        , fillRack
                        , getPlayer
                        , setPlayer
                        , toggleTurn
                        , takeMoveM )
-import Scrabble.Board.Board  ( Player(..)
-                       , Board
-                       , Dir(..)
-                       , mkWP )
+import Scrabble.Board.Board  ( mkWP )
 import Scrabble.Show   ( showGame
                        , showPlayer
                        , showBoard )
-import Scrabble.Dict.Dict   ( Dict 
-                            , englishDictionary )
+import Scrabble.Dict.Dict   ( englishDictionary )
 import Scrabble.Evaluator ( Evaluator(..) )
 
 startGame :: String -- ^ Name of Player 1
@@ -66,7 +67,7 @@ takeTurn d g msc = runInputT defaultSettings loop
            let theGen = gen g'
                theRack = takeFromRack r wp
                (filledRack, bag', gen') = fillRack theRack theBag theGen
-               p'   = (getPlayer g') { rack = filledRack }
+               p'   = (getPlayer g') { rack = filledRack } 
                g''  = setPlayer g' p'
                g''' = toggleTurn g''
                msc'  = Just (word  ++ ": " ++ show sc)

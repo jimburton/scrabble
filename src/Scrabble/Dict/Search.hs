@@ -9,11 +9,12 @@ import Data.Set             ( Set )
 import Data.List            ( delete )
 import Prelude hiding       ( Word )
 import Scrabble.Dict.Dict
-  ( Dict
-  , dictContainsWord
+  ( dictContainsWord
   , dictContainsPrefix)
 import Scrabble.Dict.Letter ( Letter )
-import Scrabble.Dict.Word   ( Word )
+import Scrabble.Types
+  ( Dict
+  , Word )
 
 {- ===== Dictionary Search ===== -}
 

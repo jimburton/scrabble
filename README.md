@@ -1,4 +1,6 @@
 
+Adapted from https://github.com/joshcough/Scrabble for teaching at the University of Brighton.
+
 Explanation of Evaluator monad, with this example of nasty nested case statements:
 
 ```

@@ -8,9 +8,9 @@ import Data.List      ( intercalate )
 import Data.Array
 import qualified Data.Map as Map
 import Scrabble.Board.Board
-  ( Board
-  , Player(..)
-  , bonusMap )
+  ( bonusMap )
+import Scrabble.Types ( Board
+                      , Player(..))
 import Scrabble.Dict.Letter ( toChar ) 
 
 -- =============== Functions for turning boards into strings =========== --

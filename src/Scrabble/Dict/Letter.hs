@@ -18,9 +18,6 @@ data Letter =
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
   deriving (Enum, Eq, Ord)
 
-instance Show Letter where
-  show l = [toChar l]
-
 -- | Convert a Char to a Letter, if the Char is a valid Letter (A-Z).
 letterFromChar :: Char -> Maybe Letter
 letterFromChar c = Map.lookup c charToLetterMap
@@ -28,6 +25,9 @@ letterFromChar c = Map.lookup c charToLetterMap
 -- | Convert a Letter back into a Char. Always valid.
 toChar :: Letter -> Char
 toChar l = fromJust $ Map.lookup l letterToCharMap
+
+instance Show Letter where
+  show l = [toChar l]
 
 -- private value.
 letterToCharList :: [(Letter,Char)]

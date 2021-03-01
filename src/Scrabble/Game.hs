@@ -14,13 +14,14 @@ module Scrabble.Game
 
 import System.Random
 import Prelude hiding ( words )
-
-import Scrabble.Board.Board
-  ( Board
-  , Rack
+import Scrabble.Types
+  ( Game(..)
+  , Turn(..)
   , WordPut
   , Player(..)
-  , scoreWord
+  , Dict )
+import Scrabble.Board.Board
+  ( scoreWord
   , validateRackM
   , validateMoveM 
   , newBoard
@@ -29,25 +30,16 @@ import Scrabble.Board.Board
   , additionalWords
   , newTilesInMove )
 import Scrabble.Board.Bag
-  ( Bag
-  , newBag
-  , fillRack )
+  ( newBag
+  , fillRack
+  , takeFromRack )
 import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Dict.Dict
-  ( Dict
-  , wordsInDictM )
+  ( wordsInDictM )
 
 -- ============= Functions for playing the game =============== --
 
-data Turn = P1 | P2 deriving (Show, Eq)
-
-data Game = Game { board   :: Board
-                 , bag     :: Bag
-                 , player1 :: Player
-                 , player2 :: Player
-                 , turn    :: Turn
-                 , gen     :: StdGen }
 
 -- | Start a new game.
 newGame :: String -- ^ Name of Player 1
@@ -105,12 +97,6 @@ setPlayer :: Game -> Player -> Game
 setPlayer g p = if turn g == P1
                 then g { player1 = p }
                 else g { player2 = p }
-
--- | Take some letters from a rack.
-takeFromRack :: Rack    -- ^ The rack to take from
-             -> WordPut -- ^ The letters to take from the rack
-             -> Rack
-takeFromRack r = filter (not . (`elem` r)) . map snd 
 
 -- | Toggle the turn in the game (between P1 and P2)
 toggleTurn :: Game -- ^ The game in which to toggle the turn

@@ -1,6 +1,5 @@
 module Scrabble.Dict.Dict
-  ( Dict
-  , letterFromChar
+  ( letterFromChar
   , toChar
   , wordsInDict
   , wordsInDictM
@@ -13,7 +12,6 @@ import Data.Char        ( toUpper )
 import Data.List        ( inits )
 import Data.Set         ( Set )
 import Prelude hiding   ( Word )
-import System.IO.Unsafe
 
 import qualified Data.Maybe as Maybe
 import qualified Data.Set   as Set
@@ -22,21 +20,14 @@ import Scrabble.Dict.Letter
   ( letterFromChar
   , toChar )
 import Scrabble.Dict.Word
-  ( Word 
-  , wordToString)
-import Scrabble.Evaluator ( Evaluator(..) )
+  ( wordToString)
+import Scrabble.Evaluator
+  ( Evaluator(..) )
+import Scrabble.Types
+  ( Word
+  , Dict(..) )
 
 {- ===== Dictionary ===== -}
-
-data Dict = Dict {
-   dictWords    :: Set Word -- ^ All the words in the dictionary
- , dictPrefixes :: Set Word -- ^ The prefixes of all the words in the dictionary.
-} deriving Eq
-
-instance Show Dict where
-  show d = concat ["(Dict ", nrWords, ", ", nrPrefixes, ")"] where
-    nrWords    = "words: "    ++ show (length $ dictWords d)
-    nrPrefixes = "prefixes: " ++ show (length $ dictPrefixes d)
 
 -- | Check whether a list of words are all in the dictionary.
 wordsInDictM :: Dict
@@ -97,6 +88,6 @@ englishDictionary :: IO Dict
 englishDictionary = readDictionary englishDictionaryPath
 
 -- | Read the English dictionary (performing the IO action)
-unsafeReadEnglishDictionary :: Dict
-unsafeReadEnglishDictionary = unsafePerformIO englishDictionary
+--unsafeReadEnglishDictionary :: Dict
+--unsafeReadEnglishDictionary = unsafePerformIO englishDictionary
 

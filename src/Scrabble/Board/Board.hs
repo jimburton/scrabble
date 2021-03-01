@@ -1,12 +1,5 @@
 module Scrabble.Board.Board
-  ( Board
-  , WordPut
-  , Dir(..)
-  , Player(..)
-  , Rack
-  , Pos
-  , Bonus(..)
-  , validateMoveM
+  ( validateMoveM
   , validateRackM
   , touches
   , getSquare
@@ -35,28 +28,22 @@ import Data.Array
 import Data.Map                  ( Map )
 import Data.Char                 ( toUpper )
 import Scrabble.Dict.Letter
-  ( Letter(..)
+  ( Letter
   , charToLetterMap
   , scoreLetter )
-import Scrabble.Board.Rack       ( Rack )
+import Scrabble.Types ( Board(..)
+                      , Pos
+                      , WordPut
+                      , Word
+                      , Player(..)
+                      , Bonus(..)
+                      , Dir(..)
+                      , Rack ) 
 import Scrabble.Evaluator        ( Evaluator(..)
                                  , evalBool )
 
-type Board = Array Int (Array Int (Maybe Letter))
-
-data Player = Player { name :: String
-                     , rack :: Rack
-                     , score :: Int
-                     } deriving (Show, Eq)
-
 newBoard :: Board
 newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
-
-type Pos = (Int, Int)
-
-type WordPut = [(Pos, Letter)]
-
-data Dir = HZ | VT deriving (Show, Read, Eq)
 
 -- | The Bool argument is whether any bonus should be applied to this
 --   Pos and Tile, i.e. whether this is the first time it has been
@@ -273,12 +260,6 @@ mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
   zip (iterate f pos) (map (\c -> fromJust (Map.lookup (toUpper c) charToLetterMap)) w) 
 
 -- ========== Bonuses ============ --
-
-data Bonus = Word Int | Letter Int -- ^ The datatype of bonuses
-
-instance Show Bonus where
-  show (Word i)   = 'W' : show i
-  show (Letter i) = 'L' : show i
 
 -- | Data for the bonus map.
 bonusSquaresList :: [((Int, Int), Bonus)] -- ^ ((Row, Column), Bonus)

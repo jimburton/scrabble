@@ -4,15 +4,14 @@ module Scrabble.Dict.Word
   , wordFromString )
   where
 
+import Prelude hiding  ( Word )
 import Scrabble.Dict.Letter
   ( Letter
   , letterFromChar
   , toChar )
-import Prelude hiding  ( Word )
+import Scrabble.Types ( Word )
 
 -- ===== Words ===== --
-
-type Word = [Letter]
 
 -- | Stringify a word.
 wordToString :: Word -> String
