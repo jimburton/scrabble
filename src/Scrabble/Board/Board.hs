@@ -31,10 +31,9 @@ import Scrabble.Dict.Letter
   ( Letter
   , charToLetterMap
   , scoreLetter )
-import Scrabble.Types ( Board(..)
+import Scrabble.Types ( Board
                       , Pos
                       , WordPut
-                      , Word
                       , Player(..)
                       , Bonus(..)
                       , Dir(..)

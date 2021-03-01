@@ -10,7 +10,6 @@ module Scrabble.Dict.Dict
 
 import Data.Char        ( toUpper )
 import Data.List        ( inits )
-import Data.Set         ( Set )
 import Prelude hiding   ( Word )
 
 import qualified Data.Maybe as Maybe

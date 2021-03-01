@@ -6,8 +6,7 @@ module Scrabble.Dict.Word
 
 import Prelude hiding  ( Word )
 import Scrabble.Dict.Letter
-  ( Letter
-  , letterFromChar
+  ( letterFromChar
   , toChar )
 import Scrabble.Types ( Word )
 
