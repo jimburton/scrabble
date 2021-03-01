@@ -38,7 +38,7 @@ import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Dict.Dict
   ( wordsInDictT )
-import Scrabble.Dict.Search
+import Scrabble.Dict.Word
   ( wordToText ) 
 
 -- ============= Functions for playing the game =============== --

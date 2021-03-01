@@ -11,18 +11,19 @@ module Scrabble.Types
   , Turn(..)
   , Game(..)
   , Bag
-  , Dict(..)
   , DictTrie ) 
 
 where
 
 import Prelude hiding ( Word )
 import Data.Array
-import Data.Set
 import Data.Trie.Text ( Trie ) 
 import System.Random ( StdGen )
 import Scrabble.Dict.Letter ( Letter ) 
 
+-- ============ Types for the application ================ --
+
+-- Letter is declared in Scrabble.Dict.Letter
 
 type Word = [Letter]
 
@@ -59,15 +60,5 @@ data Game = Game { board   :: Board
 
 type Bag = [Letter]
 
-data Dict = Dict {
-   dictWords    :: Set Word -- ^ All the words in the dictionary
- , dictPrefixes :: Set Word -- ^ The prefixes of all the words in the dictionary.
-} deriving Eq
-
 type DictTrie = Trie Bool
-
-instance Show Dict where
-  show d = concat ["(Dict ", nrWords, ", ", nrPrefixes, ")"] where
-    nrWords    = "words: "    ++ show (length $ dictWords d)
-    nrPrefixes = "prefixes: " ++ show (length $ dictPrefixes d)
 

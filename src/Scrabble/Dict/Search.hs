@@ -1,8 +1,7 @@
 module Scrabble.Dict.Search
   ( findWordsT
   , findPrefixesT
-  , wordPlaysT
-  , wordToText )
+  , wordPlaysT )
   where
 
 import Data.List            ( delete
@@ -10,9 +9,7 @@ import Data.List            ( delete
                             , permutations )
 import Prelude hiding       ( Word )
 import Data.Text            ( Text )
-import Data.Maybe           ( fromJust )
 import Control.Monad        (filterM)
-import qualified Data.Text as Text
 import qualified Data.Trie.Text as Trie
 import Scrabble.Types
   ( DictTrie
@@ -20,8 +17,8 @@ import Scrabble.Types
   , Letter
   , Word )
 import Scrabble.Dict.Word
-  ( wordFromString
-  , wordToString )
+  ( textToWord
+  , wordToText ) 
 
 {- ===== Dictionary Search ===== -}
 
@@ -30,12 +27,6 @@ findWordsT :: DictTrie -- ^ The dictionary to search
           -> [Text]    -- ^ The letters to build the words from.
           -> [Word]
 findWordsT d ws = map textToWord $ filter (`Trie.member` d) ws
-
---textToWord :: Text -> Word
-textToWord  t = fromJust $ wordFromString (Text.unpack t)
-
-wordToText :: Word -> Text
-wordToText w = Text.pack (wordToString w)
 
 -- | Ordered list of values in a bounded enumeration.
 domain :: (Bounded a, Enum a) => [a]
