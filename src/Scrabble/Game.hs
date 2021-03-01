@@ -4,17 +4,16 @@ module Scrabble.Game
   , newGame
   , newBoard
   , newBag
-  , takeTurn
   , takeFromRack
   , fillRack
   , getPlayer
   , setPlayer
   , toggleTurn
-  , takeMove )
+  , takeMoveM )
   where
 
-import           System.Random
-import           Prelude hiding   ( words )
+import System.Random
+import Prelude hiding ( words )
 
 import Scrabble.Board.Board
   ( Board
@@ -22,8 +21,8 @@ import Scrabble.Board.Board
   , WordPut
   , Player(..)
   , scoreWord
-  , validateRack
-  , validateMove
+  , validateRackM
+  , validateMoveM 
   , newBoard
   , updateBoard
   , empty
@@ -35,7 +34,10 @@ import Scrabble.Board.Bag
   , fillRack )
 import Scrabble.Dict.Dict
   ( Dict
-  , wordsInDict )
+  , wordsInDict
+  , wordsInDictM ) 
+import Scrabble.Evaluator
+  ( Evaluator(..) )
 
 -- ============= Functions for playing the game =============== --
 
@@ -73,81 +75,51 @@ newGame p1Name p2Name theGen =
 -- | Take a turn in the game. Play a word onto the board then reset the current
 --   player's rack and pass the turn to the next player. Returns the new game
 --   and the score of this turn.
-takeTurn :: Dict    -- ^ The dictionary
+takeTurnM :: Dict    -- ^ The dictionary
          -> Game    -- ^ The game
          -> Bool    -- ^ Is first move
          -> WordPut -- ^ The word to play
-         -> Either String (Game, Int)
-takeTurn d g fm wp =
+         -> Evaluator (Game, Int)
+takeTurnM d g fm wp = do
   let theGen = gen g
       r      = rack (getPlayer g)
-      theBag = bag g in
-  case takeMove d g wp fm of
-    Right (g',sc) -> let theRack = takeFromRack r wp
-                         (filledRack, bag', gen') = fillRack theRack theBag theGen
-                         p'   = (getPlayer g') { rack = filledRack }
-                         g''  = setPlayer g' p'
-                         g''' = toggleTurn g'' in
-                       Right (g''' { bag = bag', gen = gen' }, sc)
-    Left e   -> Left e
+      theBag = bag g 
+  takeMoveM d g wp fm >>= \(g',sc) -> do
+    let theRack = takeFromRack r wp
+        (filledRack, bag', gen') = fillRack theRack theBag theGen
+        p'   = (getPlayer g') { rack = filledRack }
+        g''  = setPlayer g' p'
+        g''' = toggleTurn g'' 
+    pure (g''' { bag = bag', gen = gen' }, sc)
 
 -- | Take a move. Checks that this word is in the player's rack then calls the
 --   move function. Returns the new game and the score of this move.
-takeMove :: Dict    -- ^ The dictionary
+takeMoveM :: Dict    -- ^ The dictionary
          -> Game    -- ^ The game
          -> WordPut -- ^ The word to play
          -> Bool    -- ^ Is first move
-         -> Either String (Game, Int)
-takeMove d g w fm = 
-  let p = getPlayer g
-      b = board g
-      r = rack p in
-  case validateRack b r w of
-    Right _ -> move d g w fm
-    Left e  -> Left e
+         -> Evaluator (Game, Int)
+takeMoveM d g w fm = validateRackM (board g) ((rack . getPlayer) g) w >> moveM d g w fm
 
 -- | Play a word onto a board, updating the score of the current player
 --   and resetting their rack. Returns the new game and the score of this move.
 --   The word is validated as being in the dictionary.
-move :: Dict    -- ^ The dictionary
+moveM :: Dict    -- ^ The dictionary
      -> Game    -- ^ The game
      -> WordPut -- ^ The word to play
      -> Bool    -- ^ Is first move
-     -> Either String (Game, Int)
-move d g w fm =
+     -> Evaluator (Game, Int)
+moveM d g w fm = do
   let b   = board g
       p   = getPlayer g
       aw  = additionalWords b w 
       sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
       waw = map (map snd) (w:aw)
       fpb = if newTilesInMove b w == 7 then 50 else 0
-      sc  = sum $ map (scoreWord fpb) sws in 
-  case validateMove b p w fm of
-    Right _ -> case wordsInDict d waw of
-      Right _ -> let g' = setScore g sc in
-                 Right (g' {board = updateBoard b w}, sc)
-      Left e -> Left e
-    Left e -> Left e
-
--- | Play a sequence of letters onto a board, updating the score of the current player.
---   Returns the new game and the score of this move. The word is NOT validated as
---   being in the dictionary.
-move' :: Game    -- ^ The game
-      -> WordPut -- ^ The word to play
-      -> Bool    -- ^ Is first move
-      -> Either String (Game, Int)
-move' g w fm =
-  let b   = board g
-      p   = getPlayer g
-      aw  = additionalWords b w
-      sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
-      waw = map (map snd) (w:aw)
-      fpb = if newTilesInMove b w == 7 then 50 else 0
-      sc  = sum $ map (scoreWord fpb) sws in
-  case validateMove b p w fm of
-    Right _ -> let g' = setScore g sc in
-                 Right (g' {board = updateBoard b w}, sc)
-    Left e -> Left e
+      sc  = sum $ map (scoreWord fpb) sws 
+  validateMoveM b p w fm >> wordsInDictM d waw >> do 
+    let g' = setScore g sc 
+    pure (g' {board = updateBoard b w}, sc)
 
 -- | Update the current player in the game. 
 setPlayer :: Game -> Player -> Game

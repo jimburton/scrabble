@@ -6,10 +6,9 @@ module Scrabble.Board.Board
   , Rack
   , Pos
   , Bonus(..)
-  , validateMove
+  , validateMoveM
+  , validateRackM
   , touches
-  , connects
-  , straight
   , getSquare
   , updateSquare
   , updateBoard
@@ -17,7 +16,6 @@ module Scrabble.Board.Board
   , scoreLetter
   , bonusMap
   , scoreWord
-  , validateRack
   , incCol
   , incRow
   , empty
@@ -42,6 +40,8 @@ import Scrabble.Dict.Letter
   , charToLetterMap
   , scoreLetter )
 import Scrabble.Board.Rack       ( Rack )
+import Scrabble.Evaluator        ( Evaluator(..)
+                                 , evalBool )
 
 type Board = Array Int (Array Int (Maybe Letter))
 
@@ -85,73 +85,61 @@ newTilesInMove b = length . mapMaybe (getSquare b . fst)
 --   it is the first move, in which case check that it touches the centre square),
 --   it is in a straight and continuous line, and is made
 --   up of letters that either in the rack or on the board.
-validateMove :: Board   -- ^ The board
+validateMoveM :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
              -> Bool    -- ^ Is first move
-             -> Either String Bool
-validateMove b p w fm = case connects w b fm of
-  Right _ -> case straight w of
-               Right _ -> if all (\(pos,t) -> case getSquare b pos of
-                                     Just l  -> l == t
-                                     Nothing -> t `elem` rack p) w
-                          then if fmGood
-                               then Right True
-                               else Left "First move must touch centre square"
-                          else Left "Letters not in rack or not on board"
-               Left e -> Left e
-  Left e -> Left e
-  where fmGood = not fm || touches (7,7) w 
+             -> Evaluator Bool
+validateMoveM b p w fm = connectsM w b fm >> straightM w >> do
+               if all (\(pos,t) -> case getSquare b pos of
+                          Just l  -> l == t
+                          Nothing -> t `elem` rack p) w
+                 then if not fm || touches (7,7) w
+                      then pure True
+                      else fail "First move must touch centre square"
+                 else fail "Letters not in rack or not on board"
 
 -- | Does the word touch the pos on the board?
 touches :: Pos -> WordPut -> Bool
 touches p = any ((==p) .  fst)
 
 -- | New words must touch another (apart from the first one to be played)
-connects :: WordPut -- ^ The word to play
+connectsM :: WordPut -- ^ The word to play
          -> Board   -- ^ The board
          -> Bool    -- ^ Is first move
-         -> Either String Bool
-connects [] _ fm     = if fm then Right True else Left "Not touching any other tile"
-connects (w:ws) b fm = let (pos,_) = w in
+         -> Evaluator Bool
+connectsM [] _ fm     = if fm then pure True else fail "Not touching any other tile"
+connectsM (w:ws) b fm = let (pos,_) = w in
   if (not . all null) (occupiedNeighbours b pos)
-  then Right True
-  else connects ws b fm
+  then pure True
+  else connectsM ws b fm
 
 -- | Words must contain at least two tiles and must be in a straight line on the board
-straight :: WordPut -> Either String Bool
-straight (w:x:xs) = let (r,_)  = fst w
-                        (r',_) = fst x
-                        ps     = map fst xs in 
-                    if r == r' - 1
-                    then if all (\(x',y') -> fst x' == fst y' - 1) . zip ps $ tail ps
-                         then Right True
-                         else Left "Not in a straight line"
-                    else if all (\(x',y') -> snd x' == snd y' - 1) . zip ps $ tail ps
-                         then Right True
-                         else Left "Not in a straight line"
-straight _         = Left "Too few letters"
+straightM :: WordPut -> Evaluator Bool
+straightM (w:x:xs) = let (r,_)  = fst w
+                         (r',_) = fst x
+                         ps     = map fst xs
+                         sel    = if r == r'-1 then fst else snd
+                         f      = \(x',y') -> sel x' == sel y' - 1 in 
+                       (all f . zip ps $ tail ps) `evalBool` "Not in a straight line"
+straightM _         = fail "Too few letters"
 
 -- | Check that a word to be played is made of tiles that are either in the player's
 --   rack or are already on the board.
-validateRack :: Board
+validateRackM :: Board
              -> Rack
              -> WordPut
-             -> Either String Bool
-validateRack b r w = case someNewTiles b w of
-  Right _ -> if all (\(pos,t) -> t `elem` r
-                      || (not (empty b pos) && (fromJust . getSquare b) pos == t)) w
-             then Right True
-             else Left "Not all tiles in rack or on board"
-  Left e -> Left e
+             -> Evaluator Bool
+validateRackM b r w = someNewTilesM b w >>
+  all (\(pos,t) -> t `elem` r
+           || (not (empty b pos) && (fromJust . getSquare b) pos == t)) w
+  `evalBool` "Not all tiles in rack or on board"
 
 -- | Check that a word to be played incudes some tiles that aren't on the board.
-someNewTiles :: Board
+someNewTilesM :: Board
              -> WordPut
-             -> Either String Bool
-someNewTiles b w = if any (empty b . fst) w
-                   then Right True
-                   else Left "You didn't play any new tiles"
+             -> Evaluator Bool
+someNewTilesM b w = any (empty b . fst) w `evalBool` "You didn't play any new tiles"
 
 -- ==================== Manipulating and querying the board =================--
 
@@ -227,9 +215,7 @@ wordFromSquare :: Board
                -> (Pos -> Pos) -- ^ The function that moves to the start of the word (up rows or left along columns)
                -> Pos
                -> WordPut
-wordFromSquare b f pos = case getSquare b pos of
-    Nothing -> []
-    Just t  -> (pos, t) : wordFromSquare b f (f pos)
+wordFromSquare b f pos =  maybe [] (\t -> (pos, t) : wordFromSquare b f (f pos)) (getSquare b pos)
 
 -- | Find the starting position of a word that crosses a position on the board.
 startOfWord :: Board        -- The board.
@@ -276,17 +262,17 @@ occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
 wordOnRow :: Board -- ^ The board.
           -> Pos   -- ^ The position on the board.
           -> Maybe WordPut
-wordOnRow b (r,c) = if isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
-                    then Just (wordFromSquare b incCol (startOfWord b decCol (r,c)))
-                    else Nothing
+wordOnRow b (r,c) = getSquare b (r,c-1) >>
+                    getSquare b (r,c+1) >>
+                    return (wordFromSquare b incCol (startOfWord b decCol (r,c)))
 
 -- | Retrieve the word that crosses a position on the board vertically.
 wordOnCol :: Board -- ^ The board.
           -> Pos   -- ^ The position on the board.
           -> Maybe WordPut
-wordOnCol b (r,c) = if isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
-                    then Just (wordFromSquare b incRow (startOfWord b decRow (r,c)))
-                    else Nothing
+wordOnCol b (r,c) = getSquare b (r-1,c) >>
+                    getSquare b (r+1,c) >>
+                    return (wordFromSquare b incRow (startOfWord b decRow (r,c)))
 
 -- | Make a WordPut from a string.
 mkWP :: String -- ^ The string.

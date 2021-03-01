@@ -5,7 +5,7 @@ import  System.Random  ( getStdGen )
 import  System.Console.Haskeline
 import Data.Maybe (isNothing)
 import Data.Foldable   ( forM_ )
-import  Control.Monad.IO.Class
+import  Control.Monad.IO.Class ( liftIO )
 import  Scrabble.Game  ( Game(..)
                        , Turn(..)
                        , newGame
@@ -16,7 +16,7 @@ import  Scrabble.Game  ( Game(..)
                        , getPlayer
                        , setPlayer
                        , toggleTurn
-                       , takeMove )
+                       , takeMoveM )
 import Scrabble.Board.Board  ( Player(..)
                        , Board
                        , Dir(..)
@@ -26,6 +26,7 @@ import Scrabble.Show   ( showGame
                        , showBoard )
 import Scrabble.Dict.Dict   ( Dict
                             , englishDictionary )
+import Scrabble.Evaluator ( Evaluator(..) )
 
 startGame :: String -- ^ Name of Player 1
           -> String -- ^ Name of Player 2
@@ -63,18 +64,18 @@ takeTurn d g msc = runInputT defaultSettings loop
              col = read colStr :: Int
              dir = if dirStr == "H" then HZ else VT
              wp  = mkWP word (row,col) dir
-             m   = takeMove d g wp fm 
-         case m of
-           Right (g',sc) -> do let theGen = gen g'
-                                   theRack = takeFromRack r wp
-                                   (filledRack, bag', gen') = fillRack theRack theBag theGen
-                                   p'   = (getPlayer g') { rack = filledRack }
-                                   g''  = setPlayer g' p'
-                                   g''' = toggleTurn g''
-                                   msc  = Just (word  ++ ": " ++ show sc)
-                               liftIO $ takeTurn d (g''' { bag = bag', gen = gen' }) msc
-           Left e   -> do liftIO $ putStrLn e
-                          liftIO $ takeTurn d g $ Just (word  ++ ": NO SCORE")
+         case takeMoveM d g wp fm >>= \(g',sc) -> do 
+           let theGen = gen g'
+               theRack = takeFromRack r wp
+               (filledRack, bag', gen') = fillRack theRack theBag theGen
+               p'   = (getPlayer g') { rack = filledRack }
+               g''  = setPlayer g' p'
+               g''' = toggleTurn g''
+               msc  = Just (word  ++ ": " ++ show sc)
+           return $ takeTurn d (g''' { bag = bag', gen = gen' }) msc of
+           (Ev (Left e))  -> do liftIO $ putStrLn e
+                                liftIO $ takeTurn d g $ Just (word  ++ ": NO SCORE")
+           (Ev (Right g)) -> liftIO g
 
 printBoard :: Bool -> Board -> IO ()
 printBoard printBonuses b = putStrLn $ showBoard printBonuses b

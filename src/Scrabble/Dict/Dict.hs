@@ -3,6 +3,7 @@ module Scrabble.Dict.Dict
   , letterFromChar
   , toChar
   , wordsInDict
+  , wordsInDictM
   , englishDictionary
   , dictContainsWord
   , dictContainsPrefix )
@@ -23,6 +24,7 @@ import Scrabble.Dict.Letter
 import Scrabble.Dict.Word
   ( Word 
   , wordToString)
+import Scrabble.Evaluator ( Evaluator(..) )
 
 {- ===== Dictionary ===== -}
 
@@ -37,6 +39,12 @@ instance Show Dict where
     nrPrefixes = "prefixes: " ++ show (length $ dictPrefixes d)
 
 -- | Check whether a list of words are all in the dictionary.
+wordsInDictM :: Dict
+            -> [Word]
+            -> Evaluator Bool
+wordsInDictM d ws = and <$> mapM (dictContainsWordM d) ws
+
+-- | Check whether a list of words are all in the dictionary.
 wordsInDict :: Dict
             -> [Word]
             -> Either String Bool
@@ -45,6 +53,12 @@ wordsInDict d (w:ws) = let wStr = wordToString w in
                        if dictContainsWord d w
                        then wordsInDict d ws
                        else Left ("Not in dictionary: "++wStr) 
+
+-- | Returns true if the dict contains the given word
+dictContainsWordM :: Dict -> Word -> Evaluator Bool
+dictContainsWordM d w = if Set.member w (dictWords d)
+                        then Ev $ Right True
+                        else Ev $ Left ("Not in dictionary: " ++ show w)
 
 -- | Returns true if the dict contains the given word
 dictContainsWord :: Dict -> Word -> Bool
