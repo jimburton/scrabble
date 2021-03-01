@@ -36,7 +36,6 @@ import Data.Map                  ( Map )
 import Data.Char                 ( toUpper )
 import Scrabble.Dict.Letter
   ( Letter(..)
-  , toChar
   , charToLetterMap
   , scoreLetter )
 import Scrabble.Board.Rack       ( Rack )
@@ -156,10 +155,6 @@ updateSquare b ((r,c),l) = let row = (b ! r) // [(c, Just l)] in
 updateBoard :: Board -> WordPut -> Board
 updateBoard = foldl updateSquare
 
--- | Stringify a set of tiles on the board.
-wordString :: WordPut -> String
-wordString = map (toChar . snd)
-
 -- | Find the additional words that are created by placing a word on the board.
 additionalWords :: Board   -- ^ The board.
                 -> WordPut -- ^ The new word.
@@ -204,14 +199,6 @@ gridNeighbours :: (Pos -> Pos) -- ^ Seek in first direction (left or up)
 gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
                                m = [g pos | isJust (getSquare b (g pos))] in
                         l ++ m
-
--- | Is there an occupied horizontal neighbour of a position on the board.
-hNeighbour :: Board -> Pos -> Bool
-hNeighbour b (r,c) = isJust (getSquare b (r-1,c)) || isJust (getSquare b (r+1,c))
-
--- | Is there an occupied vertical neighbour of a position on the board.
-vNeighbour :: Board -> Pos -> Bool
-vNeighbour b (r,c) = isJust (getSquare b (r,c-1)) || isJust (getSquare b (r,c+1))
 
 -- | TODO Do I need this?
 wordFromSquare :: Board

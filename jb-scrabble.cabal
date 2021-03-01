@@ -54,6 +54,7 @@ executable scrabble
                      , Scrabble.Board.Rack
                      , Scrabble.Board.Board
   -- ghc-options: -Wall -Werror -fno-warn-name-shadowing
+  ghc-options: -Wall 
   build-depends:       base >=4.12 && <4.13
                      , random
                      , array

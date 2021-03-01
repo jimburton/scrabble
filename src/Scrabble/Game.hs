@@ -32,12 +32,11 @@ import Scrabble.Board.Bag
   ( Bag
   , newBag
   , fillRack )
-import Scrabble.Dict.Dict
-  ( Dict
-  , wordsInDict
-  , wordsInDictM ) 
 import Scrabble.Evaluator
   ( Evaluator(..) )
+import Scrabble.Dict.Dict
+  ( Dict
+  , wordsInDictM )
 
 -- ============= Functions for playing the game =============== --
 
@@ -71,26 +70,6 @@ newGame p1Name p2Name theGen =
                 , turn = P1
                 , gen = gen'' } in
     g
-
--- | Take a turn in the game. Play a word onto the board then reset the current
---   player's rack and pass the turn to the next player. Returns the new game
---   and the score of this turn.
-takeTurnM :: Dict    -- ^ The dictionary
-         -> Game    -- ^ The game
-         -> Bool    -- ^ Is first move
-         -> WordPut -- ^ The word to play
-         -> Evaluator (Game, Int)
-takeTurnM d g fm wp = do
-  let theGen = gen g
-      r      = rack (getPlayer g)
-      theBag = bag g 
-  takeMoveM d g wp fm >>= \(g',sc) -> do
-    let theRack = takeFromRack r wp
-        (filledRack, bag', gen') = fillRack theRack theBag theGen
-        p'   = (getPlayer g') { rack = filledRack }
-        g''  = setPlayer g' p'
-        g''' = toggleTurn g'' 
-    pure (g''' { bag = bag', gen = gen' }, sc)
 
 -- | Take a move. Checks that this word is in the player's rack then calls the
 --   move function. Returns the new game and the score of this move.

@@ -8,12 +8,9 @@ import Data.Foldable  ( forM_ )
 import Data.Char      ( toUpper ) 
 import Control.Monad.IO.Class ( liftIO )
 import Scrabble.Game  ( Game(..)
-                       , Turn(..)
                        , newGame
                        , takeFromRack
                        , fillRack
-                       , newBag
-                       , newBoard
                        , getPlayer
                        , setPlayer
                        , toggleTurn
@@ -25,7 +22,7 @@ import Scrabble.Board.Board  ( Player(..)
 import Scrabble.Show   ( showGame
                        , showPlayer
                        , showBoard )
-import Scrabble.Dict.Dict   ( Dict
+import Scrabble.Dict.Dict   ( Dict 
                             , englishDictionary )
 import Scrabble.Evaluator ( Evaluator(..) )
 
@@ -72,11 +69,11 @@ takeTurn d g msc = runInputT defaultSettings loop
                p'   = (getPlayer g') { rack = filledRack }
                g''  = setPlayer g' p'
                g''' = toggleTurn g''
-               msc  = Just (word  ++ ": " ++ show sc)
-           return $ takeTurn d (g''' { bag = bag', gen = gen' }) msc of
+               msc'  = Just (word  ++ ": " ++ show sc)
+           return $ takeTurn d (g''' { bag = bag', gen = gen' }) msc' of
            (Ev (Left e))  -> do liftIO $ putStrLn e
                                 liftIO $ takeTurn d g $ Just (word  ++ ": NO SCORE")
-           (Ev (Right g)) -> liftIO g
+           (Ev (Right game)) -> liftIO game
 
 printBoard :: Bool -> Board -> IO ()
 printBoard printBonuses b = putStrLn $ showBoard printBonuses b

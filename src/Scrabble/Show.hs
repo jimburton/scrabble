@@ -7,12 +7,11 @@ module Scrabble.Show
 import Data.List      ( intercalate )
 import Data.Array
 import qualified Data.Map as Map
-import Scrabble.Game  ( getPlayer )
 import Scrabble.Board.Board
   ( Board
   , Player(..)
   , bonusMap )
-import Scrabble.Dict.Letter ( toChar )
+import Scrabble.Dict.Letter ( toChar ) 
 
 -- =============== Functions for turning boards into strings =========== --
 
@@ -31,6 +30,7 @@ showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
                                   else "  |"
                        Just t -> [' ', toChar t, '|']
   topNumbers    = "  |" ++ concatMap (\i -> showI i ++ "|") [0..14] ++ "\n"
+  showI         :: Int -> String
   showI i       = if i < 10 then " " ++ show i else show i
   top           = line '-'
   bottom        = line '-'

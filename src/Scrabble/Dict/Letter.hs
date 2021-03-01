@@ -61,6 +61,3 @@ letterToScoreMap = Map.fromList letterToScoreList
 scoreLetter :: Letter -> Int
 scoreLetter = fromJust . flip Map.lookup letterToScoreMap
 
-showTile :: Letter -> String
-showTile l = [toChar l] ++  " (" ++ show (scoreLetter l) ++ ")"
-

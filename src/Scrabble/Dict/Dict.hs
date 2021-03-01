@@ -74,7 +74,7 @@ readDictionary dict = mkDict <$> readFile dict where
   mkDict :: String -> Dict
   mkDict = uncurry dictFromLists . wordsAndPrefixes
   wordsAndPrefixes :: String -> ([Word], [[Word]])
-  wordsAndPrefixes dict = unzip $ wordWithPrefixes <$> lines dict where
+  wordsAndPrefixes dict' = unzip $ wordWithPrefixes <$> lines dict' where
     -- return the word, and all its prefixes
     wordWithPrefixes :: String -> (Word, [Word])
     wordWithPrefixes w =

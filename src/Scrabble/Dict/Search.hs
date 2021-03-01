@@ -53,12 +53,12 @@ search' :: SearchFunc -- ^ Function to continue the search
         -> [Letter]   -- ^ Prefix that all search results must start with
         -> [Letter]   -- ^ The letters to append to the prefix to find matches
         -> [Word]     -- ^ List of words matching
-search' search pred dict prefix rest = match ++ recur prefix rest where
-  match = if pred dict prefix then [prefix] else []
-  recur prefix _    | not $ dictContainsPrefix dict prefix = []
-  recur prefix rest = do l <- rest; search (prefix ++ [l]) (delete l rest)
+search' search p dict prefix rest = match ++ recur prefix rest where
+  match = [prefix | p dict prefix]
+  recur prefix' _    | not $ dictContainsPrefix dict prefix' = []
+  recur prefix' rest' = do l <- rest'; search (prefix' ++ [l]) (delete l rest')
 
 -- Delete all elements in the first list from the second list.
 deleteAll :: Eq a => [a] -> [a] -> [a]
-deleteAll []     hand = hand
-deleteAll (x:xs) hand = deleteAll xs (delete x hand)
+deleteAll xs hand = foldl (flip delete) hand xs
+
