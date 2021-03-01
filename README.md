@@ -50,3 +50,4 @@ validateMove b p w fm = case connects w b fm of
 -}
 
 ```
+Use gridNeighbours from Board to talk about higher orderness and succinct code.

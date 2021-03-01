@@ -26,6 +26,7 @@ instance Monad Evaluator where
     return   = pure
     fail msg = Ev (Left msg)
 
+-- | Test a bool in the monad
 evalBool :: Bool -> String -> Evaluator Bool
 evalBool b e = if b then pure True else fail e
 

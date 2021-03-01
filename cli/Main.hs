@@ -1,12 +1,13 @@
 module Main
   where
 
-import  System.Random  ( getStdGen )
-import  System.Console.Haskeline
-import Data.Maybe (isNothing)
-import Data.Foldable   ( forM_ )
-import  Control.Monad.IO.Class ( liftIO )
-import  Scrabble.Game  ( Game(..)
+import System.Random  ( getStdGen )
+import System.Console.Haskeline
+import Data.Maybe     ( isNothing )
+import Data.Foldable  ( forM_ )
+import Data.Char      ( toUpper ) 
+import Control.Monad.IO.Class ( liftIO )
+import Scrabble.Game  ( Game(..)
                        , Turn(..)
                        , newGame
                        , takeFromRack
@@ -62,7 +63,7 @@ takeTurn d g msc = runInputT defaultSettings loop
          let [word,rowStr,colStr,dirStr] = words wds
          let row = read rowStr :: Int
              col = read colStr :: Int
-             dir = if dirStr == "H" then HZ else VT
+             dir = if map toUpper dirStr == "H" then HZ else VT
              wp  = mkWP word (row,col) dir
          case takeMoveM d g wp fm >>= \(g',sc) -> do 
            let theGen = gen g'

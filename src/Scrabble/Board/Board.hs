@@ -90,14 +90,13 @@ validateMoveM :: Board   -- ^ The board
              -> WordPut -- ^ The word to play
              -> Bool    -- ^ Is first move
              -> Evaluator Bool
-validateMoveM b p w fm = connectsM w b fm >> straightM w >> do
-               if all (\(pos,t) -> case getSquare b pos of
-                          Just l  -> l == t
-                          Nothing -> t `elem` rack p) w
-                 then if not fm || touches (7,7) w
-                      then pure True
-                      else fail "First move must touch centre square"
-                 else fail "Letters not in rack or not on board"
+validateMoveM b p w fm =
+  connectsM w b fm >>
+  straightM w >>
+  (not fm || touches (7,7) w) `evalBool`
+  "First move must touch centre square" >>
+  all (\(pos,t) -> maybe (t `elem` rack p) (==t) (getSquare b pos)) w `evalBool`
+  "Letters not in rack or not on board"
 
 -- | Does the word touch the pos on the board?
 touches :: Pos -> WordPut -> Bool
@@ -136,9 +135,7 @@ validateRackM b r w = someNewTilesM b w >>
   `evalBool` "Not all tiles in rack or on board"
 
 -- | Check that a word to be played incudes some tiles that aren't on the board.
-someNewTilesM :: Board
-             -> WordPut
-             -> Evaluator Bool
+someNewTilesM :: Board -> WordPut -> Evaluator Bool
 someNewTilesM b w = any (empty b . fst) w `evalBool` "You didn't play any new tiles"
 
 -- ==================== Manipulating and querying the board =================--
@@ -192,15 +189,21 @@ empty b pos = isNothing (getSquare b pos)
 
 -- | The occupied horizonal neighbours of a position on the board.
 hNeighbours :: Board -> Pos -> [Pos]
-hNeighbours b (r,c) = let west = [(r-1,c) | isJust (getSquare b (r-1,c))]
-                          east = [(r+1,c) | isJust (getSquare b (r+1,c))] in
-                        east ++ west
+hNeighbours = gridNeighbours decRow incRow
 
 -- | The occupied vertical neighbours of a position on the board.
 vNeighbours :: Board -> Pos -> [Pos]
-vNeighbours b (r,c) = let north = [(r,c-1) | isJust (getSquare b (r,c-1))]
-                          south = [(r,c+1) | isJust (getSquare b (r,c+1))] in
-                        north ++ south
+vNeighbours = gridNeighbours decCol incCol
+
+-- | Get the vertical or horizontal neighbours of a pos
+gridNeighbours :: (Pos -> Pos) -- ^ Seek in first direction (left or up)
+               -> (Pos -> Pos) -- ^ Seek in second direction (right or down)
+               -> Board        -- ^ The board
+               -> Pos          -- ^ The pos
+               -> [Pos]
+gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
+                               m = [g pos | isJust (getSquare b (g pos))] in
+                        l ++ m
 
 -- | Is there an occupied horizontal neighbour of a position on the board.
 hNeighbour :: Board -> Pos -> Bool
