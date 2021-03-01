@@ -1,80 +1,48 @@
 module Scrabble.Dict.Dict
   ( letterFromChar
   , toChar
-  , wordsInDict
-  , wordsInDictM
-  , englishDictionary
-  , dictContainsWord
-  , dictContainsPrefix )
+  , wordsInDictT
+  , englishDictionaryT
+  , dictContainsWordT
+  , dictContainsPrefixT )
   where
 
 import Data.Char        ( toUpper )
-import Data.List        ( inits )
 import Prelude hiding   ( Word )
-
-import qualified Data.Maybe as Maybe
-import qualified Data.Set   as Set
+import Data.Text        (Text
+                        , pack)
+import qualified Data.Trie.Text as Trie
 
 import Scrabble.Dict.Letter
   ( letterFromChar
   , toChar )
-import Scrabble.Dict.Word
-  ( wordToString)
 import Scrabble.Evaluator
-  ( Evaluator(..) )
+  ( Evaluator(..)
+  , evalBool )
 import Scrabble.Types
-  ( Word
-  , Dict(..) )
+  ( DictTrie )
 
 {- ===== Dictionary ===== -}
 
 -- | Check whether a list of words are all in the dictionary.
-wordsInDictM :: Dict
-            -> [Word]
+wordsInDictT :: DictTrie
+            -> [Text]
             -> Evaluator Bool
-wordsInDictM d ws = and <$> mapM (dictContainsWordM d) ws
-
--- | Check whether a list of words are all in the dictionary.
-wordsInDict :: Dict
-            -> [Word]
-            -> Either String Bool
-wordsInDict _ []     = Right True
-wordsInDict d (w:ws) = let wStr = wordToString w in
-                       if dictContainsWord d w
-                       then wordsInDict d ws
-                       else Left ("Not in dictionary: "++wStr) 
+wordsInDictT t ws = and <$> mapM (dictContainsWordT t) ws
 
 -- | Returns true if the dict contains the given word
-dictContainsWordM :: Dict -> Word -> Evaluator Bool
-dictContainsWordM d w = if Set.member w (dictWords d)
-                        then Ev $ Right True
-                        else Ev $ Left ("Not in dictionary: " ++ show w)
-
--- | Returns true if the dict contains the given word
-dictContainsWord :: Dict -> Word -> Bool
-dictContainsWord = flip Set.member . dictWords
+dictContainsWordT :: DictTrie -> Text -> Evaluator Bool
+dictContainsWordT d t = Trie.member t d `evalBool` ("Not in dictionary: " ++ show t)
 
 -- | Returns true if the dict contains the given prefix
-dictContainsPrefix :: Dict -> Word -> Bool
-dictContainsPrefix = flip Set.member . dictPrefixes
+dictContainsPrefixT :: DictTrie -> Text -> Bool 
+dictContainsPrefixT d t = not $ Trie.null $ Trie.submap t d 
 
 -- Reads in a dictionary of Scrabble words from the given file.
-readDictionary :: FilePath -> IO Dict
-readDictionary dict = mkDict <$> readFile dict where
-  mkDict :: String -> Dict
-  mkDict = uncurry dictFromLists . wordsAndPrefixes
-  wordsAndPrefixes :: String -> ([Word], [[Word]])
-  wordsAndPrefixes dict' = unzip $ wordWithPrefixes <$> lines dict' where
-    -- return the word, and all its prefixes
-    wordWithPrefixes :: String -> (Word, [Word])
-    wordWithPrefixes w =
-      -- first turn each char into a Letter, when create result
-      let w' = Maybe.fromJust . letterFromChar . toUpper <$> w
-      in (w', init $ inits w')
-  -- list based constructor for Dict
-  dictFromLists :: [Word] -> [[Word]] -> Dict
-  dictFromLists wordList prefixesLists =
-    Dict (Set.fromList wordList) (Set.fromList $ concat prefixesLists)
+readDictionaryT :: FilePath -> IO DictTrie
+readDictionaryT dict = do
+  ls <- lines <$> readFile dict
+  return (Trie.fromList [(pack (map toUpper l), True) | l <- ls])
 
 {- ===== English Dictionary ===== -}
 
@@ -83,8 +51,8 @@ englishDictionaryPath :: FilePath
 englishDictionaryPath = "./dict/en.txt"
 
 -- | Reads in the (English) dictionary of Scrabble words.
-englishDictionary :: IO Dict
-englishDictionary = readDictionary englishDictionaryPath
+englishDictionaryT :: IO DictTrie
+englishDictionaryT = readDictionaryT englishDictionaryPath
 
 -- | Read the English dictionary (performing the IO action)
 --unsafeReadEnglishDictionary :: Dict

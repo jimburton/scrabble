@@ -1,63 +1,79 @@
 module Scrabble.Dict.Search
-  ( findWords
-  , findPrefixes
-  , wordPlays )
+  ( findWordsT
+  , findPrefixesT
+  , wordPlaysT
+  , wordToText )
   where
 
-import qualified Data.Set as Set
-import Data.Set             ( Set )
-import Data.List            ( delete )
+import Data.List            ( delete
+                            , nub
+                            , permutations )
 import Prelude hiding       ( Word )
-import Scrabble.Dict.Dict
-  ( dictContainsWord
-  , dictContainsPrefix)
-import Scrabble.Dict.Letter ( Letter )
+import Data.Text            ( Text )
+import Data.Maybe           ( fromJust )
+import Control.Monad        (filterM)
+import qualified Data.Text as Text
+import qualified Data.Trie.Text as Trie
 import Scrabble.Types
-  ( Dict
+  ( DictTrie
+  , Word
+  , Letter
   , Word )
+import Scrabble.Dict.Word
+  ( wordFromString
+  , wordToString )
 
 {- ===== Dictionary Search ===== -}
 
 -- | Find all the words in the dictionary that can be made with the given letters.
-findWords :: Dict     -- ^ The dictionary to search
-          -> [Letter] -- ^ The letters to build the words from.
-          -> Set Word
-findWords d = Set.fromList . f [] where f = search' f dictContainsWord d
+findWordsT :: DictTrie -- ^ The dictionary to search
+          -> [Text]    -- ^ The letters to build the words from.
+          -> [Word]
+findWordsT d ws = map textToWord $ filter (`Trie.member` d) ws
+
+--textToWord :: Text -> Word
+textToWord  t = fromJust $ wordFromString (Text.unpack t)
+
+wordToText :: Word -> Text
+wordToText w = Text.pack (wordToString w)
+
+-- | Ordered list of values in a bounded enumeration.
+domain :: (Bounded a, Enum a) => [a]
+domain = [minBound..maxBound]
+
+
+-- | Generate a power set.  The algorithm used here is from
+--   <http://evan-tech.livejournal.com/220036.html>.
+powerSet :: [a] -> [[a]]
+powerSet = filterM (const domain)
+
+
+-- | Generate a power set's permutations.
+powerSetPermutations :: [a] -> [[a]]
+powerSetPermutations = concatMap permutations . powerSet
+
+-- | Generate a power set's unique permutations.
+uniquePowerSetPermutations :: Eq a => [a] -> [[a]]
+uniquePowerSetPermutations = nub . powerSetPermutations
+
+perms :: Eq a => [a] -> [[a]]
+perms xs = filter ((>1) . length) $ uniquePowerSetPermutations xs
 
 -- | Find all the prefixes in the dictionary that can be made with the given letters.
-findPrefixes :: Dict    -- ^ The dictionary to search
+findPrefixesT :: DictTrie    -- ^ The dictionary to search
             -> [Letter] -- ^ The letters to build the words from.
-            -> Set Word
-findPrefixes d = Set.fromList . ([]:) . f [] where f = search' f dictContainsPrefix d
+            -> [Word]
+findPrefixesT t ls = findWordsT t (map wordToText (perms ls))
 
 -- | Find all the words that can be made with the letters on the board
 --   Returned words are made up of PREFIX + L + SUFFIX, where
 --   PREFIX and SUFFIX come from letters in the hand
 --   and L is a letter on the board.
-wordPlays :: Dict    -- ^ Dictionary to search
+wordPlaysT :: DictTrie    -- ^ Dictionary to search
          -> [Letter] -- ^ Letters in hand
          -> [Letter] -- ^ Letters on board
-         -> Set Word
-wordPlays dict hand board = Set.fromList $ do
-  prefix <- Set.toList $ findPrefixes dict hand
-  letter <- board
-  addSuffixes (prefix++[letter]) (deleteAll prefix hand) where
-    addSuffixes = search' addSuffixes dictContainsWord dict
-
-type SearchFunc = [Letter] -> [Letter] -> [Word]
-type SearchPred = Dict -> Word -> Bool
-
--- generic recursive dictionary search function.
-search' :: SearchFunc -- ^ Function to continue the search
-        -> SearchPred -- ^ Predicate that indicates if word matches
-        -> Dict       -- ^ The dictionary to search
-        -> [Letter]   -- ^ Prefix that all search results must start with
-        -> [Letter]   -- ^ The letters to append to the prefix to find matches
-        -> [Word]     -- ^ List of words matching
-search' search p dict prefix rest = match ++ recur prefix rest where
-  match = [prefix | p dict prefix]
-  recur prefix' _    | not $ dictContainsPrefix dict prefix' = []
-  recur prefix' rest' = do l <- rest'; search (prefix' ++ [l]) (delete l rest')
+         -> [Word]
+wordPlaysT t hand board = undefined -- map (\(i,t) -> i ++ 'L':t) $ zip (inits str) (tails str) 
 
 -- Delete all elements in the first list from the second list.
 deleteAll :: Eq a => [a] -> [a] -> [a]

@@ -25,6 +25,8 @@ library
                , random
                , array
                , containers
+               , text
+               , text-trie
   
   exposed-modules:
       Scrabble
@@ -58,6 +60,8 @@ executable scrabble
   build-depends:       base >=4.12 && <4.13
                      , random
                      , array
+                     , text
+                     , text-trie
                      , containers
                      , haskeline
   hs-source-dirs:      cli

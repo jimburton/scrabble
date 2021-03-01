@@ -1,0 +1,5 @@
+* Features
+  + Handle blanks 
+  + Pass a move
+  + Swap tiles
+* Bugs

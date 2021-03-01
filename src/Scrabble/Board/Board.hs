@@ -31,15 +31,17 @@ import Scrabble.Dict.Letter
   ( Letter
   , charToLetterMap
   , scoreLetter )
-import Scrabble.Types ( Board
-                      , Pos
-                      , WordPut
-                      , Player(..)
-                      , Bonus(..)
-                      , Dir(..)
-                      , Rack ) 
-import Scrabble.Evaluator        ( Evaluator(..)
-                                 , evalBool )
+import Scrabble.Types
+  ( Board
+  , Pos
+  , WordPut
+  , Player(..)
+  , Bonus(..)
+  , Dir(..)
+  , Rack ) 
+import Scrabble.Evaluator
+  ( Evaluator(..)
+  , evalBool )
 
 newBoard :: Board
 newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
@@ -71,9 +73,9 @@ newTilesInMove b = length . mapMaybe (getSquare b . fst)
 --   it is in a straight and continuous line, and is made
 --   up of letters that either in the rack or on the board.
 validateMoveM :: Board   -- ^ The board
-             -> Player  -- ^ The player making the move
-             -> WordPut -- ^ The word to play
-             -> Bool    -- ^ Is first move
+             -> Player   -- ^ The player making the move
+             -> WordPut  -- ^ The word to play
+             -> Bool     -- ^ Is first move
              -> Evaluator Bool
 validateMoveM b p w fm =
   connectsM w b fm >>
@@ -89,8 +91,8 @@ touches p = any ((==p) .  fst)
 
 -- | New words must touch another (apart from the first one to be played)
 connectsM :: WordPut -- ^ The word to play
-         -> Board   -- ^ The board
-         -> Bool    -- ^ Is first move
+         -> Board    -- ^ The board
+         -> Bool     -- ^ Is first move
          -> Evaluator Bool
 connectsM [] _ fm     = if fm then pure True else fail "Not touching any other tile"
 connectsM (w:ws) b fm = let (pos,_) = w in

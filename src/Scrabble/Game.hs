@@ -9,7 +9,8 @@ module Scrabble.Game
   , getPlayer
   , setPlayer
   , toggleTurn
-  , takeMoveM )
+  , moveM
+  , moveM')
   where
 
 import System.Random
@@ -19,7 +20,7 @@ import Scrabble.Types
   , Turn(..)
   , WordPut
   , Player(..)
-  , Dict )
+  , DictTrie )
 import Scrabble.Board.Board
   ( scoreWord
   , validateRackM
@@ -36,7 +37,9 @@ import Scrabble.Board.Bag
 import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Dict.Dict
-  ( wordsInDictM )
+  ( wordsInDictT )
+import Scrabble.Dict.Search
+  ( wordToText ) 
 
 -- ============= Functions for playing the game =============== --
 
@@ -60,37 +63,46 @@ newGame p1Name p2Name theGen =
                 , player1 = p1
                 , player2 = p2
                 , turn = P1
-                , gen = gen'' } in
+                , gen = gen''
+                , firstMove = True } in
     g
-
--- | Take a move. Checks that this word is in the player's rack then calls the
---   move function. Returns the new game and the score of this move.
-takeMoveM :: Dict    -- ^ The dictionary
-         -> Game    -- ^ The game
-         -> WordPut -- ^ The word to play
-         -> Bool    -- ^ Is first move
-         -> Evaluator (Game, Int)
-takeMoveM d g w fm = validateRackM (board g) ((rack . getPlayer) g) w >> moveM d g w fm
 
 -- | Play a word onto a board, updating the score of the current player
 --   and resetting their rack. Returns the new game and the score of this move.
 --   The word is validated as being in the dictionary.
-moveM :: Dict    -- ^ The dictionary
+moveM :: DictTrie    -- ^ The dictionary
      -> Game    -- ^ The game
      -> WordPut -- ^ The word to play
-     -> Bool    -- ^ Is first move
      -> Evaluator (Game, Int)
-moveM d g w fm = do
+moveM d g w  = do
   let b   = board g
+      fm  = firstMove g
       p   = getPlayer g
       aw  = additionalWords b w 
       sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
-      waw = map (map snd) (w:aw)
+      waw = map (wordToText . map snd) (w:aw)
       fpb = if newTilesInMove b w == 7 then 50 else 0
       sc  = sum $ map (scoreWord fpb) sws 
-  validateMoveM b p w fm >> wordsInDictM d waw >> do 
+  validateRackM b (rack p) w >> validateMoveM b p w fm >> wordsInDictT d waw >> do 
     let g' = setScore g sc 
-    pure (g' {board = updateBoard b w}, sc)
+    pure (g' {board = updateBoard b w, firstMove = False}, sc)
+
+moveM' :: DictTrie    -- ^ The dictionary
+     -> Game    -- ^ The game
+     -> WordPut -- ^ The word to play
+     -> Evaluator (Game, Int)
+-- | Move with no dictionary check, for convenience in testing
+moveM' _ g w  = do
+  let b   = board g
+      fm  = firstMove g
+      p   = getPlayer g
+      aw  = additionalWords b w 
+      sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
+      fpb = if newTilesInMove b w == 7 then 50 else 0
+      sc  = sum $ map (scoreWord fpb) sws 
+  validateRackM b (rack p) w >> validateMoveM b p w fm >> do 
+    let g' = setScore g sc 
+    pure (g' {board = updateBoard b w, firstMove = False}, sc)
 
 -- | Update the current player in the game. 
 setPlayer :: Game -> Player -> Game

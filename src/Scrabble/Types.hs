@@ -1,21 +1,25 @@
-module Scrabble.Types ( Letter
-                      , Word
-                      , Board
-                      , Pos
-                      , WordPut
-                      , Dir(..)
-                      , Rack
-                      , Bonus(..)
-                      , Player(..)
-                      , Turn(..)
-                      , Game(..)
-                      , Bag
-                      , Dict(..) )
-  where
+module Scrabble.Types
+  ( Letter
+  , Word
+  , Board
+  , Pos
+  , WordPut
+  , Dir(..)
+  , Rack
+  , Bonus(..)
+  , Player(..)
+  , Turn(..)
+  , Game(..)
+  , Bag
+  , Dict(..)
+  , DictTrie ) 
+
+where
 
 import Prelude hiding ( Word )
 import Data.Array
 import Data.Set
+import Data.Trie.Text ( Trie ) 
 import System.Random ( StdGen )
 import Scrabble.Dict.Letter ( Letter ) 
 
@@ -50,7 +54,8 @@ data Game = Game { board   :: Board
                  , player1 :: Player
                  , player2 :: Player
                  , turn    :: Turn
-                 , gen     :: StdGen }
+                 , gen     :: StdGen
+                 , firstMove :: Bool }
 
 type Bag = [Letter]
 
@@ -58,6 +63,8 @@ data Dict = Dict {
    dictWords    :: Set Word -- ^ All the words in the dictionary
  , dictPrefixes :: Set Word -- ^ The prefixes of all the words in the dictionary.
 } deriving Eq
+
+type DictTrie = Trie Bool
 
 instance Show Dict where
   show d = concat ["(Dict ", nrWords, ", ", nrPrefixes, ")"] where
