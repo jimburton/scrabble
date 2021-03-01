@@ -27,7 +27,8 @@ import Scrabble.Board.Board
   , newBoard
   , updateBoard
   , empty
-  , additionalWords )
+  , additionalWords
+  , newTilesInMove )
 import Scrabble.Board.Bag
   ( Bag
   , newBag
@@ -119,7 +120,8 @@ move d g w fm =
       aw  = additionalWords b w 
       sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
       waw = map (map snd) (w:aw)
-      sc  = sum $ map scoreWord sws in
+      fpb = if newTilesInMove b w == 7 then 50 else 0
+      sc  = sum $ map (scoreWord fpb) sws in 
   case validateMove b p w fm of
     Right _ -> case wordsInDict d waw of
       Right _ -> let g' = setScore g sc in
@@ -140,7 +142,8 @@ move' g w fm =
       aw  = additionalWords b w
       sws = map (map (\(p',t') -> (p',t', empty b p'))) (w:aw) -- Only the new tiles should get bonuses
       waw = map (map snd) (w:aw)
-      sc  = sum $ map scoreWord sws in
+      fpb = if newTilesInMove b w == 7 then 50 else 0
+      sc  = sum $ map (scoreWord fpb) sws in
   case validateMove b p w fm of
     Right _ -> let g' = setScore g sc in
                  Right (g' {board = updateBoard b w}, sc)

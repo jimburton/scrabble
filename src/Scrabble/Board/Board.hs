@@ -22,7 +22,8 @@ module Scrabble.Board.Board
   , incRow
   , empty
   , additionalWords
-  , mkWP )
+  , mkWP
+  , newTilesInMove )
   where
 
 import qualified Data.Map as Map
@@ -30,7 +31,8 @@ import Data.Maybe
   ( fromJust
   , isNothing
   , catMaybes
-  , isJust )
+  , isJust
+  , mapMaybe )
 import Data.Array
 import Data.Map                  ( Map )
 import Data.Char                 ( toUpper )
@@ -60,8 +62,10 @@ data Dir = HZ | VT deriving (Show, Read, Eq)
 -- | The Bool argument is whether any bonus should be applied to this
 --   Pos and Tile, i.e. whether this is the first time it has been
 --   counted.
-scoreWord :: [(Pos, Letter, Bool)] -> Int
-scoreWord = scoreWord' 0 1 where
+scoreWord :: Int -- ^ Starting bonus. This applies only for the seven letter word bonus.
+          -> [(Pos, Letter, Bool)] -- ^ (Position on board, letter, apply bonus)
+          -> Int
+scoreWord fpb = scoreWord' fpb 1 where
   scoreWord' s b [] = s * b
   scoreWord' s b ((pos,t,p):ws) =
     if not p then scoreWord' (scoreLetter t + s) b ws 
@@ -70,6 +74,10 @@ scoreWord = scoreWord' 0 1 where
       Just b'  -> case b' of
                    (Word i)   -> scoreWord' (scoreLetter t + s) (i*b) ws
                    (Letter i) -> scoreWord' ((scoreLetter t * i) + s) b ws
+
+-- | How many new tiles are being played in a move?
+newTilesInMove :: Board -> WordPut -> Int
+newTilesInMove b = length . mapMaybe (getSquare b . fst) 
 
 -- ================= Validation ===============--
 
@@ -175,10 +183,10 @@ additionalWords b w = additionalWords' w
   where additionalWords' []       = []
         additionalWords' (wp:wps) =
           let (r,c) = fst wp
-              h = if empty b (r,c) && (any (not . flip touches w) (hNeighbours b (r,c)))
+              h = if empty b (r,c) && not (all (`touches` w) (hNeighbours b (r,c)))
                   then wordOnRow (updateSquare b wp) (r,c)
                   else Nothing
-              v = if empty b (r,c) && (any (not . flip touches w) (vNeighbours b (r,c)))
+              v = if empty b (r,c) && not (all (`touches` w) (vNeighbours b (r,c)))
                   then wordOnCol (updateSquare b wp) (r,c)
                   else Nothing in
             filter ((>1) . length) $ catMaybes [h, v] ++ additionalWords' wps
