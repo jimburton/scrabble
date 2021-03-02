@@ -256,16 +256,16 @@ mkWP w pos dir is = let f  = if dir == HZ then incCol else incRow
                                         (l, scoreLetter l)) w) in
                       foldl zeroScore wp is 
 
-replace :: [a] -> Int -> a -> [a]
-replace xs i e = case splitAt i xs of
-   (before, _:after) -> before ++ e: after
+--replace :: [a] -> Int -> a -> [a]
+--replace xs i e = replaceBy xs i (const e)
+
+replaceBy :: [a] -> Int -> (a -> a) -> [a]
+replaceBy xs i f = case splitAt i xs of
+   (before, x:after) -> before ++ f x : after
    _ -> xs
 
 zeroScore :: WordPut -> Int -> WordPut
-zeroScore xs i = case splitAt i xs of
-  (before, (p,(l,_)):after) -> before ++ (p,(l,0)): after
-  _                         -> xs
-
+zeroScore xs i = replaceBy xs i (\(p,(l,_)) -> (p,(l,0)))
 
 -- ========== Bonuses ============ --
 
