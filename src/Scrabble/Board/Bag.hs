@@ -1,10 +1,7 @@
 module Scrabble.Board.Bag
   ( newBag
   , fillRack
-  , fillRackM
-  , takeFromRackM
-  , takeFromRack
-  , deleteAll )
+  , takeFromRack )
   where
 
 import Data.List ( delete )
@@ -40,20 +37,8 @@ newBag = concatMap (\(l,n) -> replicate n l) numTilesList
 fillRack :: Rack   -- ^ The rack to fill 
          -> Bag    -- ^ The bag to pick from.
          -> StdGen -- ^ The random generator.
-         -> (Rack, Bag, StdGen)
-fillRack r = fillRack' (7 - length r) r
-    where fillRack' 0 r' b' g' = (r', b', g')
-          fillRack' _ r' [] g' = (r', [], g')
-          fillRack' n r' b' g' =
-            let (t, b'', g'') = getTile b' g' in
-            fillRack' (n-1) (t:r') b'' g''
-
---   rack, the new bag and the updated random generator.
-fillRackM :: Rack   -- ^ The rack to fill 
-         -> Bag    -- ^ The bag to pick from.
-         -> StdGen -- ^ The random generator.
          -> Evaluator (Rack, Bag, StdGen)
-fillRackM r b g = pure $ fillRack' (7 - length r) r b g
+fillRack r b g = pure $ fillRack' (7 - length r) r b g
   where fillRack' 0 r' b' g' = (r', b', g')
         fillRack' _ r' [] g' = (r', [], g')
         fillRack' n r' b' g' =
@@ -61,22 +46,14 @@ fillRackM r b g = pure $ fillRack' (7 - length r) r b g
             fillRack' (n-1) (t:r') b'' g''
 
 -- | Take some letters from a rack.
-takeFromRackM :: Rack    -- ^ The rack to take from
-             -> WordPut -- ^ The letters to take from the rack
-             -> Evaluator Rack
-takeFromRackM r w = pure $ deleteAll r (map snd w)
-
--- | Take some letters from a rack.
 takeFromRack :: Rack    -- ^ The rack to take from
              -> WordPut -- ^ The letters to take from the rack
-             -> Rack
-takeFromRack r w = deleteAll r (map snd w)
+             -> Evaluator Rack
+takeFromRack r w = pure $ deleteAll r (map snd w)
 
 -- Delete the first occurence of each element in the second list from the first list.
 deleteAll :: Eq a => [a] -> [a] -> [a]
 deleteAll = foldl (flip delete)
-
-
 
 -- | Get a single tile from a bag.
 getTile :: Bag    -- ^ The bag to take the tile from.
@@ -86,6 +63,3 @@ getTile b g = let (i, g') = randomR (0, length b -1) g
                   t = b !! i
                   b' = take i b ++ drop (i+1) b in
               (t, b', g')
-
-              
-

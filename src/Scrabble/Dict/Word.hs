@@ -1,7 +1,7 @@
 module Scrabble.Dict.Word
   ( Word
   , wordToString
-  , wordFromString
+  , stringToWord
   , textToWord
   , wordToText )
   where
@@ -22,11 +22,11 @@ wordToString :: Word -> String
 wordToString = fmap toChar
 
 -- | Turn a string into a word.
-wordFromString :: String -> Maybe Word
-wordFromString s = sequence $ letterFromChar <$> s
+stringToWord :: String -> Maybe Word
+stringToWord s = sequence $ letterFromChar <$> s
 
 textToWord :: Text -> Word
-textToWord  t = fromJust $ wordFromString (T.unpack t)
+textToWord  t = fromJust $ stringToWord (T.unpack t)
 
 wordToText :: Word -> Text
 wordToText w = T.pack (wordToString w)

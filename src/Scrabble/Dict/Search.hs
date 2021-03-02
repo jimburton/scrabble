@@ -4,9 +4,9 @@ module Scrabble.Dict.Search
   , wordPlaysT )
   where
 
-import Data.List            ( delete
-                            , nub
-                            , permutations )
+import Data.List
+  ( nub
+  , permutations )
 import Prelude hiding       ( Word )
 import Data.Text            ( Text )
 import Control.Monad        (filterM)
@@ -64,6 +64,4 @@ wordPlaysT :: DictTrie    -- ^ Dictionary to search
          -> [Letter] -- ^ Letters in hand
          -> [Letter] -- ^ Letters on board
          -> [Word]
-wordPlaysT t hand board = undefined -- map (\(i,t) -> i ++ 'L':t) $ zip (inits str) (tails str) 
-
-
+wordPlaysT = undefined -- map (\(i,t) -> i ++ 'L':t) $ zip (inits str) (tails str) 

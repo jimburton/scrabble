@@ -9,7 +9,7 @@ module Scrabble.Dict.Dict
 
 import Data.Char        ( toUpper )
 import Prelude hiding   ( Word )
-import Data.Text        (Text
+import Data.Text        ( Text
                         , pack)
 import qualified Data.Trie.Text as Trie
 

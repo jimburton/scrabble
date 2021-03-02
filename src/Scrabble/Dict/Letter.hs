@@ -60,4 +60,3 @@ letterToScoreMap = Map.fromList letterToScoreList
 -- | Find the score of a letter.
 scoreLetter :: Letter -> Int
 scoreLetter = fromJust . flip Map.lookup letterToScoreMap
-

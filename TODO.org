@@ -2,6 +2,7 @@
 ** TODO Moving all move updates into one function in main
    Currently spread around updateScore, fillRack, toggleTurn etc. and 
    needs to be called from view (e.g. cli).
+** TODO Cleaning up the API
 
 * Features
   + Handle blanks 
