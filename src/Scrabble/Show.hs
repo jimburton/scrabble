@@ -24,12 +24,12 @@ showBoard printBonuses b = topNumbers ++ top ++ showRows ++ bottom where
   showRows      = intercalate "\n" (zipWith showRow [0..14] (elems b)) ++ "\n"
   showRow     i r = showI i ++ "|" ++ concat (zipWith (showSquare i) [0..14] (elems r)) 
   showSquare i c s = case s of
-                       Nothing -> if printBonuses
-                                  then case Map.lookup (i,c) bonusMap of
-                                         Nothing -> "  |"
-                                         Just b' -> show b' ++ "|"
-                                  else "  |"
-                       Just t -> [' ', toChar t, '|']
+                       Nothing    -> if printBonuses
+                                     then case Map.lookup (i,c) bonusMap of
+                                            Nothing -> "  |"
+                                            Just b' -> show b' ++ "|"
+                                     else "  |"
+                       Just (t,_) -> [' ', toChar t, '|']
   topNumbers    = "  |" ++ concatMap (\i -> showI i ++ "|") [0..14] ++ "\n"
   showI         :: Int -> String
   showI i       = if i < 10 then " " ++ show i else show i

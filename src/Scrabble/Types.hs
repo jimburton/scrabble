@@ -27,11 +27,11 @@ import Scrabble.Dict.Letter ( Letter )
 
 type Word = [Letter]
 
-type Board = Array Int (Array Int (Maybe Letter))
+type Board = Array Int (Array Int (Maybe (Letter, Int)))
 
 type Pos = (Int, Int)
 
-type WordPut = [(Pos, Letter)]
+type WordPut = [(Pos, (Letter, Int))]
 
 data Dir = HZ | VT deriving (Show, Read, Eq)
 

@@ -111,7 +111,7 @@ updatePlayer w g = do
       r      = rack p
       theBag = bag g
       theGen = gen g
-  takeFromRack r (map snd w) >>= \r' -> fillRack r' theBag theGen
+  takeFromRack r (map (fst . snd) w) >>= \r' -> fillRack r' theBag theGen
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
     >>= \g' -> pure g' { bag = theBag', gen = theGen'}
 
@@ -159,7 +159,7 @@ type Validator = Game -> [WordPut] -> Evaluator Bool
 valWithRulesAndDict :: Validator
 valWithRulesAndDict g ws = do
   let d  = dict g
-      ts = map (wordToText . map snd) ws
+      ts = map (wordToText . map (fst .snd)) ws
   valGameRules g ws >> wordsInDictT d ts
 
 -- | Validate a set of words against the rack (are all tiles in the current

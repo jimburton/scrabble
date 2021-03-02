@@ -23,6 +23,7 @@ import Data.Maybe
 import Data.Array
 import Data.Map                  ( Map )
 import Data.Char                 ( toUpper )
+import Data.List                 ( splitAt )
 import Scrabble.Dict.Letter
   ( Letter
   , charToLetterMap
@@ -46,17 +47,17 @@ newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Noth
 --   Pos and Tile, i.e. whether this is the first time it has been
 --   counted.
 scoreWord :: Int -- ^ Starting bonus. This applies only for the seven letter word bonus.
-          -> [(Pos, Letter, Bool)] -- ^ (Position on board, letter, apply bonus)
+          -> [(Pos, (Letter, Int), Bool)] -- ^ (Position on board, letter, apply bonus)
           -> Int
 scoreWord fpb = scoreWord' fpb 1 where
   scoreWord' s b [] = s * b
   scoreWord' s b ((pos,t,p):ws) =
-    if not p then scoreWord' (scoreLetter t + s) b ws 
+    if not p then scoreWord' (snd t + s) b ws 
     else case Map.lookup pos bonusMap of
-      Nothing -> scoreWord' (scoreLetter t + s) b ws
+      Nothing -> scoreWord' (snd t + s) b ws
       Just b'  -> case b' of
-                   (Word i)   -> scoreWord' (scoreLetter t + s) (i*b) ws
-                   (Letter i) -> scoreWord' ((scoreLetter t * i) + s) b ws
+                   (Word i)   -> scoreWord' (snd t + s) (i*b) ws
+                   (Letter i) -> scoreWord' ((snd t * i) + s) b ws
 
 -- | How many new tiles are being played in a move?
 newTilesInMove :: Board -> WordPut -> Int
@@ -78,7 +79,7 @@ validateMove b p w fm =
   straight w >>
   (not fm || touches (7,7) w) `evalBool`
   "First move must touch centre square" >>
-  all (\(pos,t) -> maybe (t `elem` rack p) (==t) (getSquare b pos)) w `evalBool`
+  all (\(pos,(t,_)) -> maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)) w `evalBool`
   "Letters not in rack or not on board"
 
 -- | Does the word touch the pos on the board?
@@ -113,8 +114,8 @@ validateRack :: Board
              -> WordPut
              -> Evaluator Bool
 validateRack b r w = someNewTiles b w >>
-  all (\(pos,t) -> t `elem` r
-           || (not (empty b pos) && (fromJust . getSquare b) pos == t)) w
+  all (\(pos,(t,_)) -> t `elem` r
+           || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
   `evalBool` "Not all tiles in rack or on board"
 
 -- | Check that a word to be played incudes some tiles that aren't on the board.
@@ -124,13 +125,13 @@ someNewTiles b w = any (empty b . fst) w `evalBool` "You didn't play any new til
 -- ==================== Manipulating and querying the board =================--
 
 -- | Retrieve a position on the board.
-getSquare :: Board -> Pos -> Maybe Letter
+getSquare :: Board -> Pos -> Maybe (Letter,Int)
 getSquare b (r,c) = if onBoard (r,c)
                     then (b ! r) ! c
                     else Nothing
 
 -- | Place a tile onto the board.
-updateSquare :: Board -> (Pos, Letter) -> Board
+updateSquare :: Board -> (Pos, (Letter,Int)) -> Board
 updateSquare b ((r,c),l) = let row = (b ! r) // [(c, Just l)] in
                              b // [(r, row)]
 
@@ -179,7 +180,7 @@ gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
                                m = [g pos | isJust (getSquare b (g pos))] in
                         l ++ m
 
--- | TODO Do I need this?
+-- | Retrieve the word that crosses this pos on the board
 wordFromSquare :: Board
                -> (Pos -> Pos) -- ^ The function that moves to the start of the word (up rows or left along columns)
                -> Pos
@@ -247,9 +248,24 @@ wordOnCol b (r,c) = getSquare b (r-1,c) >>
 mkWP :: String -- ^ The string.
      -> Pos    -- ^ The starting position on the board.
      -> Dir    -- ^ The direction in which the word is to be placed.
+     -> [Int]  -- ^ Indices of the letters which were blanks
      -> WordPut
-mkWP w pos dir = let f = if dir == HZ then incCol else incRow in
-  zip (iterate f pos) (map (\c -> fromJust (Map.lookup (toUpper c) charToLetterMap)) w) 
+mkWP w pos dir is = let f  = if dir == HZ then incCol else incRow 
+                        wp = zip (iterate f pos)
+                          (map (\c -> let l = fromJust (Map.lookup (toUpper c) charToLetterMap) in 
+                                        (l, scoreLetter l)) w) in
+                      foldl zeroScore wp is 
+
+replace :: [a] -> Int -> a -> [a]
+replace xs i e = case splitAt i xs of
+   (before, _:after) -> before ++ e: after
+   _ -> xs
+
+zeroScore :: WordPut -> Int -> WordPut
+zeroScore xs i = case splitAt i xs of
+  (before, (p,(l,_)):after) -> before ++ (p,(l,0)): after
+  _                         -> xs
+
 
 -- ========== Bonuses ============ --
 

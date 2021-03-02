@@ -73,7 +73,7 @@ takeTurn g msc = runInputT defaultSettings loop
                row = read rowStr :: Int
                col = read colStr :: Int
                dir = if map toUpper dirStr == "H" then HZ else VT
-               wp  = mkWP wd (row,col) dir
+               wp  = mkWP wd (row,col) dir is
            case move valWithRulesAndDict g wp >>= \(g',sc) -> do 
              let msc'  = Just (wd  ++ ": " ++ show sc)
              pure $ takeTurn g' msc' of
