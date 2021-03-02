@@ -34,3 +34,4 @@ evalBool b e = if b then pure True else fail e
 --try k r e = case e of
 --              (Ev (Left e))  -> e <$> k 
 --              (Ev (Right g)) -> r g
+

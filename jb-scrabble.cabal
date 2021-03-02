@@ -41,6 +41,8 @@ library
       Scrabble.Board.Bag
       Scrabble.Board.Board
 
+  default-extensions: TupleSections
+  
   default-language: Haskell2010
 
 executable scrabble

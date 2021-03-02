@@ -1,15 +1,24 @@
 module Scrabble.Board.Bag
   ( newBag
   , fillRack
-  , takeFromRack )
+  , fillRackM
+  , takeFromRackM
+  , takeFromRack
+  , deleteAll )
   where
 
-import System.Random         ( StdGen
-                             , randomR )
-import Scrabble.Types ( Bag
-                      , Rack
-                      , WordPut )
-import Scrabble.Dict.Letter  ( Letter(..) )
+import Data.List ( delete )
+import System.Random
+  ( StdGen
+  , randomR )
+import Scrabble.Types
+  ( Bag
+  , Rack
+  , WordPut )
+import Scrabble.Dict.Letter
+  ( Letter(..) )
+import Scrabble.Evaluator
+  ( Evaluator )
 
 -- ============ Functions relating to a bag of tiles ============= --
 
@@ -39,11 +48,34 @@ fillRack r = fillRack' (7 - length r) r
             let (t, b'', g'') = getTile b' g' in
             fillRack' (n-1) (t:r') b'' g''
 
+--   rack, the new bag and the updated random generator.
+fillRackM :: Rack   -- ^ The rack to fill 
+         -> Bag    -- ^ The bag to pick from.
+         -> StdGen -- ^ The random generator.
+         -> Evaluator (Rack, Bag, StdGen)
+fillRackM r b g = pure $ fillRack' (7 - length r) r b g
+  where fillRack' 0 r' b' g' = (r', b', g')
+        fillRack' _ r' [] g' = (r', [], g')
+        fillRack' n r' b' g' =
+          let (t, b'', g'') = getTile b' g' in
+            fillRack' (n-1) (t:r') b'' g''
+
+-- | Take some letters from a rack.
+takeFromRackM :: Rack    -- ^ The rack to take from
+             -> WordPut -- ^ The letters to take from the rack
+             -> Evaluator Rack
+takeFromRackM r w = pure $ deleteAll r (map snd w)
+
 -- | Take some letters from a rack.
 takeFromRack :: Rack    -- ^ The rack to take from
              -> WordPut -- ^ The letters to take from the rack
              -> Rack
-takeFromRack r = filter (not . (`elem` r)) . map snd 
+takeFromRack r w = deleteAll r (map snd w)
+
+-- Delete the first occurence of each element in the second list from the first list.
+deleteAll :: Eq a => [a] -> [a] -> [a]
+deleteAll = foldl (flip delete)
+
 
 
 -- | Get a single tile from a bag.

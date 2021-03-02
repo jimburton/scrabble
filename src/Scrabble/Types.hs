@@ -50,15 +50,18 @@ data Player = Player { name :: String
 
 data Turn = P1 | P2 deriving (Show, Eq)
 
+type Bag = [Letter]
+
+type DictTrie = Trie Bool
+
 data Game = Game { board   :: Board
                  , bag     :: Bag
                  , player1 :: Player
                  , player2 :: Player
                  , turn    :: Turn
                  , gen     :: StdGen
-                 , firstMove :: Bool }
+                 , firstMove :: Bool
+                 , dict    :: DictTrie }
 
-type Bag = [Letter]
 
-type DictTrie = Trie Bool
 

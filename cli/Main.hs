@@ -12,19 +12,26 @@ import Scrabble.Types
   , Dir(..)
   , Player(..)
   , Board )
-import Scrabble.Game  ( newGame
-                       , takeFromRack
-                       , fillRack
-                       , getPlayer
-                       , setPlayer
-                       , toggleTurn
-                       , moveM
-                       , moveM' ) -- moveM
-import Scrabble.Board.Board  ( mkWP )
-import Scrabble.Show   ( showGame
-                       , showPlayer
-                       , showBoard )
-import Scrabble.Dict.Dict   ( englishDictionaryT )
+import Scrabble.Game
+  ( newGame
+  , getPlayer
+  , setPlayer
+  , toggleTurn
+  , moveM
+  , moveM'
+  , move
+  , valWithDict ) -- moveM 
+import Scrabble.Board.Board
+  ( mkWP )
+import Scrabble.Board.Bag
+  ( takeFromRack
+  , fillRack )
+import Scrabble.Show
+  ( showGame
+  , showPlayer
+  , showBoard )
+import Scrabble.Dict.Dict
+  ( englishDictionaryT )
 import Scrabble.Evaluator ( Evaluator(..) )
 
 startGame :: String -- ^ Name of Player 1
@@ -32,21 +39,20 @@ startGame :: String -- ^ Name of Player 1
           -> IO Game
 startGame p1Name p2Name = do
   theGen <- getStdGen
-  playGame (newGame p1Name p2Name theGen)
+  d      <- englishDictionaryT
+  playGame (newGame p1Name p2Name theGen d)
 
 playGame :: Game -> IO Game
 playGame g = do
   printBoard True (board g) Nothing
   printPlayer $ player1 g
   printPlayer $ player2 g
-  d <- englishDictionaryT
-  takeTurn d g Nothing
+  takeTurn2 g Nothing
 
-takeTurn :: DictTrie -- ^ The dictionary
-         -> Game -- ^ The game
+takeTurn :: Game -- ^ The game
          -> Maybe String -- ^ Previous score as a string
          -> IO Game
-takeTurn d g msc = runInputT defaultSettings loop
+takeTurn g msc = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
@@ -64,7 +70,7 @@ takeTurn d g msc = runInputT defaultSettings loop
              col = read colStr :: Int
              dir = if map toUpper dirStr == "H" then HZ else VT
              wp  = mkWP wd (row,col) dir
-         case moveM d g wp >>= \(g',sc) -> do 
+         case moveM g wp >>= \(g',sc) -> do 
            let theGen = gen g'
                theRack = takeFromRack r wp
                (filledRack, bag', gen') = fillRack theRack theBag theGen
@@ -72,9 +78,35 @@ takeTurn d g msc = runInputT defaultSettings loop
                g''  = setPlayer g' p'
                g''' = toggleTurn g''
                msc'  = Just (wd  ++ ": " ++ show sc)
-           return $ takeTurn d (g''' { bag = bag', gen = gen' }) msc' of
+           return $ takeTurn (g''' { bag = bag', gen = gen' }) msc' of
            (Ev (Left e))  -> do liftIO $ putStrLn e
-                                liftIO $ takeTurn d g $ Just (wd  ++ ": NO SCORE")
+                                liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
+           (Ev (Right game)) -> liftIO game
+
+takeTurn2 :: Game -- ^ The game
+         -> Maybe String -- ^ Previous score as a string
+         -> IO Game
+takeTurn2 g msc = runInputT defaultSettings loop
+ where
+   loop :: InputT IO Game
+   loop  = do
+     liftIO $ printBoard True (board g) msc
+     mLn <- getInputLine (showTurn g)
+     case mLn of
+       Nothing -> loop
+       Just wdStr -> do
+         let wds = words wdStr
+         (wd,is) <- liftIO $ replaceBlanks (head wds)
+         let [rowStr,colStr,dirStr] = tail $ words wdStr
+             row = read rowStr :: Int
+             col = read colStr :: Int
+             dir = if map toUpper dirStr == "H" then HZ else VT
+             wp  = mkWP wd (row,col) dir
+         case move valWithDict g wp >>= \(g',sc) -> do 
+           let msc'  = Just (wd  ++ ": " ++ show sc)
+           pure $ takeTurn2 g' msc' of
+           (Ev (Left e))  -> do liftIO $ putStrLn e
+                                liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
            (Ev (Right game)) -> liftIO game
 
 replaceBlanks :: String

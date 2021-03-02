@@ -48,7 +48,7 @@ readDictionaryT dict = do
 
 -- English dictionary file path
 englishDictionaryPath :: FilePath
-englishDictionaryPath = "./dict/en.txt"
+englishDictionaryPath = "./dict/english2.txt"
 
 -- | Reads in the (English) dictionary of Scrabble words.
 englishDictionaryT :: IO DictTrie

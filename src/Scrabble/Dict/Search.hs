@@ -66,7 +66,4 @@ wordPlaysT :: DictTrie    -- ^ Dictionary to search
          -> [Word]
 wordPlaysT t hand board = undefined -- map (\(i,t) -> i ++ 'L':t) $ zip (inits str) (tails str) 
 
--- Delete all elements in the first list from the second list.
-deleteAll :: Eq a => [a] -> [a] -> [a]
-deleteAll xs hand = foldl (flip delete) hand xs
 
