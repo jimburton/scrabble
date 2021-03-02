@@ -52,8 +52,8 @@ perms xs = filter ((>1) . length) $ uniquePowerSetPermutations xs
 
 -- | Find all the prefixes in the dictionary that can be made with the given letters.
 findPrefixesT :: DictTrie    -- ^ The dictionary to search
-            -> [Letter] -- ^ The letters to build the words from.
-            -> [Word]
+              -> Word -- ^ The letters to build the words from.
+              -> [Word]
 findPrefixesT t ls = findWordsT t (map wordToText (perms ls))
 
 -- | Find all the words that can be made with the letters on the board

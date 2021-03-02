@@ -1,13 +1,16 @@
 * Refactoring
-** TODO Moving all move updates into one function in main
+** DONE Moving all move updates into one function in main
+   CLOSED: [2021-03-02 Tue 13:50]
    Currently spread around updateScore, fillRack, toggleTurn etc. and 
    needs to be called from view (e.g. cli).
-** TODO Cleaning up the API
+** DONE Cleaning up the API
+   CLOSED: [2021-03-02 Tue 13:50]
 
 * Features
-  + Handle blanks 
-  + Pass a move
-  + Swap tiles
+** TODO Handle blanks 
+** TODO Pass a move
+** TODO Swap tiles
+** TODO AI
 * Bugs
 
 ** DONE fillRack

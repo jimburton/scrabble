@@ -8,11 +8,14 @@ module Scrabble.Game
   , getPlayer
   , move
   , valGameRules
-  , valWithRulesAndDict )
+  , valWithRulesAndDict
+  , swap
+  , pass )
   where
 
 import System.Random
-import Prelude hiding ( words )
+import Prelude hiding ( Word
+                      , words )
 import Data.Functor ( (<&>) )
 import Scrabble.Types
   ( Game(..)
@@ -20,7 +23,8 @@ import Scrabble.Types
   , WordPut
   , Player(..)
   , DictTrie
-  , Player )
+  , Player
+  , Word )
 import Scrabble.Board.Board
   ( scoreWord
   , validateRack
@@ -29,7 +33,8 @@ import Scrabble.Board.Board
   , empty
   , additionalWords
   , newTilesInMove
-  , updateSquare )
+  , updateSquare
+  , mkWP )
 import Scrabble.Board.Bag
   ( newBag
   , fillRack
@@ -82,18 +87,18 @@ move v g w  = do
   let b   = board g
       aw  = additionalWords b w 
   v g (w:aw) >> scoreWords g w aw >>=
-    \i -> setScoreM g i >>= updatePlayer w >>=
+    \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
     updateBoard w >>= toggleTurn <&> (,i)
 
 -- | Update the score of the current player in the game.
-setScoreM :: Game -- ^ The game to be updated
+setScore :: Game -- ^ The game to be updated
           -> Int  -- ^ The new score of the current player
           -> Evaluator Game
-setScoreM g s = if turn g == P1
-                then let s' = score (player1 g) in
-                       pure g { player1 = (player1 g) {score = s' + s} }
-                else let s' = score (player2 g) in
-                       pure g { player2 = (player2 g) {score = s' + s} }
+setScore g s = if turn g == P1
+               then let s' = score (player1 g) in
+                      pure g { player1 = (player1 g) {score = s' + s} }
+               else let s' = score (player2 g) in
+                      pure g { player2 = (player2 g) {score = s' + s} }
 
 -- | Place a word onto the board.
 updateBoard :: WordPut -> Game -> Evaluator Game
@@ -107,9 +112,22 @@ updatePlayer w g = do
       r      = rack p
       theBag = bag g
       theGen = gen g
-  takeFromRack r w >>= \r' -> fillRack r' theBag theGen
+  takeFromRack r (map snd w) >>= \r' -> fillRack r' theBag theGen
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
     >>= \g' -> pure g' { bag = theBag', gen = theGen'}
+
+swap :: Word -> Game -> Evaluator Game
+swap ls g = do
+  let p      = getPlayer g
+      r      = rack p
+      theBag = bag g
+      theGen = gen g
+  takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
+    >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
+    >>= toggleTurn >>= \g' -> pure g' { bag = theBag', gen = theGen' }
+
+pass :: Game -> Evaluator Game
+pass = toggleTurn
 
 -- | Calculate the score of playing a word onto the board, including
 --   bonuses and other words that may be created.

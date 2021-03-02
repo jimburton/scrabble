@@ -5,13 +5,15 @@ module Scrabble.Board.Bag
   where
 
 import Data.List ( delete )
+import Prelude hiding ( Word )
 import System.Random
   ( StdGen
   , randomR )
 import Scrabble.Types
   ( Bag
   , Rack
-  , WordPut )
+  , WordPut
+  , Word )
 import Scrabble.Dict.Letter
   ( Letter(..) )
 import Scrabble.Evaluator
@@ -47,9 +49,9 @@ fillRack r b g = pure $ fillRack' (7 - length r) r b g
 
 -- | Take some letters from a rack.
 takeFromRack :: Rack    -- ^ The rack to take from
-             -> WordPut -- ^ The letters to take from the rack
+             -> Word -- ^ The letters to take from the rack
              -> Evaluator Rack
-takeFromRack r w = pure $ deleteAll r (map snd w)
+takeFromRack r = pure . deleteAll r 
 
 -- Delete the first occurence of each element in the second list from the first list.
 deleteAll :: Eq a => [a] -> [a] -> [a]
