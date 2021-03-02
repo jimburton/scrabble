@@ -33,8 +33,7 @@ import Scrabble.Board.Board
   , empty
   , additionalWords
   , newTilesInMove
-  , updateSquare
-  , mkWP )
+  , updateSquare )
 import Scrabble.Board.Bag
   ( newBag
   , fillRack

@@ -12,7 +12,6 @@ import System.Random
 import Scrabble.Types
   ( Bag
   , Rack
-  , WordPut
   , Word )
 import Scrabble.Dict.Letter
   ( Letter(..) )

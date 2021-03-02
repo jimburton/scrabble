@@ -11,14 +11,12 @@ import Scrabble.Types
   ( Game(..)
   , Dir(..)
   , Player(..)
-  , Board
-  , DictTrie )
+  , Board )
 import Scrabble.Game
   ( newGame
   , getPlayer
   , move
   , valWithRulesAndDict
-  , valGameRules
   , swap
   , pass ) 
 import Scrabble.Board.Board
@@ -32,8 +30,7 @@ import Scrabble.Dict.Dict
 import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Dict.Word
-  ( stringToWord
-  , wordToText )
+  ( stringToWord )
 import Scrabble.Dict.Search
   ( findPrefixesT )
 
