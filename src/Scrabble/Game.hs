@@ -88,7 +88,8 @@ newGame p1Name p2Name theGen d =
                 , firstMove = True
                 , dict      = d
                 , gameOver  = False
-                , playable  = Map.empty } in
+                , playable  = Map.empty
+                , lastMovePass = False } in
     g
 
 -- | Start a new game against the computer.
@@ -116,7 +117,8 @@ newGame1P pName theGen d =
                 , firstMove = True
                 , dict      = d
                 , gameOver  = False
-                , playable  = Map.empty } in
+                , playable  = Map.empty
+                , lastMovePass = False } in
     g
 
 -- | Play a word onto a board, updating the score of the current player
@@ -133,7 +135,7 @@ move v g w is = do
   let b   = board g
       aw  = additionalWords b w 
   setBlanks w is g >>= v (w:aw) >> scoreWords g w aw >>=
-    \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
+    \i -> setScore g { firstMove = False, lastMovePass = False } i >>= updatePlayer w >>=
     updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
 
 -- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
@@ -227,7 +229,12 @@ swap ls g = do
     >>= toggleTurn >>= \g' -> pure g' { bag = theBag', gen = theGen' }
 
 pass :: Game -> Evaluator Game
-pass = toggleTurn
+pass g = if lastMovePass g
+         then endGame g
+         else toggleTurn g { lastMovePass = True }
+
+endGame :: Game -> Evaluator Game
+endGame g = pure g { gameOver = True }
 
 -- | Calculate the score of playing a word onto the board, including
 --   bonuses and other words that may be created.

@@ -57,31 +57,38 @@ playGame g = do
 takeTurn :: Game -- ^ The game
          -> Maybe String -- ^ Previous score as a string
          -> IO Game
-takeTurn g msc = trace ("Playables: "++show (playable g)) $ runInputT defaultSettings loop
+takeTurn g msc = trace ("Turn: "++show (turn g)) $ runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
      liftIO $ printBoard True (board g) msc
-     mLn <- getInputLine (showTurn g)
-     case mLn of
-       Nothing -> loop
-       Just wdStr -> do
-         let wds = words wdStr
-         (wd,is) <- liftIO $ replaceBlanks (head wds)
-         if head wd == ':'
-           then liftIO $ cmd (map toUpper wd, mLn, g) >>= uncurry takeTurn
-           else do
-           let [rowStr,colStr,dirStr] = tail $ words wdStr
-               row = read rowStr :: Int
-               col = read colStr :: Int
-               dir = if map toUpper dirStr == "H" then HZ else VT
-               wp  = mkWP wd (row,col) dir is 
-           case move valGameRulesAndDict g wp is of
-             Ev (Left e) -> do liftIO $ putStrLn e
-                               liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
-             Ev (Right (g',sc)) -> if gameOver g'
-                                   then liftIO $ doGameOver g'
-                                   else liftIO $ takeTurn g' (Just $ show sc)
+     if gameOver g
+       then liftIO $ doGameOver g
+       else do
+       mLn <- getInputLine (showTurn g)
+       case mLn of
+         Nothing -> loop
+         Just wdStr -> do
+           let wds = words wdStr
+           if length wds /= 4 && head (head wds) /= ':'
+             then loop
+             else do
+             (wd,is) <- liftIO $ replaceBlanks (head wds)
+             if head wd == ':'
+               then liftIO $ do
+               (g',ms) <- cmd (map toUpper wd, mLn, g)
+               _ <- (traceIO ("LMP:" ++ (show $ lastMovePass g')))
+               takeTurn g' ms
+               else do
+               let [rowStr,colStr,dirStr] = tail $ words wdStr
+                   row = read rowStr :: Int
+                   col = read colStr :: Int
+                   dir = if map toUpper dirStr == "H" then HZ else VT
+                   wp  = mkWP wd (row,col) dir is 
+               case move valGameRulesAndDict g wp is of
+                 Ev (Left e) -> do liftIO $ putStrLn e
+                                   liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
+                 Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just $ show sc)
 
 doGameOver :: Game -> IO Game
 doGameOver g = do
@@ -128,10 +135,9 @@ doSwap (g, mLn) = do
 
 doPass :: (Game, Maybe String) -> IO (Game, Maybe String)
 doPass (g, mLn) = case pass g of
-  Ev (Right g') -> pure (g',mLn)
+  Ev (Right g') -> pure (g', Just "Passed move")
   Ev (Left e)   -> do putStrLn e
                       pure (g,mLn)
-
 
 help :: IO ()
 help = putStrLn "HELP: TODO"

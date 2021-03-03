@@ -66,7 +66,8 @@ data Game = Game { board     :: Board
                  , firstMove :: Bool
                  , dict      :: DictTrie
                  , gameOver  :: Bool
-                 , playable  :: Playable }
+                 , playable  :: Playable
+                 , lastMovePass :: Bool }
 
 type Playable = Map.Map Pos (Letter, Freedom)
 
