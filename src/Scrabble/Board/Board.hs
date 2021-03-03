@@ -12,9 +12,19 @@ module Scrabble.Board.Board
   , mkWP
   , newTilesInMove
   , replaceBy
-  ,replace )
+  , replace
+  , freedom
+  , freedomsFromWord
+  , newTiles
+  , getDirection
+  , incRow
+  , incCol
+  , decRow
+  , decCol
+  , canPlay )
   where
 
+import Debug.Trace
 import qualified Data.Map as Map
 import Data.Maybe
   ( fromJust
@@ -63,7 +73,65 @@ scoreWord fpb = scoreWord' 0 1 where
 
 -- | How many new tiles are being played in a move?
 newTilesInMove :: Board -> WordPut -> Int
-newTilesInMove b = length . filter isNothing . map (getSquare b . fst) 
+newTilesInMove b w = length $ newTiles b w
+
+-- | The new tiles that are being played in a move.
+newTiles :: Board -> WordPut -> [(Pos, (Letter,Int))]
+newTiles b = filter (\(p,_) -> isNothing (getSquare b p))  
+
+-- | The playable space above and below or to the left and right of this position.
+freedomFromRow :: Board -> Pos -> Letter -> (Pos, Letter, (Int, Int))
+freedomFromRow b (r,c) l =
+  let ns = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decRow p)))
+           (iterate decRow (r,c))
+      n  = if null ns then 0 else fst (last ns)
+      ss = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incRow p)))
+           (iterate incRow (r,c))
+      s  = if null ss then 0 else fst (last ss) in
+    ((r,c),l,(r-n,s-r))
+
+-- | The playable space above and below or to the left and right of this position.
+freedomFromCol :: Board -> Pos -> Letter -> (Pos, Letter, (Int, Int))
+freedomFromCol b (r,c) l =
+  let ns = takeWhile (\p -> canPlay b p && (snd p == 0 || canPlay b (decCol p)))
+           (iterate decCol (r,c))
+      n  = if null ns then 0 else snd (last ns)
+      ss = takeWhile (\p -> canPlay b p && (snd p == 14 || canPlay b (decCol p)))
+           (iterate incCol (r,c))
+      s  = if null ss then 0 else snd (last ss) in
+    ((r,c),l,(c-n,s-c))
+
+freedom :: Board -> Pos -> Letter -> Dir -> (Pos, Letter, (Int, Int))
+freedom b p l d = if d == HZ
+                  then freedomFromRow b p l
+                  else freedomFromCol b p l
+{-
+
+freedomFromRow :: Board -> Pos -> Letter -> Dir -> (Pos, Letter, (Int, Int))
+freedomFromRow b (r,c) l dir = let f = if dir == HZ then decRow else decCol
+                            g = if dir == HZ then incRow else incCol
+                            h = if dir == HZ then fst else snd
+                            ns = takeWhile (\p -> canPlay b p && canPlay b (f p))
+                                 (iterate f (r,c))
+                            n  = if null ns then 0 else h (last ns)
+                            ss = takeWhile (\p -> canPlay b p && canPlay b (g p))
+                                 (iterate g (r,c))
+                            s  = if null ss then 0 else h (last ss) in
+                          ((r,c),l,(r-n,s-r))
+
+-}
+
+-- | Is this position playable?
+canPlay :: Board -> Pos -> Bool
+canPlay b p = onBoard p && isNothing (getSquare b p)
+
+freedomsFromWord :: WordPut -> Board -> [(Pos, Letter, (Int, Int))]
+freedomsFromWord w b =
+  let nt = newTiles b w 
+      d  = getDirection w 
+      fs = filter (\(_,_,(n,s)) -> n>0 || s>0) (map (\(p,(l,_)) -> freedom b p l d) nt) in
+    (trace ("freedoms: "++(show fs))) $ fs
+
 
 -- ================= Validation ===============--
 
@@ -153,10 +221,10 @@ additionalWords b w = additionalWords' w
 
 -- | Get direction of a word on the board. WordPuts must be at least two tiles
 --   long.
--- getDirection :: WordPut -> Dir
--- getDirection w = let r1 = fst $ head w
---                     r2 = fst $ head (tail w) in
---                   if  r1<r2 then HZ else VT
+getDirection :: WordPut -> Dir
+getDirection w = let r1 = fst $ head w
+                     r2 = fst $ head (tail w) in
+                   if  r1<r2 then HZ else VT
   
 -- | Is a square empty?
 empty :: Board -> Pos -> Bool

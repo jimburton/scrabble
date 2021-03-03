@@ -12,7 +12,7 @@ module Scrabble.Types
   , Game(..)
   , Bag
   , DictTrie
-  , Freedom )
+  , Freedom(..) )
 
 where
 
@@ -74,6 +74,7 @@ data Freedom = Freedom { north :: Int
                        , east  :: Int
                        , south :: Int
                        , west  :: Int }
+             deriving (Show)
 
 
 

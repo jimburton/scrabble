@@ -16,6 +16,7 @@ module Scrabble.Game
   , updateBoard )
   where
 
+import Debug.Trace
 import System.Random
 import Prelude hiding ( Word
                       , words )
@@ -30,7 +31,9 @@ import Scrabble.Types
   , Player
   , Word
   , Rack
-  , Board )
+  , Board
+  , Freedom(..)
+  , Dir(..))
 import Scrabble.Board.Board
   ( scoreWord
   , validateRack
@@ -40,7 +43,11 @@ import Scrabble.Board.Board
   , additionalWords
   , newTilesInMove
   , updateSquare
-  , replace ) 
+  , replace
+  , freedom
+  , freedomsFromWord
+  , newTiles
+  , getDirection ) 
 import Scrabble.Board.Bag
   ( newBag
   , fillRack
@@ -127,7 +134,7 @@ move v g w is = do
       aw  = additionalWords b w 
   setBlanks w is g >>= v (w:aw) >> scoreWords g w aw >>=
     \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
-    updateBoard w >>= toggleTurn <&> (,i)
+    updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
 
 -- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
 --   The word is validated by the Validator.
@@ -142,7 +149,7 @@ moveAI v g = do
       aw = additionalWords (board g) w
   v (w:aw) g >> scoreWords g w aw >>=
     \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
-    updateBoard w >>= toggleTurn <&> (,i)
+    updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
 
 -- ======== AI ========= --
 
@@ -171,6 +178,31 @@ setScore g s = if turn g == P1
 updateBoard :: WordPut -> Game -> Evaluator Game
 updateBoard w g = pure g { board = foldl updateSquare (board g) w}
 
+-- | Update the list of playable positions on the board based on the placement
+--   of this word like so:
+--   + a horizontal word may add some playable positions to the board in the N and S directions
+--   + a vertical word may add some playable positions to the board in the E and W directions
+--   + a horizontal word may reduce the playability of positions in the same columns
+--   + a vertical word may reduce the playability of positions in the same rows
+--
+-- TODO handle updating old playables
+updatePlayables :: WordPut -> Game -> Evaluator Game
+updatePlayables w g = do let ps = (trace ("Playable: "++show (playable g))) $ playable g
+                             b  = board g
+                             nt = newTiles b w 
+                             d  = getDirection w
+                             fs = freedomsFromWord nt b
+                             f (u,p) = if d == HZ
+                                       then Freedom { north = u
+                                                    , east  = 0
+                                                    , south = p
+                                                    , west  = 0 }
+                                       else Freedom { north = 0
+                                                    , east  = p
+                                                    , south = 0
+                                                    , west  = u }
+                             nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps fs
+                         pure (g { playable = nps })
 
 -- | Update the rack of the current player
 updatePlayer :: WordPut -> Game -> Evaluator Game

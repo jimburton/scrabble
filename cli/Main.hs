@@ -1,6 +1,7 @@
 module Main
   where
 
+import Debug.Trace
 import System.Random  ( getStdGen )
 import System.Console.Haskeline
 import Data.Foldable  ( forM_ )
@@ -56,7 +57,7 @@ playGame g = do
 takeTurn :: Game -- ^ The game
          -> Maybe String -- ^ Previous score as a string
          -> IO Game
-takeTurn g msc = runInputT defaultSettings loop
+takeTurn g msc = trace ("Playables: "++show (playable g)) $ runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do

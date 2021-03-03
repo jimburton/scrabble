@@ -29,6 +29,15 @@
 
    Keep the map of playable positions up to date after each move.
 
+*** Selecting playable positions:
+
+    This is quite tricky...hard to see how to efficiently check whether you can add to the
+    beginning or end of words in the same direction.
+
+    For positions that are part of horizontally placed words, get the distance between
+    the pos and the edge of the board or two spaces before an occupied tile, whichever is
+    closer. Vive versa for vertical words...
+
 * Bugs
 
 ** DONE fillRack
@@ -54,6 +63,7 @@
 14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
 ------------------------------------------------
 
+** TODO Handle bad input in CLI
 * Testing
 
 ** TODO Blanks
