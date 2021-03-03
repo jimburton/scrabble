@@ -8,7 +8,7 @@ import Data.Char      ( toUpper )
 import Control.Monad.IO.Class ( liftIO )
 import Data.Maybe ( fromJust )
 import Scrabble.Types
-  ( Game(..)
+  ( Game(..) 
   , Dir(..)
   , Player(..)
   , Board )
@@ -74,14 +74,28 @@ takeTurn g msc = runInputT defaultSettings loop
                row = read rowStr :: Int
                col = read colStr :: Int
                dir = if map toUpper dirStr == "H" then HZ else VT
-               wp  = mkWP wd (row,col) dir is
-           case move valGameRules g wp >>= \(g',sc) -> do -- change val while in development 
-             let msc'  = Just (wd  ++ ": " ++ show sc)
-             pure $ takeTurn g' msc' of
-             (Ev (Left e))  -> do liftIO $ putStrLn e
-                                  liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
-             (Ev (Right game)) -> liftIO game
+               wp  = mkWP wd (row,col) dir is 
+           case move valGameRules g wp is of
+             Ev (Left e) -> do liftIO $ putStrLn e
+                               liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
+             Ev (Right (g',sc)) -> if gameOver g'
+                                   then liftIO $ doGameOver g'
+                                   else liftIO $ takeTurn g' (Just $ show sc)
 
+doGameOver :: Game -> IO Game
+doGameOver g = do
+  let p1     = player1 g
+      p2     = player2 g
+      draw   = score p1 == score p2
+      winner = if score p1 > score p2
+               then p1 else p2
+  putStrLn "Game over!"
+  putStrLn $ name p1 ++ ": " ++ show (score p1)
+  putStrLn $ name p2 ++ ": " ++ show (score p2)
+  if draw
+    then putStrLn "It's a draw!" >> pure g
+    else putStrLn ("Congratulations " ++ name winner) >> pure g
+               
 data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
 
 getCmd :: String -> Cmd

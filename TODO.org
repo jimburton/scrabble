@@ -7,9 +7,15 @@
    CLOSED: [2021-03-02 Tue 13:50]
 
 * Features
-** TODO Handle blanks 
-** TODO Pass a move
-** TODO Swap tiles
+** DONE Handle blanks 
+   CLOSED: [2021-03-03 Wed 15:25]
+
+** DONE Pass a move
+   CLOSED: [2021-03-03 Wed 10:53]
+** DONE Swap tiles
+   CLOSED: [2021-03-03 Wed 10:53]
+** DONE Ending the game
+   CLOSED: [2021-03-03 Wed 15:25]
 ** TODO AI
 * Bugs
 

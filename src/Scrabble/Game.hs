@@ -24,7 +24,8 @@ import Scrabble.Types
   , Player(..)
   , DictTrie
   , Player
-  , Word )
+  , Word
+  , Rack )
 import Scrabble.Board.Board
   ( scoreWord
   , validateRack
@@ -33,7 +34,8 @@ import Scrabble.Board.Board
   , empty
   , additionalWords
   , newTilesInMove
-  , updateSquare )
+  , updateSquare
+  , replace ) 
 import Scrabble.Board.Bag
   ( newBag
   , fillRack
@@ -56,21 +58,22 @@ newGame :: String -- ^ Name of Player 1
         -> Game
 newGame p1Name p2Name theGen d = 
   let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
-      p1 = Player { name = p1Name
-                  , rack = rack1
+      p1 = Player { name  = p1Name
+                  , rack  = rack1
                   , score = 0 }
       Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
-      p2 = Player { name = p2Name
-                  , rack = rack2
+      p2 = Player { name  = p2Name
+                  , rack  = rack2
                   , score = 0 }
-      g  = Game { board = newBoard
-                , bag = bag2
-                , player1 = p1
-                , player2 = p2
-                , turn = P1
-                , gen = gen''
+      g  = Game { board     = newBoard
+                , bag       = bag2
+                , player1   = p1
+                , player2   = p2
+                , turn      = P1
+                , gen       = gen''
                 , firstMove = True
-                , dict = d } in
+                , dict      = d
+                , gameOver  = False } in
     g
 
 -- | Play a word onto a board, updating the score of the current player
@@ -81,13 +84,22 @@ newGame p1Name p2Name theGen d =
 move :: Validator -- ^ Function to validate the word against the board.
      -> Game      -- ^ The game.
      -> WordPut   -- ^ The word to play
+     -> [Int]     -- ^ The list positions which were blanks
      -> Evaluator (Game, Int)
-move v g w  = do
+move v g w is = do
   let b   = board g
       aw  = additionalWords b w 
-  v g (w:aw) >> scoreWords g w aw >>=
+  setBlanks w is g >>= v (w:aw) >> scoreWords g w aw >>=
     \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
     updateBoard w >>= toggleTurn <&> (,i)
+
+setBlanks :: WordPut -> [Int] -> Game -> Evaluator Game
+setBlanks w bs g = pure (getPlayer g)
+                   >>= \p -> pure (p { rack = setBlanks' bs (rack p)})
+                   >>= setPlayer g 
+  where setBlanks' :: [Int] -> Rack -> Rack
+        setBlanks' [] r     = r
+        setBlanks' (i:is) r = setBlanks' is (replace r i (fst (snd (w !! i)))) 
 
 -- | Update the score of the current player in the game.
 setScore :: Game -- ^ The game to be updated
@@ -143,31 +155,31 @@ setPlayer g p = if turn g == P1
                 then pure g { player1 = p }
                 else pure g { player2 = p }
 
+-- | Get the current player in the game.
+getPlayer :: Game -> Player
+getPlayer g = if turn g == P1 then player1 g else player2 g
+
 -- | Toggle the turn in the game (between P1 and P2)
 toggleTurn :: Game -- ^ The game in which to toggle the turn
            -> Evaluator Game
 toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
 
--- | Get the current player in the game.
-getPlayer :: Game -> Player
-getPlayer g = if turn g == P1 then player1 g else player2 g
-
 -- | Validator is the type of functions that validate words to be played
-type Validator = Game -> [WordPut] -> Evaluator Bool
+type Validator = [WordPut] -> Game -> Evaluator Bool
 
 -- | Validate a set of words against the rules of the game and the dictionary. 
 valGameRulesAndDict :: Validator
-valGameRulesAndDict g ws = do
+valGameRulesAndDict ws g = do
   let d  = dict g
       ts = map (wordToText . map (fst .snd)) ws
-  valGameRules g ws >> wordsInDictT d ts
+  valGameRules ws g >> wordsInDictT d ts 
 
 -- | Validate a set of words against the rack (are all tiles in the current
 --   player's rack or on the board?) and that the move is in the rules of the
 --   game (each word except the first one connects to an existing word, whereas the
 --   first one to be played must touch the centre square)
 valGameRules :: Validator
-valGameRules g ws = do
+valGameRules ws g = do
   let b  = board g
       p  = getPlayer g
       w  = head ws

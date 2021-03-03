@@ -10,7 +10,9 @@ module Scrabble.Board.Board
   , empty
   , additionalWords
   , mkWP
-  , newTilesInMove )
+  , newTilesInMove
+  , replaceBy
+  ,replace )
   where
 
 import qualified Data.Map as Map
@@ -256,8 +258,8 @@ mkWP w pos dir is = let f  = if dir == HZ then incCol else incRow
                                         (l, scoreLetter l)) w) in
                       foldl zeroScore wp is 
 
---replace :: [a] -> Int -> a -> [a]
---replace xs i e = replaceBy xs i (const e)
+replace :: [a] -> Int -> a -> [a]
+replace xs i e = replaceBy xs i (const e)
 
 replaceBy :: [a] -> Int -> (a -> a) -> [a]
 replaceBy xs i f = case splitAt i xs of

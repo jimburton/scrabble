@@ -43,8 +43,8 @@ instance Show Bonus where
   show (Word i)   = 'W' : show i
   show (Letter i) = 'L' : show i
 
-data Player = Player { name :: String
-                     , rack :: Rack
+data Player = Player { name  :: String
+                     , rack  :: Rack
                      , score :: Int
                      } deriving (Show, Eq)
 
@@ -54,14 +54,15 @@ type Bag = [Letter]
 
 type DictTrie = Trie Bool
 
-data Game = Game { board   :: Board
-                 , bag     :: Bag
-                 , player1 :: Player
-                 , player2 :: Player
-                 , turn    :: Turn
-                 , gen     :: StdGen
+data Game = Game { board     :: Board
+                 , bag       :: Bag
+                 , player1   :: Player
+                 , player2   :: Player
+                 , turn      :: Turn
+                 , gen       :: StdGen
                  , firstMove :: Bool
-                 , dict    :: DictTrie }
+                 , dict      :: DictTrie
+                 , gameOver  :: Bool }
 
 
 
