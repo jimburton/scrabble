@@ -189,7 +189,7 @@ updateBoard w g = pure g { board = foldl updateSquare (board g) w}
 --
 -- TODO handle updating old playables
 updatePlayables :: WordPut -> Game -> Evaluator Game
-updatePlayables w g = do let ps = (trace ("Playable: "++show (playable g))) $ playable g
+updatePlayables w g = do let ps = playable g
                              b  = board g
                              nt = newTiles b w 
                              d  = getDirection w
@@ -258,7 +258,10 @@ getPlayer g = if turn g == P1 then player1 g else player2 g
 -- | Toggle the turn in the game (between P1 and P2)
 toggleTurn :: Game -- ^ The game in which to toggle the turn
            -> Evaluator Game
-toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
+toggleTurn g = let eog = null (bag g) 
+                     && null (rack (player1 g)) 
+                     && null (rack (player2 g)) in
+  pure g { turn = if turn g == P1 then P2 else P1 , gameOver = eog}
 
 -- | Validator is the type of functions that validate words to be played
 type Validator = [WordPut] -> Game -> Evaluator Bool
