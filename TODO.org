@@ -17,11 +17,24 @@
 ** DONE Ending the game
    CLOSED: [2021-03-03 Wed 15:25]
 ** TODO AI
+   Keep a map of playable positions: Pos => (Letter, numspaces N, numspaces E, numspaces S,
+   numspaces W).
+
+   Ideal solution: 
+
+   For each entry in the map, add the tile to the rack and get all suggestions. Pick the
+   highest scoring one, making the list "Candidates".
+
+   Play the highest scoring Candidate.
+
+   Keep the map of playable positions up to date after each move.
+
 * Bugs
 
 ** DONE fillRack
    CLOSED: [2021-03-02 Tue 11:22]
-** TODO move not handling two new letter words correctly
+** DONE move not handling new two letter words correctly
+   CLOSED: [2021-03-03 Wed 16:59]
   | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
 ------------------------------------------------
  0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|

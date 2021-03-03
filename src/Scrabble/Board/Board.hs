@@ -145,13 +145,11 @@ additionalWords b w = additionalWords' w
   where additionalWords' []       = []
         additionalWords' (wp:wps) =
           let (r,c) = fst wp
-              h = if empty b (r,c) && not (all (`touches` w) (hNeighbours b (r,c)))
-                  then wordOnRow (updateSquare b wp) (r,c)
-                  else Nothing
-              v = if empty b (r,c) && not (all (`touches` w) (vNeighbours b (r,c)))
-                  then wordOnCol (updateSquare b wp) (r,c)
-                  else Nothing in
-            filter ((>1) . length) $ catMaybes [h, v] ++ additionalWords' wps
+              h = [wordOnCol (updateSquare b wp) (r,c) |
+                    empty b (r,c) && not (all (`touches` w) (hNeighbours b (r,c)))]
+              v = [wordOnRow (updateSquare b wp) (r,c) |
+                    empty b (r,c) && not (all (`touches` w) (vNeighbours b (r,c)))] in
+            h ++ v ++ additionalWords' wps
 
 -- | Get direction of a word on the board. WordPuts must be at least two tiles
 --   long.
@@ -233,18 +231,20 @@ occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
 -- | Retrieve the word that crosses a position on the board horizontally.
 wordOnRow :: Board -- ^ The board.
           -> Pos   -- ^ The position on the board.
-          -> Maybe WordPut
-wordOnRow b (r,c) = getSquare b (r,c-1) >>
-                    getSquare b (r,c+1) >>
-                    return (wordFromSquare b incCol (startOfWord b decCol (r,c)))
+          -> WordPut
+wordOnRow b (r,c) = wordFromSquare b incCol (startOfWord b decCol (r,c))
 
 -- | Retrieve the word that crosses a position on the board vertically.
 wordOnCol :: Board -- ^ The board.
           -> Pos   -- ^ The position on the board.
-          -> Maybe WordPut
-wordOnCol b (r,c) = getSquare b (r-1,c) >>
+          -> WordPut
+wordOnCol b (r,c) = wordFromSquare b incRow (startOfWord b decRow (r,c))
+
+{-
+getSquare b (r-1,c) >>
                     getSquare b (r+1,c) >>
                     return (wordFromSquare b incRow (startOfWord b decRow (r,c)))
+-}
 
 -- | Make a WordPut from a string.
 mkWP :: String -- ^ The string.

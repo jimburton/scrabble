@@ -75,7 +75,7 @@ takeTurn g msc = runInputT defaultSettings loop
                col = read colStr :: Int
                dir = if map toUpper dirStr == "H" then HZ else VT
                wp  = mkWP wd (row,col) dir is 
-           case move valGameRules g wp is of
+           case move valGameRulesAndDict g wp is of
              Ev (Left e) -> do liftIO $ putStrLn e
                                liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
              Ev (Right (g',sc)) -> if gameOver g'

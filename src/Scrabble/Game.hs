@@ -3,20 +3,24 @@ module Scrabble.Game
   ( Game(..)
   , Turn(..)
   , newGame
+  , newGame1P
   , newBoard
   , newBag
   , getPlayer
   , move
+  , moveAI
   , valGameRules
   , valGameRulesAndDict
   , swap
-  , pass )
+  , pass
+  , updateBoard )
   where
 
 import System.Random
 import Prelude hiding ( Word
                       , words )
 import Data.Functor ( (<&>) )
+import qualified Data.Map as Map
 import Scrabble.Types
   ( Game(..)
   , Turn(..)
@@ -25,7 +29,8 @@ import Scrabble.Types
   , DictTrie
   , Player
   , Word
-  , Rack )
+  , Rack
+  , Board )
 import Scrabble.Board.Board
   ( scoreWord
   , validateRack
@@ -51,20 +56,22 @@ import Scrabble.Dict.Word
 
 
 -- | Start a new game.
-newGame :: String -- ^ Name of Player 1
-        -> String -- ^ Name of Player 2
-        -> StdGen -- ^ The random generator
+newGame :: String   -- ^ Name of Player 1
+        -> String   -- ^ Name of Player 2
+        -> StdGen   -- ^ The random generator
         -> DictTrie -- ^ The dictionary
         -> Game
 newGame p1Name p2Name theGen d = 
   let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
       p1 = Player { name  = p1Name
                   , rack  = rack1
-                  , score = 0 }
+                  , score = 0
+                  , isAI = False }
       Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
       p2 = Player { name  = p2Name
                   , rack  = rack2
-                  , score = 0 }
+                  , score = 0
+                  , isAI  = False }
       g  = Game { board     = newBoard
                 , bag       = bag2
                 , player1   = p1
@@ -73,7 +80,36 @@ newGame p1Name p2Name theGen d =
                 , gen       = gen''
                 , firstMove = True
                 , dict      = d
-                , gameOver  = False } in
+                , gameOver  = False
+                , playable  = Map.empty } in
+    g
+
+-- | Start a new game against the computer.
+newGame1P :: String   -- ^ Name of Player
+          -> StdGen   -- ^ The random generator
+          -> DictTrie -- ^ The dictionary
+          -> Game
+newGame1P pName theGen d = 
+  let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
+      p1 = Player { name  = pName
+                  , rack  = rack1
+                  , score = 0
+                  , isAI = False }
+      Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
+      p2 = Player { name  = "Haskell"
+                  , rack  = rack2
+                  , score = 0
+                  , isAI  = True }
+      g  = Game { board     = newBoard
+                , bag       = bag2
+                , player1   = p1
+                , player2   = p2
+                , turn      = P1
+                , gen       = gen''
+                , firstMove = True
+                , dict      = d
+                , gameOver  = False
+                , playable  = Map.empty } in
     g
 
 -- | Play a word onto a board, updating the score of the current player
@@ -92,6 +128,26 @@ move v g w is = do
   setBlanks w is g >>= v (w:aw) >> scoreWords g w aw >>=
     \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
     updateBoard w >>= toggleTurn <&> (,i)
+
+-- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
+--   The word is validated by the Validator.
+--   Sets the new board, updates the current player's score, refills their rack with letters, then
+--   toggles the current turn. Returns the updated game and the score.
+moveAI :: Validator -- ^ Function to validate the word against the board.
+       -> Game      -- ^ The game.
+       -> Evaluator (Game, Int)
+moveAI v g = do
+  let r  = rack (getPlayer g)
+      w  = findWord (dict g) (board g) r
+      aw = additionalWords (board g) w
+  v (w:aw) g >> scoreWords g w aw >>=
+    \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
+    updateBoard w >>= toggleTurn <&> (,i)
+
+-- ======== AI ========= --
+
+findWord :: DictTrie -> Board -> Rack -> WordPut
+findWord d b r = undefined
 
 setBlanks :: WordPut -> [Int] -> Game -> Evaluator Game
 setBlanks w bs g = pure (getPlayer g)
@@ -123,7 +179,8 @@ updatePlayer w g = do
       r      = rack p
       theBag = bag g
       theGen = gen g
-  takeFromRack r (map (fst . snd) w) >>= \r' -> fillRack r' theBag theGen
+  takeFromRack r (map (fst . snd) (filter (\(pos,_) -> empty (board g) pos) w))
+    >>= \r' -> fillRack r' theBag theGen
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
     >>= \g' -> pure g' { bag = theBag', gen = theGen'}
 

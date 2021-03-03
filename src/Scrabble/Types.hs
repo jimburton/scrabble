@@ -11,13 +11,15 @@ module Scrabble.Types
   , Turn(..)
   , Game(..)
   , Bag
-  , DictTrie ) 
+  , DictTrie
+  , Freedom )
 
 where
 
 import Prelude hiding ( Word )
 import Data.Array
-import Data.Trie.Text ( Trie ) 
+import Data.Trie.Text ( Trie )
+import qualified Data.Map as Map
 import System.Random ( StdGen )
 import Scrabble.Dict.Letter ( Letter ) 
 
@@ -46,6 +48,7 @@ instance Show Bonus where
 data Player = Player { name  :: String
                      , rack  :: Rack
                      , score :: Int
+                     , isAI  :: Bool
                      } deriving (Show, Eq)
 
 data Turn = P1 | P2 deriving (Show, Eq)
@@ -62,7 +65,15 @@ data Game = Game { board     :: Board
                  , gen       :: StdGen
                  , firstMove :: Bool
                  , dict      :: DictTrie
-                 , gameOver  :: Bool }
+                 , gameOver  :: Bool
+                 , playable  :: Playable }
+
+type Playable = Map.Map Pos (Letter, Freedom)
+
+data Freedom = Freedom { north :: Int
+                       , east  :: Int
+                       , south :: Int
+                       , west  :: Int }
 
 
 
