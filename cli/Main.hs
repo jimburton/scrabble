@@ -16,7 +16,8 @@ import Scrabble.Game
   ( newGame
   , getPlayer
   , move
-  , valWithRulesAndDict
+  , valGameRulesAndDict 
+  , valGameRules
   , swap
   , pass ) 
 import Scrabble.Board.Board
@@ -74,7 +75,7 @@ takeTurn g msc = runInputT defaultSettings loop
                col = read colStr :: Int
                dir = if map toUpper dirStr == "H" then HZ else VT
                wp  = mkWP wd (row,col) dir is
-           case move valWithRulesAndDict g wp >>= \(g',sc) -> do 
+           case move valGameRules g wp >>= \(g',sc) -> do -- change val while in development 
              let msc'  = Just (wd  ++ ": " ++ show sc)
              pure $ takeTurn g' msc' of
              (Ev (Left e))  -> do liftIO $ putStrLn e

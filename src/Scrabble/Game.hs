@@ -8,7 +8,7 @@ module Scrabble.Game
   , getPlayer
   , move
   , valGameRules
-  , valWithRulesAndDict
+  , valGameRulesAndDict
   , swap
   , pass )
   where
@@ -156,8 +156,8 @@ getPlayer g = if turn g == P1 then player1 g else player2 g
 type Validator = Game -> [WordPut] -> Evaluator Bool
 
 -- | Validate a set of words against the rules of the game and the dictionary. 
-valWithRulesAndDict :: Validator
-valWithRulesAndDict g ws = do
+valGameRulesAndDict :: Validator
+valGameRulesAndDict g ws = do
   let d  = dict g
       ts = map (wordToText . map (fst .snd)) ws
   valGameRules g ws >> wordsInDictT d ts

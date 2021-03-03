@@ -49,8 +49,8 @@ newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Noth
 scoreWord :: Int -- ^ Starting bonus. This applies only for the seven letter word bonus.
           -> [(Pos, (Letter, Int), Bool)] -- ^ (Position on board, letter, apply bonus)
           -> Int
-scoreWord fpb = scoreWord' fpb 1 where
-  scoreWord' s b [] = s * b
+scoreWord fpb = scoreWord' 0 1 where
+  scoreWord' s b [] = (s * b) + fpb
   scoreWord' s b ((pos,t,p):ws) =
     if not p then scoreWord' (snd t + s) b ws 
     else case Map.lookup pos bonusMap of
@@ -61,7 +61,7 @@ scoreWord fpb = scoreWord' fpb 1 where
 
 -- | How many new tiles are being played in a move?
 newTilesInMove :: Board -> WordPut -> Int
-newTilesInMove b = length . mapMaybe (getSquare b . fst) 
+newTilesInMove b = length . filter isNothing . map (getSquare b . fst) 
 
 -- ================= Validation ===============--
 
