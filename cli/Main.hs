@@ -15,8 +15,10 @@ import Scrabble.Types
   , Board )
 import Scrabble.Game
   ( newGame
+  , newGame1P
   , getPlayer
   , move
+  , moveAI
   , valGameRulesAndDict 
   , valGameRules
   , swap
@@ -45,6 +47,14 @@ startGame p1Name p2Name = do
   d      <- englishDictionaryT
   playGame (newGame p1Name p2Name theGen d)
 
+-- | Start a new game against the computer.
+startGameAI :: String -- ^ Name of Player 1
+          -> IO Game
+startGameAI p1Name = do
+  theGen <- getStdGen
+  d      <- englishDictionaryT
+  playGame (newGame1P p1Name theGen d)
+
 -- | Play the game.
 playGame :: Game -> IO Game
 playGame g = do
@@ -64,31 +74,48 @@ takeTurn g msc = trace ("Turn: "++show (turn g)) $ runInputT defaultSettings loo
      liftIO $ printBoard True (board g) msc
      if gameOver g
        then liftIO $ doGameOver g
-       else do
-       mLn <- getInputLine (showTurn g)
-       case mLn of
-         Nothing -> loop
-         Just wdStr -> do
-           let wds = words wdStr
-           if length wds /= 4 && head (head wds) /= ':'
-             then loop
+       else if isAI (getPlayer g)
+            then liftIO $ takeTurnAI g
+            else liftIO $ takeTurnManual g
+
+-- | Allow the computer to take a turn.
+takeTurnAI :: Game -> IO Game
+takeTurnAI g = case moveAI valGameRulesAndDict g of
+  Ev (Right (g',i)) -> takeTurn g' (Just (show i))
+  Ev (Left e)       -> do putStrLn e
+                          pure g
+
+-- | Take a turn manually.
+takeTurnManual :: Game -- ^ The game
+               -> IO Game
+takeTurnManual g = runInputT defaultSettings loop
+ where
+   loop :: InputT IO Game
+   loop  = do
+     mLn <- getInputLine (showTurn g)
+     case mLn of
+       Nothing -> loop
+       Just wdStr -> do
+         let wds = words wdStr
+         if length wds /= 4 && head (head wds) /= ':'
+           then loop
+           else do
+           (wd,is) <- liftIO $ replaceBlanks (head wds)
+           if head wd == ':'
+             then liftIO $ do
+             (g',ms) <- cmd (map toUpper wd, mLn, g)
+             _ <- traceIO ("LMP:" ++ show (lastMovePass g'))
+             takeTurn g' ms
              else do
-             (wd,is) <- liftIO $ replaceBlanks (head wds)
-             if head wd == ':'
-               then liftIO $ do
-               (g',ms) <- cmd (map toUpper wd, mLn, g)
-               _ <- (traceIO ("LMP:" ++ (show $ lastMovePass g')))
-               takeTurn g' ms
-               else do
-               let [rowStr,colStr,dirStr] = tail $ words wdStr
-                   row = read rowStr :: Int
-                   col = read colStr :: Int
-                   dir = if map toUpper dirStr == "H" then HZ else VT
-                   wp  = mkWP wd (row,col) dir is 
-               case move valGameRulesAndDict g wp is of
-                 Ev (Left e) -> do liftIO $ putStrLn e
-                                   liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
-                 Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just $ show sc)
+             let [rowStr,colStr,dirStr] = tail $ words wdStr
+                 row = read rowStr :: Int
+                 col = read colStr :: Int
+                 dir = if map toUpper dirStr == "H" then HZ else VT
+                 wp  = mkWP wd (row,col) dir is 
+             case move valGameRulesAndDict g wp is of
+               Ev (Left e) -> do liftIO $ putStrLn e
+                                 liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
+               Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just $ show sc)
 
 doGameOver :: Game -> IO Game
 doGameOver g = do

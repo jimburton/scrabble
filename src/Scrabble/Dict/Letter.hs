@@ -3,13 +3,16 @@ module Scrabble.Dict.Letter
   , toChar
   , letterFromChar
   , charToLetterMap
-  , scoreLetter )
+  , scoreLetter
+  , toText )
   where
 
 import qualified Data.Map as Map
 import           Data.Map    ( Map )
 import           Data.Maybe  ( fromJust )
 import           Data.Tuple  ( swap )
+import Data.Text ( Text )
+import qualified Data.Text as T
 
 -- ===== Letters ===== --
 
@@ -25,6 +28,9 @@ letterFromChar c = Map.lookup c charToLetterMap
 -- | Convert a Letter back into a Char. Always valid.
 toChar :: Letter -> Char
 toChar l = fromJust $ Map.lookup l letterToCharMap
+
+toText :: Letter -> Text
+toText = T.pack . show
 
 instance Show Letter where
   show l = [toChar l]

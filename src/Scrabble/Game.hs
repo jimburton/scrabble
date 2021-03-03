@@ -22,6 +22,10 @@ import Prelude hiding ( Word
                       , words )
 import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
+import qualified Data.Trie.Text as Trie
+import Scrabble.Dict.Letter
+  ( Letter(..)
+  , toText )
 import Scrabble.Types
   ( Game(..)
   , Turn(..)
@@ -32,8 +36,10 @@ import Scrabble.Types
   , Word
   , Rack
   , Board
-  , Freedom(..)
-  , Dir(..))
+  , Dir(..)
+  , Playable
+  , Pos
+  , FreedomDir(..) )
 import Scrabble.Board.Board
   ( scoreWord
   , validateRack
@@ -47,7 +53,12 @@ import Scrabble.Board.Board
   , freedom
   , freedomsFromWord
   , newTiles
-  , getDirection ) 
+  , getDirection
+  , incRow
+  , incCol
+  , decRow
+  , decCol
+  , mkWP ) 
 import Scrabble.Board.Bag
   ( newBag
   , fillRack
@@ -57,7 +68,10 @@ import Scrabble.Evaluator
 import Scrabble.Dict.Dict
   ( wordsInDictT )
 import Scrabble.Dict.Word
-  ( wordToText ) 
+  ( wordToText
+  , wordToString )
+import Scrabble.Dict.Search
+  ( findPrefixesT )
 
 -- ============= Functions for playing the game =============== --
 
@@ -147,7 +161,7 @@ moveAI :: Validator -- ^ Function to validate the word against the board.
        -> Evaluator (Game, Int)
 moveAI v g = do
   let r  = rack (getPlayer g)
-      w  = findWord (dict g) (board g) r
+      w  = findWord (dict g) (board g) r (playable g)
       aw = additionalWords (board g) w
   v (w:aw) g >> scoreWords g w aw >>=
     \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
@@ -155,8 +169,44 @@ moveAI v g = do
 
 -- ======== AI ========= --
 
-findWord :: DictTrie -> Board -> Rack -> WordPut
-findWord d b r = undefined
+-- | Pick a word for the AI to play. Dumb version -- pick the first one 
+findWord :: DictTrie -> Board -> Rack -> Playable -> WordPut 
+findWord d b r p = let k = head (Map.keys p) in
+  case Map.lookup k p of
+  Just (l,fs) -> let (fd,i) = head fs in
+                   case fd of
+                     UpD    -> findPrefixOfSize d k b l r (fd,i)
+                     DownD  -> findSuffixOfSize d k b l r (fd,i)
+                     LeftD  -> findPrefixOfSize d k b l r (fd,i)
+                     RightD -> findSuffixOfSize d k b l r (fd,i)
+  Nothing     -> error "How did that happen? Pass the move"
+
+findPrefixOfSize :: DictTrie -> Pos -> Board -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
+findPrefixOfSize d k b l r (fd,i) =
+  let r' = filter (/=Blank) r
+      w = head $ filter ((==l) . head) $ findPrefixesT d r'
+      dir = if fd == UpD || fd == DownD then VT else HZ
+      pos = case fd of
+              UpD    -> (fst k,snd k-i)
+              DownD  -> k
+              LeftD  -> (fst k-i,snd k)
+              RightD -> k in
+    mkWP (wordToString w) pos dir []
+
+findSuffixOfSize :: DictTrie -> Pos -> Board -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
+findSuffixOfSize d k b l r (fd,i) =
+  let r' = filter (/=Blank) r
+      w = head $ findPrefixesT (Trie.submap (toText l) d) r'
+      dir = if fd == UpD || fd == DownD then VT else HZ
+      pos = case fd of
+              UpD    -> (fst k,snd k-i)
+              DownD  -> k
+              LeftD  -> (fst k-i,snd k)
+              RightD -> k in
+    mkWP (wordToString w) pos dir []
+
+findWordOfSize :: DictTrie -> Letter -> Rack -> (Pos -> Pos) -> Int -> WordPut
+findWordOfSize d l r f i = undefined -- Trie.submap (toChar l) d
 
 setBlanks :: WordPut -> [Int] -> Game -> Evaluator Game
 setBlanks w bs g = pure (getPlayer g)
@@ -195,14 +245,8 @@ updatePlayables w g = do let ps = playable g
                              d  = getDirection w
                              fs = freedomsFromWord nt b
                              f (u,p) = if d == HZ
-                                       then Freedom { north = u
-                                                    , east  = 0
-                                                    , south = p
-                                                    , west  = 0 }
-                                       else Freedom { north = 0
-                                                    , east  = p
-                                                    , south = 0
-                                                    , west  = u }
+                                       then [(UpD,u), (DownD, p)]
+                                       else [(RightD, p), (LeftD, u)]
                              nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps fs
                          pure (g { playable = nps })
 
