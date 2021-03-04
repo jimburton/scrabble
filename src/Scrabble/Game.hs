@@ -13,16 +13,20 @@ module Scrabble.Game
   , valGameRulesAndDict
   , swap
   , pass
-  , updateBoard )
+  , updateBoard
+  , findWord
+  , longest )
   where
 
 import Debug.Trace
 import System.Random
-import Prelude hiding ( Word
-                      , words )
+import Prelude hiding
+  ( Word
+  , words )
 import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
 import qualified Data.Trie.Text as Trie
+import Data.List ( maximumBy )
 import Scrabble.Dict.Letter
   ( Letter(..)
   , toText )
@@ -161,7 +165,7 @@ moveAI :: Validator -- ^ Function to validate the word against the board.
        -> Evaluator (Game, Int)
 moveAI v g = do
   let r  = rack (getPlayer g)
-      w  = findWord (dict g) (board g) r (playable g)
+      w  = findWord (dict g) r (playable g)
       aw = additionalWords (board g) w
   v (w:aw) g >> scoreWords g w aw >>=
     \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
@@ -170,40 +174,45 @@ moveAI v g = do
 -- ======== AI ========= --
 
 -- | Pick a word for the AI to play. Dumb version -- pick the first one 
-findWord :: DictTrie -> Board -> Rack -> Playable -> WordPut 
-findWord d b r p = let k = head (Map.keys p) in
+findWord :: DictTrie -> Rack -> Playable -> WordPut 
+findWord d r p = let k = head (Map.keys p) in
   case Map.lookup k p of
   Just (l,fs) -> let (fd,i) = head fs in
                    case fd of
-                     UpD    -> findPrefixOfSize d k b l r (fd,i)
-                     DownD  -> findSuffixOfSize d k b l r (fd,i)
-                     LeftD  -> findPrefixOfSize d k b l r (fd,i)
-                     RightD -> findSuffixOfSize d k b l r (fd,i)
+                     UpD    -> findPrefixOfSize d k l r (fd,i)
+                     DownD  -> findSuffixOfSize d k l r (fd,i)
+                     LeftD  -> findPrefixOfSize d k l r (fd,i)
+                     RightD -> findSuffixOfSize d k l r (fd,i)
   Nothing     -> error "How did that happen? Pass the move"
 
-findPrefixOfSize :: DictTrie -> Pos -> Board -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
-findPrefixOfSize d k b l r (fd,i) =
-  let r' = filter (/=Blank) r
-      w = head $ filter ((==l) . head) $ findPrefixesT d r'
+findPrefixOfSize :: DictTrie -> Pos -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
+findPrefixOfSize d k l r (fd,i) =
+  let r' = l : filter (/=Blank) r
+      w = longest $ filter (\w' -> length w' <= i && last w'==l) $ findPrefixesT d r'
+      len = length w - 1
       dir = if fd == UpD || fd == DownD then VT else HZ
       pos = case fd of
-              UpD    -> (fst k,snd k-i)
+              UpD    -> (fst k-len,snd k)
               DownD  -> k
-              LeftD  -> (fst k-i,snd k)
+              LeftD  -> (fst k,snd k-len)
               RightD -> k in
     mkWP (wordToString w) pos dir []
 
-findSuffixOfSize :: DictTrie -> Pos -> Board -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
-findSuffixOfSize d k b l r (fd,i) =
-  let r' = filter (/=Blank) r
-      w = head $ findPrefixesT (Trie.submap (toText l) d) r'
+findSuffixOfSize :: DictTrie -> Pos -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
+findSuffixOfSize d k l r (fd,i) =
+  let r' = l : filter (/=Blank) r
+      w = longest $ filter ((<=i) . length) $ findPrefixesT (Trie.submap (toText l) d) r'
+      len = length w - 1
       dir = if fd == UpD || fd == DownD then VT else HZ
       pos = case fd of
-              UpD    -> (fst k,snd k-i)
+              UpD    -> (fst k-len,snd k)
               DownD  -> k
-              LeftD  -> (fst k-i,snd k)
+              LeftD  -> (fst k,snd k-len)
               RightD -> k in
     mkWP (wordToString w) pos dir []
+
+longest :: [[a]] -> [a]
+longest = maximumBy (\x y -> length x `compare` length y)
 
 findWordOfSize :: DictTrie -> Letter -> Rack -> (Pos -> Pos) -> Int -> WordPut
 findWordOfSize d l r f i = undefined -- Trie.submap (toChar l) d
