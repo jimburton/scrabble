@@ -28,7 +28,8 @@ import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
 import qualified Data.Trie.Text as Trie
 import Data.Text ( Text )
-import Data.List ( maximumBy )
+import Data.List ( maximumBy
+                 , (\\) )
 import Scrabble.Dict.Letter
   ( Letter(..)
   , toText )
@@ -184,23 +185,14 @@ findWord :: DictTrie -- ^ The dictionary.
          -> Playable -- ^ The playable positions.
          -> Maybe WordPut 
 findWord d r p = msum $ Map.mapWithKey findWord' p
-  where findWord' k (l,ps) = msum $ map (\(fd,i) ->
-                                           case fd of
-                                             UpD    -> findPrefixOfSize d k l r (fd,i)
-                                             DownD  -> findSuffixOfSize d k l r (fd,i)
-                                             LeftD  -> findPrefixOfSize d k l r (fd,i)
-                                             RightD -> findSuffixOfSize d k l r (fd,i)) ps
+  where findWord' k (l,ps) =
+          msum $ map (\(fd,i) ->
+                         case fd of
+                           UpD    -> findPrefixOfSize d k l r (fd,i)
+                           DownD  -> findSuffixOfSize d k l r (fd,i)
+                           LeftD  -> findPrefixOfSize d k l r (fd,i)
+                           RightD -> findSuffixOfSize d k l r (fd,i)) ps
 
-{-let k = head (Map.keys p) in
-  case Map.lookup k p of
-  Just (l,fs) -> let (fd,i) = trace ("playable: "++show fs) $ head fs in
-                   case fd of
-                     UpD    -> findPrefixOfSize d k l r (fd,i)
-                     DownD  -> findSuffixOfSize d k l r (fd,i)
-                     LeftD  -> findPrefixOfSize d k l r (fd,i)
-                     RightD -> findSuffixOfSize d k l r (fd,i)
-  Nothing     -> error "How did that happen? Pass the move"
--}
 -- | Find a word of at least a certain size that ends with a certain letter.
 findPrefixOfSize :: DictTrie         -- ^ The dictionary.
                  -> Pos              -- ^ The end point of the word.
@@ -279,22 +271,22 @@ updateBoard w g = pure g { board = foldl updateSquare (board g) w}
 
 -- | Update the list of playable positions on the board based on the placement
 --   of this word like so:
---   + a horizontal word may add some playable positions to the board in the N and S directions
---   + a vertical word may add some playable positions to the board in the E and W directions
---   + a horizontal word may reduce the playability of positions in the same columns
---   + a vertical word may reduce the playability of positions in the same rows
---
--- TODO handle updating old playables
+--   + a horizontal word may add some playable positions to the board in the N and S directions,
+--   + a vertical word may add some playable positions to the board in the E and W directions,
+--   + a horizontal word may reduce the playability of positions in the same columns,
+--   + a vertical word may reduce the playability of positions in the same rows.
 updatePlayables :: WordPut -> Game -> Evaluator Game
-updatePlayables w g = do let ps = playable g
-                             b  = board g
-                             nt = newTiles b w 
-                             d  = getDirection w
-                             fs = freedomsFromWord nt b
+updatePlayables w g = do let ps  = playable g
+                             b   = board g
+                             nt  = newTiles b w
+                             ot  = map fst (w \\ nt )
+                             ps' = Map.filterWithKey (\k _ -> k `notElem` ot) ps 
+                             d   = getDirection w
+                             fs  = freedomsFromWord nt b
                              f (u,p) = if d == HZ
                                        then [(UpD,u), (DownD, p)]
                                        else [(RightD, p), (LeftD, u)]
-                             nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps fs
+                             nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
                          pure (g { playable = nps })
 
 -- | Update the rack of the current player
