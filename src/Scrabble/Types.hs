@@ -1,5 +1,5 @@
 module Scrabble.Types
-  ( Letter
+  ( Letter(..)
   , Word
   , Board
   , Pos
@@ -14,7 +14,9 @@ module Scrabble.Types
   , DictTrie
   , Playable
   , FreedomDir(..)
-  , PosTransform )
+  , PosTransform
+  , Evaluator(..)
+  , Validator )
 
 where
 
@@ -23,11 +25,14 @@ import Data.Array
 import Data.Trie.Text ( Trie )
 import qualified Data.Map as Map
 import System.Random ( StdGen )
-import Scrabble.Dict.Letter ( Letter ) 
 
 -- ============ Types for the application ================ --
 
--- Letter is declared in Scrabble.Dict.Letter
+data Letter =
+  A | B | C | D | E | F | G | H | I | J | K | L | M |
+  N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
+  deriving (Show, Enum, Eq, Ord)
+
 -- | A word is a list of letters. 
 type Word = [Letter]
 
@@ -91,6 +96,12 @@ type Playable = Map.Map Pos (Letter, [(FreedomDir, Int)])
 
 -- | A direction on the board (up, down, left or right)
 data FreedomDir = UpD | DownD | LeftD | RightD deriving (Show, Read, Eq)
+
+newtype Evaluator a = Ev (Either String a)
+
+-- | Validator is the type of functions that validate words to be played
+type Validator = [WordPut] -> Game -> Evaluator Bool
+
 
 
 

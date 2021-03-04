@@ -9,10 +9,12 @@ import Data.Array
 import qualified Data.Map as Map
 import Scrabble.Board.Board
   ( bonusMap )
-import Scrabble.Types ( Board
-                      , Player(..))
-import Scrabble.Dict.Letter ( toChar
-                            , scoreLetter ) 
+import Scrabble.Types
+  ( Board
+  , Player(..))
+import Scrabble.Lang.Letter
+  ( toChar
+  , scoreLetter ) 
 
 -- =============== Functions for turning boards into strings =========== --
 

@@ -1,6 +1,5 @@
-module Scrabble.Dict.Letter
-  ( Letter(..)
-  , toChar
+module Scrabble.Lang.Letter
+  ( toChar
   , letterFromChar
   , charToLetterMap
   , scoreLetter
@@ -13,13 +12,9 @@ import           Data.Maybe  ( fromJust )
 import           Data.Tuple  ( swap )
 import Data.Text ( Text )
 import qualified Data.Text as T
-
+import Scrabble.Types 
+  ( Letter(..) )
 -- ===== Letters ===== --
-
-data Letter =
-  A | B | C | D | E | F | G | H | I | J | K | L | M |
-  N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
-  deriving (Enum, Eq, Ord)
 
 -- | Convert a Char to a Letter, if the Char is a valid Letter (A-Z).
 letterFromChar :: Char -> Maybe Letter
@@ -31,9 +26,6 @@ toChar l = fromJust $ Map.lookup l letterToCharMap
 
 toText :: Letter -> Text
 toText = T.pack . show
-
-instance Show Letter where
-  show l = [toChar l]
 
 -- private value.
 letterToCharList :: [(Letter,Char)]

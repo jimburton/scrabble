@@ -1,4 +1,4 @@
-module Scrabble.Dict.Search
+module Scrabble.Lang.Search
   ( findWordsT
   , findPrefixesT
   , wordPlaysT )
@@ -16,7 +16,7 @@ import Scrabble.Types
   , Word
   , Letter
   , Word )
-import Scrabble.Dict.Word
+import Scrabble.Lang.Word
   ( textToWord
   , wordToText ) 
 

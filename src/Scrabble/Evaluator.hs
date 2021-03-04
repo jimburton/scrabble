@@ -2,9 +2,8 @@ module Scrabble.Evaluator ( Evaluator(..)
                           , evalBool )
   where
 
+import Scrabble.Types ( Evaluator(..) )
 -- import Control.Monad.IO.Class ( liftIO )
-
-newtype Evaluator a = Ev (Either String a)
 
 instance Functor Evaluator where
   -- fmap :: (a -> b) -> f a -> f b 

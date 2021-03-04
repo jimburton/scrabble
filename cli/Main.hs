@@ -13,29 +13,31 @@ import Scrabble.Types
   , Dir(..)
   , Player(..)
   , Board )
-import Scrabble.Game
+import Scrabble.Game.Game
   ( newGame
-  , newGame1P
   , getPlayer
   , move
-  , moveAI
-  , valGameRulesAndDict 
-  , valGameRules
   , swap
-  , pass ) 
+  , pass )
+import Scrabble.Game.Validation
+  ( valGameRulesAndDict
+  , valGameRules )
+import Scrabble.Game.AI
+  ( newGame1P
+  , moveAI )
 import Scrabble.Board.Board
   ( mkWP )
 import Scrabble.Show
   ( showGame
   , showPlayer
   , showBoard )
-import Scrabble.Dict.Dict
+import Scrabble.Lang.Dict
   ( englishDictionaryT )
 import Scrabble.Evaluator
   ( Evaluator(..) )
-import Scrabble.Dict.Word
+import Scrabble.Lang.Word
   ( stringToWord )
-import Scrabble.Dict.Search
+import Scrabble.Lang.Search
   ( findPrefixesT )
 
 -- | Start a new game.

@@ -12,9 +12,8 @@ import System.Random
 import Scrabble.Types
   ( Bag
   , Rack
-  , Word )
-import Scrabble.Dict.Letter
-  ( Letter(..) )
+  , Word
+  , Letter(..) )
 import Scrabble.Evaluator
   ( Evaluator )
 

@@ -1,4 +1,4 @@
-module Scrabble.Dict.Word
+module Scrabble.Lang.Word
   ( Word
   , wordToString
   , stringToWord
@@ -10,7 +10,7 @@ import Prelude hiding  ( Word )
 import Data.Text       ( Text )
 import Data.Maybe      ( fromJust )
 import qualified Data.Text as T
-import Scrabble.Dict.Letter
+import Scrabble.Lang.Letter
   ( letterFromChar
   , toChar )
 import Scrabble.Types ( Word )

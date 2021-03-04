@@ -31,15 +31,20 @@ library
   exposed-modules:
       Scrabble
       Scrabble.Types
-      Scrabble.Game
       Scrabble.Show
       Scrabble.Evaluator
-      Scrabble.Dict.Letter
-      Scrabble.Dict.Word
-      Scrabble.Dict.Dict
-      Scrabble.Dict.Search
+      Scrabble.Game.Game
+      Scrabble.Game.AI
+      Scrabble.Game.Internal
+      Scrabble.Game.Validation
+      Scrabble.Lang.Letter
+      Scrabble.Lang.Word
+      Scrabble.Lang.Dict
+      Scrabble.Lang.Search
       Scrabble.Board.Bag
       Scrabble.Board.Board
+      Scrabble.Board.Validation
+      Scrabble.Board.Internal
 
   default-extensions: TupleSections
   
@@ -48,17 +53,22 @@ library
 executable scrabble
   main-is:             Main.hs
   other-modules:       Scrabble.Types
-                     , Scrabble.Game
                      , Scrabble.Show
                      , Scrabble.Evaluator
-                     , Scrabble.Dict.Dict
-                     , Scrabble.Dict.Letter
-                     , Scrabble.Dict.Word
-                     , Scrabble.Dict.Search
+                     , Scrabble.Game.Game
+                     , Scrabble.Game.AI
+                     , Scrabble.Game.Internal
+                     , Scrabble.Game.Validation
+                     , Scrabble.Lang.Dict
+                     , Scrabble.Lang.Letter
+                     , Scrabble.Lang.Word
+                     , Scrabble.Lang.Search
                      , Scrabble.Board.Bag
                      , Scrabble.Board.Board
+                     , Scrabble.Board.Validation
+                     , Scrabble.Board.Internal
   -- ghc-options: -Wall -Werror -fno-warn-name-shadowing
-  ghc-options: -Wall 
+  ghc-options: -Wall -fno-warn-orphans
   build-depends:       base >=4.12 && <4.13
                      , random
                      , array

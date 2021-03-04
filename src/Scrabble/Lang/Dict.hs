@@ -1,4 +1,4 @@
-module Scrabble.Dict.Dict
+module Scrabble.Lang.Dict
   ( letterFromChar
   , toChar
   , wordsInDictT
@@ -13,7 +13,7 @@ import Data.Text        ( Text
                         , pack)
 import qualified Data.Trie.Text as Trie
 
-import Scrabble.Dict.Letter
+import Scrabble.Lang.Letter
   ( letterFromChar
   , toChar )
 import Scrabble.Evaluator
