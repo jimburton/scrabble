@@ -28,6 +28,10 @@
    Play the highest scoring Candidate.
 
    Keep the map of playable positions up to date after each move.
+*** TODO Basic word selection (max 5 letters, prefix and suffix only) and playing it on the board
+*** TODO Select words with the playable position somewhere in the middle  
+*** TODO Make it fast enough for longer words
+*** TODO Handle blanks
 
 *** Selecting playable positions:
 

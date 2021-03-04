@@ -40,6 +40,8 @@ import Scrabble.Dict.Letter
   ( Letter
   , charToLetterMap
   , scoreLetter )
+import Scrabble.Dict.Word
+  ( wordToString )
 import Scrabble.Types
   ( Board
   , Pos
@@ -47,7 +49,8 @@ import Scrabble.Types
   , Player(..)
   , Bonus(..)
   , Dir(..)
-  , Rack ) 
+  , Rack
+  , PosTransform ) 
 import Scrabble.Evaluator
   ( Evaluator(..)
   , evalBool )
@@ -70,14 +73,6 @@ scoreWord fpb = scoreWord' 0 1 where
       Just b'  -> case b' of
                    (Word i)   -> scoreWord' (snd t + s) (i*b) ws
                    (Letter i) -> scoreWord' ((snd t * i) + s) b ws
-
--- | How many new tiles are being played in a move?
-newTilesInMove :: Board -> WordPut -> Int
-newTilesInMove b w = length $ newTiles b w
-
--- | The new tiles that are being played in a move.
-newTiles :: Board -> WordPut -> [(Pos, (Letter,Int))]
-newTiles b = filter (\(p,_) -> isNothing (getSquare b p))  
 
 -- | The playable space above and below or to the left and right of this position.
 freedomFromRow :: Board -> Pos -> Letter -> (Pos, Letter, (Int, Int))
@@ -132,66 +127,6 @@ freedomsFromWord w b =
       fs = filter (\(_,_,(n,s)) -> n>0 || s>0) (map (\(p,(l,_)) -> freedom b p l d) nt) in
     (trace ("freedoms: "++(show fs))) $ fs
 
-
--- ================= Validation ===============--
-
--- | Check that a move is valid: it touches at least one existing word (unless
---   it is the first move, in which case check that it touches the centre square),
---   it is in a straight and continuous line, and is made
---   up of letters that either in the rack or on the board.
-validateMove :: Board   -- ^ The board
-             -> Player   -- ^ The player making the move
-             -> WordPut  -- ^ The word to play
-             -> Bool     -- ^ Is first move
-             -> Evaluator Bool
-validateMove b p w fm =
-  connects w b fm >>
-  straight w >>
-  (not fm || touches (7,7) w) `evalBool`
-  "First move must touch centre square" >>
-  all (\(pos,(t,_)) -> maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)) w `evalBool`
-  "Letters not in rack or not on board"
-
--- | Does the word touch the pos on the board?
-touches :: Pos -> WordPut -> Bool
-touches p = any ((==p) .  fst)
-
--- | New words must touch another (apart from the first one to be played)
-connects :: WordPut -- ^ The word to play
-         -> Board    -- ^ The board
-         -> Bool     -- ^ Is first move
-         -> Evaluator Bool
-connects [] _ fm     = if fm then pure True else fail "Not touching any other tile"
-connects (w:ws) b fm = let (pos,_) = w in
-  if (not . all null) (occupiedNeighbours b pos)
-  then pure True
-  else connects ws b fm
-
--- | Words must contain at least two tiles and must be in a straight line on the board
-straight :: WordPut -> Evaluator Bool
-straight (w:x:xs) = let (r,_)  = fst w
-                        (r',_) = fst x
-                        ps     = map fst xs
-                        sel    = if r == r'-1 then fst else snd
-                        f      = \(x',y') -> sel x' == sel y' - 1 in 
-                      (all f . zip ps $ tail ps) `evalBool` "Not in a straight line"
-straight _         = fail "Too few letters"
-
--- | Check that a word to be played is made of tiles that are either in the player's
---   rack or are already on the board.
-validateRack :: Board
-             -> Rack
-             -> WordPut
-             -> Evaluator Bool
-validateRack b r w = someNewTiles b w >>
-  all (\(pos,(t,_)) -> t `elem` r
-           || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
-  `evalBool` "Not all tiles in rack or on board"
-
--- | Check that a word to be played incudes some tiles that aren't on the board.
-someNewTiles :: Board -> WordPut -> Evaluator Bool
-someNewTiles b w = any (empty b . fst) w `evalBool` "You didn't play any new tiles"
-
 -- ==================== Manipulating and querying the board =================--
 
 -- | Retrieve a position on the board.
@@ -222,42 +157,24 @@ additionalWords b w = additionalWords' w
 -- | Get direction of a word on the board. WordPuts must be at least two tiles
 --   long.
 getDirection :: WordPut -> Dir
-getDirection w = let r1 = fst $ head w
-                     r2 = fst $ head (tail w) in
-                   if  r1<r2 then HZ else VT
+getDirection w = let r1 = fst $ fst $ head w
+                     r2 = fst $ fst $ head (tail w) in
+                   if  r1<r2 then VT else HZ
   
 -- | Is a square empty?
 empty :: Board -> Pos -> Bool
 empty b pos = isNothing (getSquare b pos)
 
--- | The occupied horizonal neighbours of a position on the board.
-hNeighbours :: Board -> Pos -> [Pos]
-hNeighbours = gridNeighbours decRow incRow
-
--- | The occupied vertical neighbours of a position on the board.
-vNeighbours :: Board -> Pos -> [Pos]
-vNeighbours = gridNeighbours decCol incCol
-
--- | Get the vertical or horizontal neighbours of a pos
-gridNeighbours :: (Pos -> Pos) -- ^ Seek in first direction (left or up)
-               -> (Pos -> Pos) -- ^ Seek in second direction (right or down)
-               -> Board        -- ^ The board
-               -> Pos          -- ^ The pos
-               -> [Pos]
-gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
-                               m = [g pos | isJust (getSquare b (g pos))] in
-                        l ++ m
-
 -- | Retrieve the word that crosses this pos on the board
 wordFromSquare :: Board
-               -> (Pos -> Pos) -- ^ The function that moves to the start of the word (up rows or left along columns)
+               -> PosTransform -- ^ The function that moves to the start of the word (up rows or left along columns)
                -> Pos
                -> WordPut
 wordFromSquare b f pos =  maybe [] (\t -> (pos, t) : wordFromSquare b f (f pos)) (getSquare b pos)
 
 -- | Find the starting position of a word that crosses a position on the board.
 startOfWord :: Board        -- ^ The board.
-            -> (Pos -> Pos) -- ^ The function that moves to the start of the word (up rows or left along columns)
+            -> PosTransform -- ^ The function that moves to the start of the word (up rows or left along columns)
             -> Pos          -- ^ The position
             -> Pos
 startOfWord b f pos = let pos' = f pos in
@@ -270,19 +187,19 @@ onBoard :: Pos -> Bool
 onBoard (r,c) = r >= 0 && r < 15 && c >= 0 && c < 15
 
 -- | Increment the row within a position.
-incRow :: Pos -> Pos
+incRow :: PosTransform
 incRow (r,c) = (r+1,c)
 
 -- | Increment the column within a position.
-incCol :: Pos -> Pos
+incCol :: PosTransform
 incCol (r,c) = (r,c+1)
 
 -- | Decrement the row within a position.
-decRow :: Pos -> Pos
+decRow :: PosTransform
 decRow (r,c) = (r-1,c)
 
 -- | Decrement the column within a position.
-decCol :: Pos -> Pos
+decCol :: PosTransform
 decCol (r,c) = (r,c-1)
 
 -- | Find neighbouring squares to a position on the board.
@@ -308,12 +225,6 @@ wordOnCol :: Board -- ^ The board.
           -> WordPut
 wordOnCol b (r,c) = wordFromSquare b incRow (startOfWord b decRow (r,c))
 
-{-
-getSquare b (r-1,c) >>
-                    getSquare b (r+1,c) >>
-                    return (wordFromSquare b incRow (startOfWord b decRow (r,c)))
--}
-
 -- | Make a WordPut from a string.
 mkWP :: String -- ^ The string.
      -> Pos    -- ^ The starting position on the board.
@@ -337,6 +248,97 @@ replaceBy xs i f = case splitAt i xs of
 zeroScore :: WordPut -> Int -> WordPut
 zeroScore xs i = replaceBy xs i (\(p,(l,_)) -> (p,(l,0)))
 
+-- ================= Validation ===============--
+
+-- | Check that a move is valid: it touches at least one existing word (unless
+--   it is the first move, in which case check that it touches the centre square),
+--   it is in a straight and continuous line, and is made
+--   up of letters that either in the rack or on the board.
+validateMove :: Board    -- ^ The board
+             -> Player   -- ^ The player making the move
+             -> WordPut  -- ^ The word to play
+             -> Bool     -- ^ Is first move
+             -> Evaluator Bool
+validateMove b p w fm =
+  connects w b fm >>
+  straight w >>
+  (not fm || touches (7,7) w) `evalBool`
+  "First move must touch centre square" >>
+  all (\(pos,(t,_)) -> maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)) w `evalBool`
+  ("Letters not in rack or not on board: " ++ formatWP w)
+
+-- | Check that a word to be played is made of tiles that are either in the player's
+--   rack or are already on the board.
+validateRack :: Board
+             -> Rack
+             -> WordPut
+             -> Evaluator Bool
+validateRack b r w = someNewTiles b w >>
+  all (\(pos,(t,_)) -> t `elem` r
+           || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
+  `evalBool` ("Not all tiles in rack or on board: " ++ formatWP w)
+
+formatWP :: WordPut -> String
+formatWP w = wordToString (map (fst . snd) w) ++ ": " ++ show (fst (head w))
+             ++ " " ++ show (getDirection w)
+
+-- | Does the word touch the pos on the board?
+touches :: Pos -> WordPut -> Bool
+touches p = any ((==p) .  fst)
+
+-- | New words must touch another (apart from the first one to be played)
+connects :: WordPut -- ^ The word to play
+         -> Board    -- ^ The board
+         -> Bool     -- ^ Is first move
+         -> Evaluator Bool
+connects [] _ fm     = if fm then pure True else fail "Not touching any other tile"
+connects (w:ws) b fm = let (pos,_) = w in
+  if (not . all null) (occupiedNeighbours b pos)
+  then pure True
+  else connects ws b fm
+
+-- | Words must contain at least two tiles and must be in a straight line on the board
+straight :: WordPut -> Evaluator Bool
+straight (w:x:xs) = let (r,_)  = fst w
+                        (r',_) = fst x
+                        ps     = map fst xs
+                        sel    = if r == r'-1 then fst else snd
+                        f      = \(x',y') -> sel x' == sel y' - 1 in 
+                      (all f . zip ps $ tail ps) `evalBool` "Not in a straight line"
+straight _         = fail "Too few letters"
+
+-- | Check that a word to be played incudes some tiles that aren't on the board.
+someNewTiles :: Board -> WordPut -> Evaluator Bool
+someNewTiles b w = any (empty b . fst) w `evalBool`
+  ("You didn't play any new tiles: " ++ formatWP w ++ show w)
+
+-- | How many new tiles are being played in a move?
+newTilesInMove :: Board -> WordPut -> Int
+newTilesInMove b w = length $ newTiles b w
+
+-- | The new tiles that are being played in a move.
+newTiles :: Board -> WordPut -> [(Pos, (Letter,Int))]
+newTiles b = filter (\(p,_) -> isNothing (getSquare b p))  
+
+
+-- | The occupied horizonal neighbours of a position on the board.
+hNeighbours :: Board -> Pos -> [Pos]
+hNeighbours = gridNeighbours decRow incRow
+
+-- | The occupied vertical neighbours of a position on the board.
+vNeighbours :: Board -> Pos -> [Pos]
+vNeighbours = gridNeighbours decCol incCol
+
+-- | Get the vertical or horizontal neighbours of a pos
+gridNeighbours :: PosTransform -- ^ Seek in first direction (left or up)
+               -> PosTransform -- ^ Seek in second direction (right or down)
+               -> Board        -- ^ The board
+               -> Pos          -- ^ The pos
+               -> [Pos]
+gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
+                               m = [g pos | isJust (getSquare b (g pos))] in
+                        l ++ m
+                        
 -- ========== Bonuses ============ --
 
 -- | Data for the bonus map.

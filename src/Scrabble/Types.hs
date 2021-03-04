@@ -13,7 +13,8 @@ module Scrabble.Types
   , Bag
   , DictTrie
   , Playable
-  , FreedomDir(..) )
+  , FreedomDir(..)
+  , PosTransform )
 
 where
 
@@ -35,6 +36,9 @@ type Board = Array Int (Array Int (Maybe (Letter, Int)))
 
 -- | A position on the board.
 type Pos = (Int, Int)
+
+-- | Transform a position on the board
+type PosTransform = Pos -> Pos
 
 -- | A word placed on the board (tiles plus positions).
 type WordPut = [(Pos, (Letter, Int))]

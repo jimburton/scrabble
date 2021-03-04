@@ -20,12 +20,14 @@ module Scrabble.Game
 
 import Debug.Trace
 import System.Random
+import Control.Monad ( msum )
 import Prelude hiding
   ( Word
   , words )
 import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
 import qualified Data.Trie.Text as Trie
+import Data.Text ( Text )
 import Data.List ( maximumBy )
 import Scrabble.Dict.Letter
   ( Letter(..)
@@ -43,7 +45,8 @@ import Scrabble.Types
   , Dir(..)
   , Playable
   , Pos
-  , FreedomDir(..) )
+  , FreedomDir(..)
+  , PosTransform )
 import Scrabble.Board.Board
   ( scoreWord
   , validateRack
@@ -78,7 +81,6 @@ import Scrabble.Dict.Search
   ( findPrefixesT )
 
 -- ============= Functions for playing the game =============== --
-
 
 -- | Start a new game.
 newGame :: String   -- ^ Name of Player 1
@@ -165,59 +167,95 @@ moveAI :: Validator -- ^ Function to validate the word against the board.
        -> Evaluator (Game, Int)
 moveAI v g = do
   let r  = rack (getPlayer g)
-      w  = findWord (dict g) r (playable g)
-      aw = additionalWords (board g) w
-  v (w:aw) g >> scoreWords g w aw >>=
-    \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
-    updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
+      mw = findWord (dict g) (filter (/=Blank) r) (playable g)
+  case mw of
+    Nothing -> pass g >>= \g' -> pure (g',0)
+    Just w  -> do
+      let aw = additionalWords (board g) w
+      v (w:aw) g >> scoreWords g w aw >>=
+        \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
+        updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
 
 -- ======== AI ========= --
 
--- | Pick a word for the AI to play. Dumb version -- pick the first one 
-findWord :: DictTrie -> Rack -> Playable -> WordPut 
-findWord d r p = let k = head (Map.keys p) in
+-- | Pick a word for the AI to play. 
+findWord :: DictTrie -- ^ The dictionary.
+         -> Rack     -- ^ The rack.
+         -> Playable -- ^ The playable positions.
+         -> Maybe WordPut 
+findWord d r p = msum $ Map.mapWithKey findWord' p
+  where findWord' k (l,ps) = msum $ map (\(fd,i) ->
+                                           case fd of
+                                             UpD    -> findPrefixOfSize d k l r (fd,i)
+                                             DownD  -> findSuffixOfSize d k l r (fd,i)
+                                             LeftD  -> findPrefixOfSize d k l r (fd,i)
+                                             RightD -> findSuffixOfSize d k l r (fd,i)) ps
+
+{-let k = head (Map.keys p) in
   case Map.lookup k p of
-  Just (l,fs) -> let (fd,i) = head fs in
+  Just (l,fs) -> let (fd,i) = trace ("playable: "++show fs) $ head fs in
                    case fd of
                      UpD    -> findPrefixOfSize d k l r (fd,i)
                      DownD  -> findSuffixOfSize d k l r (fd,i)
                      LeftD  -> findPrefixOfSize d k l r (fd,i)
                      RightD -> findSuffixOfSize d k l r (fd,i)
   Nothing     -> error "How did that happen? Pass the move"
+-}
+-- | Find a word of at least a certain size that ends with a certain letter.
+findPrefixOfSize :: DictTrie         -- ^ The dictionary.
+                 -> Pos              -- ^ The end point of the word.
+                 -> Letter           -- ^ The letter on the board that this word will connect to.
+                 -> Rack             -- ^ The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- ^ The direction and max length of the word.
+                 -> Maybe WordPut
+findPrefixOfSize d p l =
+  findWordOfSize (filter ((==l) . last) . findPrefixesT d) p l
 
-findPrefixOfSize :: DictTrie -> Pos -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
-findPrefixOfSize d k l r (fd,i) =
-  let r' = l : filter (/=Blank) r
-      w = longest $ filter (\w' -> length w' <= i && last w'==l) $ findPrefixesT d r'
-      len = length w - 1
-      dir = if fd == UpD || fd == DownD then VT else HZ
-      pos = case fd of
-              UpD    -> (fst k-len,snd k)
-              DownD  -> k
-              LeftD  -> (fst k,snd k-len)
-              RightD -> k in
-    mkWP (wordToString w) pos dir []
+-- | Find a word of at least a certain size that begins with a certain letter.
+findSuffixOfSize :: DictTrie         -- ^ The dictionary.
+                 -> Pos              -- ^ The starting point of the word.
+                 -> Letter           -- ^ The letter on the board that this word will connect to.
+                 -> Rack             -- ^ The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- ^ The direction and max length of the word.
+                 -> Maybe WordPut
+findSuffixOfSize d k l =
+  findWordOfSize (findPrefixesT (Trie.submap (toText l) d)) k l
 
-findSuffixOfSize :: DictTrie -> Pos -> Letter -> Rack -> (FreedomDir,Int) -> WordPut
-findSuffixOfSize d k l r (fd,i) =
-  let r' = l : filter (/=Blank) r
-      w = longest $ filter ((<=i) . length) $ findPrefixesT (Trie.submap (toText l) d) r'
-      len = length w - 1
-      dir = if fd == UpD || fd == DownD then VT else HZ
-      pos = case fd of
-              UpD    -> (fst k-len,snd k)
-              DownD  -> k
-              LeftD  -> (fst k,snd k-len)
-              RightD -> k in
-    mkWP (wordToString w) pos dir []
-
+-- | Get the longest sublist in a list of lists. Not safe (list must have something in it).
 longest :: [[a]] -> [a]
 longest = maximumBy (\x y -> length x `compare` length y)
 
-findWordOfSize :: DictTrie -> Letter -> Rack -> (Pos -> Pos) -> Int -> WordPut
-findWordOfSize d l r f i = undefined -- Trie.submap (toChar l) d
+type WordFinder = Word -> [Word] 
 
-setBlanks :: WordPut -> [Int] -> Game -> Evaluator Game
+-- | Find a word of a certain size.
+--   TODO max 5 letter words at the moment. Too slow for longer words...
+findWordOfSize :: WordFinder       -- ^ Function that will query the dictionary.
+               -> Pos              -- ^ The start or end point of the word.
+               -> Letter           -- ^ The letter on the board that this word will connect to.
+               -> Rack             -- ^ The letters from the player's hand to make up the word.
+               -> (FreedomDir,Int) -- ^ The direction and max length of the word.
+               -> Maybe WordPut
+findWordOfSize wf k l r (fd,i) =
+  let r' = l : take 4 (filter (/=Blank) r)
+      ws = filter ((<=i) . length) $ wf r' in
+    if null ws
+    then Nothing
+    else let w = longest ws
+             len = length w - 1
+             dir = if fd == UpD || fd == DownD then VT else HZ
+             pos = case fd of
+               UpD    -> (fst k-len,snd k)
+               DownD  -> k
+               LeftD  -> (fst k,snd k-len)
+               RightD -> k in
+      Just $ mkWP (wordToString w) pos dir []
+
+-- | Update the current player's rack so that any blanks which have been played
+--   are exchanged with the letters the player wants them to stand for.
+setBlanks :: WordPut -- ^ Word that had blanks in it.
+          -> [Int]   -- ^ Positions of the letters in the word which were blanks.
+          -> Game    -- ^ The game.
+          -> Evaluator Game
 setBlanks w bs g = pure (getPlayer g)
                    >>= \p -> pure (p { rack = setBlanks' bs (rack p)})
                    >>= setPlayer g 
@@ -271,7 +309,10 @@ updatePlayer w g = do
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
     >>= \g' -> pure g' { bag = theBag', gen = theGen'}
 
-swap :: Word -> Game -> Evaluator Game
+-- | Take a move by swapping tiles.
+swap :: Word -- ^ The tiles to swap.
+     -> Game -- ^ The game.
+     -> Evaluator Game
 swap ls g = do
   let p      = getPlayer g
       r      = rack p
@@ -281,11 +322,13 @@ swap ls g = do
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
     >>= toggleTurn >>= \g' -> pure g' { bag = theBag', gen = theGen' }
 
+-- ^ Take a move by passing.
 pass :: Game -> Evaluator Game
 pass g = if lastMovePass g
          then endGame g
          else toggleTurn g { lastMovePass = True }
 
+-- | End the game.
 endGame :: Game -> Evaluator Game
 endGame g = pure g { gameOver = True }
 
