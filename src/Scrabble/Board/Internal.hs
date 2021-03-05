@@ -34,35 +34,36 @@ import Scrabble.Types
   , PosTransform )
 import Scrabble.Lang.Word
   ( wordToString )
+  
 -- ======== Internal for Board ========== --
 
 -- | The playable space above and below or to the left and right of this position.
-freedomFromRow :: Board -> Pos -> Letter -> (Pos, Letter, (Int, Int))
-freedomFromRow b (r,c) l =
-  let ns = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decRow p)))
-           (iterate decRow (r,c))
-      n  = if null ns then 0 else fst (last ns)
-      ss = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incRow p)))
-           (iterate incRow (r,c))
-      s  = if null ss then 0 else fst (last ss) in
-    ((r,c),l,(r-n,s-r))
-
--- | The playable space above and below or to the left and right of this position.
-freedomFromCol :: Board -> Pos -> Letter -> (Pos, Letter, (Int, Int))
-freedomFromCol b (r,c) l =
-  let ns = takeWhile (\p -> canPlay b p && (snd p == 0 || canPlay b (decCol p)))
-           (iterate decCol (r,c))
+freedomFrom :: PosTransform -- ^ Incrementer for the pos.
+            -> PosTransform -- ^ Decrementer for the pos.
+            -> (Pos -> Pos -> Pos) -- ^ Transforms initial pos into max freedom.
+            -> Board        -- ^ The board.
+            -> Pos          -- ^ The pos.
+            -> Letter       -- ^ The letter on the pos.
+            -> (Pos, Letter, (Int, Int))
+freedomFrom inc dec f b (r,c) l =
+  let ns = takeWhile (\p -> canPlay b p && (snd p == 0 || canPlay b (dec p)))
+           (iterate dec (r,c))
       n  = if null ns then 0 else snd (last ns)
-      ss = takeWhile (\p -> canPlay b p && (snd p == 14 || canPlay b (decCol p)))
-           (iterate incCol (r,c))
+      ss = takeWhile (\p -> canPlay b p && (snd p == 14 || canPlay b (inc p)))
+           (iterate inc (r,c))
       s  = if null ss then 0 else snd (last ss) in
-    ((r,c),l,(c-n,s-c))
+    ((r,c),l, f (r,c) (n,s))
 
 -- ^ The playable spaces around an occupied position on the board.
-freedom :: Board -> Pos -> Letter -> Dir -> (Pos, Letter, (Int, Int))
-freedom b p l d = if d == HZ
-                  then freedomFromRow b p l
-                  else freedomFromCol b p l
+freedom :: Board  -- ^ The board.
+        -> Pos    -- ^ The pos.
+        -> Letter -- ^ The letter on the pos.
+        -> Dir    -- ^ The direction of the word the letter is part of.
+        -> (Pos, Letter, (Int, Int))
+freedom b p l d =
+  if d == HZ
+  then freedomFrom incRow decRow (\(r,_) (n,s) -> (r-n,s-r)) b p l 
+  else freedomFrom incCol decCol (\(_,c) (n,s) -> (c-n,s-c)) b p l 
 
 -- | Is this position playable?
 canPlay :: Board -> Pos -> Bool
