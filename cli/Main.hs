@@ -43,19 +43,21 @@ import Scrabble.Lang.Search
 -- | Start a new game.
 startGame :: String -- ^ Name of Player 1
           -> String -- ^ Name of Player 2
-          -> IO Game
+          -> IO ()
 startGame p1Name p2Name = do
   theGen <- getStdGen
   d      <- englishDictionaryT
-  playGame (newGame p1Name p2Name theGen d)
+  _ <- playGame (newGame p1Name p2Name theGen d)
+  return ()
 
 -- | Start a new game against the computer.
 startGameAI :: String -- ^ Name of Player 1
-          -> IO Game
+          -> IO ()
 startGameAI p1Name = do
   theGen <- getStdGen
   d      <- englishDictionaryT
-  playGame (newGame1P p1Name theGen d)
+  _ <- playGame (newGame1P p1Name theGen d)
+  return ()
 
 -- | Play the game.
 playGame :: Game -> IO Game
@@ -119,6 +121,7 @@ takeTurnManual g = runInputT defaultSettings loop
                                  liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
                Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just $ show sc)
 
+-- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game
 doGameOver g = do
   let p1     = player1 g
@@ -132,9 +135,11 @@ doGameOver g = do
   if draw
     then putStrLn "It's a draw!" >> pure g
     else putStrLn ("Congratulations " ++ name winner) >> pure g
-               
+
+-- | Datatype for commands entered by the user.
 data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
 
+-- | Read a command.
 getCmd :: String -> Cmd
 getCmd ":SWAP" = Swap
 getCmd ":PASS" = Pass
@@ -153,6 +158,7 @@ cmd (s, mLn, g) = case getCmd s of
                                   return (g, mLn)
                     Unknown -> return (g, mLn)
 
+-- | Take a move by swapping some tiles.
 doSwap :: (Game, Maybe String) -> IO (Game, Maybe String)
 doSwap (g, mLn) = do
   putStrLn "Enter tiles to swap and type return when done:"
@@ -162,15 +168,19 @@ doSwap (g, mLn) = do
     Ev (Left e)   -> do putStrLn e
                         pure (g,mLn)
 
+-- | Take a move by passing.
 doPass :: (Game, Maybe String) -> IO (Game, Maybe String)
 doPass (g, mLn) = case pass g of
   Ev (Right g') -> pure (g', Just "Passed move")
   Ev (Left e)   -> do putStrLn e
                       pure (g,mLn)
 
+-- | Print the help message.
+--   TODO
 help :: IO ()
 help = putStrLn "HELP: TODO"
 
+-- | Print some word suggestions based ont hte current player's rack.
 hints :: Game -> IO ()
 hints g = do
   let w = rack (getPlayer g) 
@@ -194,35 +204,48 @@ replaceBlanks wd = if countElem '_' wd == 0
             Nothing  -> liftIO $ unBlank ('_':us)   
         unBlank (u:us)   = do rst <- unBlank us
                               return $ u : rst
-  
+
+-- | Print the board.
 printBoard :: Bool -> Board -> Maybe String -> IO ()
 printBoard printBonuses b msc = do putStrLn $ showBoard printBonuses b
                                    forM_ msc putStrLn
 
+-- | Print the board and the current player.
 printGame :: Bool -> Board -> Player -> IO ()
 printGame printBonuses b p = putStrLn $ showGame printBonuses b p
 
+-- | Print the current player.
 printPlayer :: Player -> IO ()
 printPlayer p = putStrLn $ showPlayer p
 
+-- | Print the prompt for the current turn.
 printTurn :: Game -> IO ()
 printTurn g = putStrLn $ showTurn g
 
+-- | Print the board and the prompt for the current turn.
 printBoardAndTurn :: Game -> Maybe String -> IO ()
 printBoardAndTurn g msc = do printBoard False (board g) msc
                              printTurn g
 
+-- | Stringify the current turn.
 showTurn :: Game -> String
 showTurn g = let p = getPlayer g in
   showPlayer p ++ "Enter WORD ROW COL DIR[H/V]:\n"
 
+-- find the indices of occurences of the first argument in the second argument.
 indices :: Eq a => a -> [a] -> [Int]
 indices x xs = map fst $ filter ((==x) . snd) (zip [0..14] xs)
 
+-- count the number of elements in a list.
 countElem :: Eq a => a -> [a] -> Int
 countElem _ []     = 0
 countElem x (y:ys) = if x==y then 1 + countElem x ys else countElem x ys
 
 main :: IO ()
-main = putStrLn "Hello, world!"
+main = do
+  putStrLn "Enter name of Player 1"
+  p1Str <- getLine
+  putStrLn "Enter name of Player 2"
+  p2Str <- getLine
+  startGame p1Str p2Str
 

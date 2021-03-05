@@ -41,7 +41,7 @@
     For positions that are part of horizontally placed words, get the distance between
     the pos and the edge of the board or two spaces before an occupied tile, whichever is
     closer. Vive versa for vertical words...
-
+*** TODO Help message 
 * Bugs
 
 ** TODO AI selecting words that include non-dictionary additional words
