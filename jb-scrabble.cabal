@@ -43,6 +43,7 @@ library
       Scrabble.Lang.Search
       Scrabble.Board.Bag
       Scrabble.Board.Board
+      Scrabble.Board.Bonus
       Scrabble.Board.Validation
       Scrabble.Board.Internal
 
@@ -65,6 +66,7 @@ executable scrabble
                      , Scrabble.Lang.Search
                      , Scrabble.Board.Bag
                      , Scrabble.Board.Board
+                     , Scrabble.Board.Bonus
                      , Scrabble.Board.Validation
                      , Scrabble.Board.Internal
   -- ghc-options: -Wall -Werror -fno-warn-name-shadowing

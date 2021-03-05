@@ -61,18 +61,19 @@ setScore g s = if turn g == P1
 --   + a horizontal word may reduce the playability of positions in the same columns,
 --   + a vertical word may reduce the playability of positions in the same rows.
 updatePlayables :: WordPut -> Game -> Evaluator Game
-updatePlayables w g = do let ps  = playable g
-                             b   = board g
-                             nt  = newTiles b w
-                             ot  = map fst (w \\ nt )
-                             ps' = Map.filterWithKey (\k _ -> k `notElem` ot) ps 
-                             d   = getDirection w
-                             fs  = freedomsFromWord nt b
-                             f (u,p) = if d == HZ
-                                       then [(UpD,u), (DownD, p)]
-                                       else [(RightD, p), (LeftD, u)]
-                             nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
-                         pure (g { playable = nps })
+updatePlayables w g = do
+  let ps  = playable g
+      b   = board g
+      nt  = newTiles b w
+      ot  = map fst (w \\ nt )
+      ps' = Map.filterWithKey (\k _ -> k `notElem` ot) ps 
+      d   = getDirection w
+      fs  = freedomsFromWord nt b
+      f (u,p) = if d == HZ
+                then [(UpD,u), (DownD, p)]
+                else [(RightD, p), (LeftD, u)]
+      nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
+  pure (g { playable = nps })
 
 -- | Update the rack of the current player
 updatePlayer :: WordPut -> Game -> Evaluator Game
