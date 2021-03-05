@@ -28,12 +28,12 @@
    Play the highest scoring Candidate.
 
    Keep the map of playable positions up to date after each move.
-*** TODO Basic word selection (max 5 letters, prefix and suffix only) and playing it on the board
+*** TODO Basic word selection (max 6 letters, prefix and suffix only) and playing it on the board
 *** TODO Select words with the playable position somewhere in the middle  
 *** TODO Make it fast enough for longer words
 *** TODO Handle blanks
 
-*** Selecting playable positions:
+*** TODO Selecting playable positions:
 
     This is quite tricky...hard to see how to efficiently check whether you can add to the
     beginning or end of words in the same direction.
@@ -43,6 +43,8 @@
     closer. Vive versa for vertical words...
 
 * Bugs
+
+** TODO AI selecting words that include non-dictionary additional words
 
 ** DONE fillRack
    CLOSED: [2021-03-02 Tue 11:22]
@@ -68,6 +70,8 @@
 ------------------------------------------------
 
 ** TODO Handle bad input in CLI
+
+** TODO Too many blanks appearing in the bag
 * Testing
 
 ** TODO Blanks

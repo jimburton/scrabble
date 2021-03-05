@@ -60,7 +60,7 @@ startGameAI p1Name = do
 -- | Play the game.
 playGame :: Game -> IO Game
 playGame g = do
-  printBoard True (board g) Nothing
+  printBoard False (board g) Nothing
   printPlayer $ player1 g
   printPlayer $ player2 g
   takeTurn g Nothing
@@ -73,7 +73,7 @@ takeTurn g msc = trace ("Turn: "++show (turn g)) $ runInputT defaultSettings loo
  where
    loop :: InputT IO Game
    loop  = do
-     liftIO $ printBoard True (board g) msc
+     liftIO $ printBoard False (board g) msc
      if gameOver g
        then liftIO $ doGameOver g
        else if isAI (getPlayer g)
@@ -114,7 +114,7 @@ takeTurnManual g = runInputT defaultSettings loop
                  col = read colStr :: Int
                  dir = if map toUpper dirStr == "H" then HZ else VT
                  wp  = mkWP wd (row,col) dir is 
-             case move valGameRulesAndDict g wp is of
+             case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ putStrLn e
                                  liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
                Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just $ show sc)
@@ -209,7 +209,7 @@ printTurn :: Game -> IO ()
 printTurn g = putStrLn $ showTurn g
 
 printBoardAndTurn :: Game -> Maybe String -> IO ()
-printBoardAndTurn g msc = do printBoard True (board g) msc
+printBoardAndTurn g msc = do printBoard False (board g) msc
                              printTurn g
 
 showTurn :: Game -> String

@@ -139,7 +139,7 @@ longest = maximumBy (\x y -> length x `compare` length y)
 type WordFinder = Word -> [Word] 
 
 -- | Find a word of a certain size.
---   TODO max 5 letter words at the moment. Too slow for longer words...
+--   TODO max 6 letter words at the moment. Too slow for seven letter words...
 findWordOfSize :: WordFinder       -- ^ Function that will query the dictionary.
                -> Pos              -- ^ The start or end point of the word.
                -> Letter           -- ^ The letter on the board that this word will connect to.
@@ -147,7 +147,7 @@ findWordOfSize :: WordFinder       -- ^ Function that will query the dictionary.
                -> (FreedomDir,Int) -- ^ The direction and max length of the word.
                -> Maybe WordPut
 findWordOfSize wf k l r (fd,i) =
-  let r' = l : take 4 (filter (/=Blank) r)
+  let r' = l : take 5 (filter (/=Blank) r)
       ws = filter ((<=i) . length) $ wf r' in
     if null ws
     then Nothing
