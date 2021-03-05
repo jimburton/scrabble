@@ -5,11 +5,8 @@ import Prelude hiding ( Word )
 import Data.Map ( Map )
 import qualified Data.Map as Map
 import Scrabble.Types
-  ( Bonus
-  , Pos
+  ( Pos
   , Bonus(..) )
--- ========= Bonuses on the board ======== --
-
 
 -- ========== Bonuses ============ --
 
