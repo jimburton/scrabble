@@ -58,6 +58,7 @@ freedomFromCol b (r,c) l =
       s  = if null ss then 0 else snd (last ss) in
     ((r,c),l,(c-n,s-c))
 
+-- ^ The playable spaces around an occupied position on the board.
 freedom :: Board -> Pos -> Letter -> Dir -> (Pos, Letter, (Int, Int))
 freedom b p l d = if d == HZ
                   then freedomFromRow b p l
@@ -67,6 +68,7 @@ freedom b p l d = if d == HZ
 canPlay :: Board -> Pos -> Bool
 canPlay b p = onBoard p && isNothing (getSquare b p)
 
+-- | All of the playable spaces around a word on the board.
 freedomsFromWord :: WordPut -> Board -> [(Pos, Letter, (Int, Int))]
 freedomsFromWord w b =
   let nt = newTiles b w 
@@ -149,7 +151,6 @@ newTilesInMove b w = length $ newTiles b w
 newTiles :: Board -> WordPut -> [(Pos, (Letter,Int))]
 newTiles b = filter (\(p,_) -> isNothing (getSquare b p))  
 
-
 -- | The occupied horizonal neighbours of a position on the board.
 hNeighbours :: Board -> Pos -> [Pos]
 hNeighbours = gridNeighbours decRow incRow
@@ -167,6 +168,7 @@ gridNeighbours :: PosTransform -- ^ Seek in first direction (left or up)
 gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
                                m = [g pos | isJust (getSquare b (g pos))] in
                         l ++ m
+
 -- | Retrieve the word that crosses this pos on the board
 wordFromSquare :: Board
                -> PosTransform -- ^ The function that moves to the start of the word (up rows or left along columns)
@@ -179,6 +181,7 @@ startOfWord :: Board        -- ^ The board.
             -> PosTransform -- ^ The function that moves to the start of the word (up rows or left along columns)
             -> Pos          -- ^ The position
             -> Pos
+
 startOfWord b f pos = let pos' = f pos in
   if not (onBoard pos') || isNothing (getSquare b pos')
   then pos
