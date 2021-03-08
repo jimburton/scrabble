@@ -164,7 +164,7 @@ takeTurnManual wg = do
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
-      MsgMove (Move wp r p) -> do
+      MsgMove (Move wp) -> do
         let g = theGame wg
             w = wordPutToText wp
         case G.move valGameRules g wp [] of
