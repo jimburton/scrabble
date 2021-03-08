@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main
   where
 
@@ -8,6 +9,9 @@ import Data.Foldable  ( forM_ )
 import Data.Char      ( toUpper ) 
 import Control.Monad.IO.Class ( liftIO )
 import Data.Maybe ( fromJust )
+import Data.Text ( Text )
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Scrabble.Types
   ( Game(..) 
   , Dir(..)
@@ -41,8 +45,8 @@ import Scrabble.Lang.Search
   ( findPrefixesT )
 
 -- | Start a new game.
-startGame :: String -- ^ Name of Player 1
-          -> String -- ^ Name of Player 2
+startGame :: Text -- ^ Name of Player 1
+          -> Text -- ^ Name of Player 2
           -> IO ()
 startGame p1Name p2Name = do
   theGen <- getStdGen
@@ -51,8 +55,8 @@ startGame p1Name p2Name = do
   return ()
 
 -- | Start a new game against the computer.
-startGameAI :: String -- ^ Name of Player 1
-          -> IO ()
+startGameAI :: Text -- ^ Name of Player 1
+            -> IO ()
 startGameAI p1Name = do
   theGen <- getStdGen
   d      <- englishDictionaryT
@@ -69,9 +73,9 @@ playGame g = do
 
 -- | Take a turn.
 takeTurn :: Game -- ^ The game
-         -> Maybe String -- ^ Previous score as a string
+         -> Maybe Text -- ^ Previous score as text
          -> IO Game
-takeTurn g msc = trace ("Turn: "++show (turn g)) $ runInputT defaultSettings loop
+takeTurn g msc = trace ("Turn: " ++ show (turn g)) $ runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
@@ -85,8 +89,8 @@ takeTurn g msc = trace ("Turn: "++show (turn g)) $ runInputT defaultSettings loo
 -- | Allow the computer to take a turn.
 takeTurnAI :: Game -> IO Game
 takeTurnAI g = case moveAI valGameRulesAndDict g of
-  Ev (Right (g',i)) -> takeTurn g' (Just (show i))
-  Ev (Left e)       -> do putStrLn e
+  Ev (Right (g',i)) -> takeTurn g' (Just (T.pack $ show i))
+  Ev (Left e)       -> do T.putStrLn e
                           pure g
 
 -- | Take a turn manually.
@@ -96,7 +100,7 @@ takeTurnManual g = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
-     mLn <- getInputLine (showTurn g)
+     mLn <- getInputLine (T.unpack $ showTurn g)
      case mLn of
        Nothing -> loop
        Just wdStr -> do
@@ -107,7 +111,7 @@ takeTurnManual g = runInputT defaultSettings loop
            (wd,is) <- liftIO $ replaceBlanks (head wds)
            if head wd == ':'
              then liftIO $ do
-             (g',ms) <- cmd (map toUpper wd, mLn, g)
+             (g',ms) <- cmd (T.map toUpper (T.pack wd), T.pack <$> mLn, g)
              _ <- traceIO ("LMP:" ++ show (lastMovePass g'))
              takeTurn g' ms
              else do
@@ -117,9 +121,9 @@ takeTurnManual g = runInputT defaultSettings loop
                  dir = if map toUpper dirStr == "H" then HZ else VT
                  wp  = mkWP wd (row,col) dir is 
              case move valGameRules g wp is of
-               Ev (Left e) -> do liftIO $ putStrLn e
-                                 liftIO $ takeTurn g $ Just (wd  ++ ": NO SCORE")
-               Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just $ show sc)
+               Ev (Left e) -> do liftIO $ T.putStrLn e
+                                 liftIO $ takeTurn g $ Just ((T.pack wd)  `T.append` ": NO SCORE")
+               Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just (T.pack $ show sc))
 
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game
@@ -129,18 +133,18 @@ doGameOver g = do
       draw   = score p1 == score p2
       winner = if score p1 > score p2
                then p1 else p2
-  putStrLn "Game over!"
-  putStrLn $ name p1 ++ ": " ++ show (score p1)
-  putStrLn $ name p2 ++ ": " ++ show (score p2)
+  T.putStrLn "Game over!"
+  T.putStrLn $ name p1 `T.append` ": " `T.append` (T.pack $ show (score p1))
+  T.putStrLn $ name p2 `T.append` ": " `T.append` (T.pack $ show (score p2))
   if draw
-    then putStrLn "It's a draw!" >> pure g
-    else putStrLn ("Congratulations " ++ name winner) >> pure g
+    then T.putStrLn "It's a draw!" >> pure g
+    else T.putStrLn ("Congratulations " `T.append` name winner) >> pure g
 
 -- | Datatype for commands entered by the user.
 data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
 
 -- | Read a command.
-getCmd :: String -> Cmd
+getCmd :: Text -> Cmd
 getCmd ":SWAP" = Swap
 getCmd ":PASS" = Pass
 getCmd ":HINT" = Hint
@@ -148,7 +152,7 @@ getCmd ":HELP" = Help
 getCmd _       = Unknown
 
 -- | Deal with commands entered by a player
-cmd :: (String, Maybe String, Game) -> IO (Game, Maybe String)
+cmd :: (Text, Maybe Text, Game) -> IO (Game, Maybe Text)
 cmd (s, mLn, g) = case getCmd s of
                     Swap    -> doSwap (g, mLn)
                     Pass    -> doPass (g, mLn) 
@@ -159,32 +163,32 @@ cmd (s, mLn, g) = case getCmd s of
                     Unknown -> return (g, mLn)
 
 -- | Take a move by swapping some tiles.
-doSwap :: (Game, Maybe String) -> IO (Game, Maybe String)
+doSwap :: (Game, Maybe Text) -> IO (Game, Maybe Text)
 doSwap (g, mLn) = do
   putStrLn "Enter tiles to swap and type return when done:"
   ln <- getLine
   case swap (fromJust $ stringToWord (map toUpper ln)) g of
     Ev (Right g') -> pure (g',mLn)
-    Ev (Left e)   -> do putStrLn e
+    Ev (Left e)   -> do T.putStrLn e
                         pure (g,mLn)
 
 -- | Take a move by passing.
-doPass :: (Game, Maybe String) -> IO (Game, Maybe String)
+doPass :: (Game, Maybe Text) -> IO (Game, Maybe Text)
 doPass (g, mLn) = case pass g of
   Ev (Right g') -> pure (g', Just "Passed move")
-  Ev (Left e)   -> do putStrLn e
+  Ev (Left e)   -> do T.putStrLn e
                       pure (g,mLn)
 
 -- | Print the help message.
 --   TODO
 help :: IO ()
-help = putStrLn "HELP: TODO"
+help = T.putStrLn "HELP: TODO"
 
 -- | Print some word suggestions based ont hte current player's rack.
 hints :: Game -> IO ()
 hints g = do
   let w = rack (getPlayer g) 
-  putStrLn "HINTS:"
+  T.putStrLn "HINTS:"
   mapM_ print $ findPrefixesT (dict g) w
                
 -- | Interactively query for the value of blanks that have been played.
@@ -206,31 +210,31 @@ replaceBlanks wd = if countElem '_' wd == 0
                               return $ u : rst
 
 -- | Print the board.
-printBoard :: Bool -> Board -> Maybe String -> IO ()
-printBoard printBonuses b msc = do putStrLn $ showBoard printBonuses b
-                                   forM_ msc putStrLn
+printBoard :: Bool -> Board -> Maybe Text -> IO ()
+printBoard printBonuses b msc = do T.putStrLn $ showBoard printBonuses b
+                                   forM_ msc T.putStrLn
 
 -- | Print the board and the current player.
 printGame :: Bool -> Board -> Player -> IO ()
-printGame printBonuses b p = putStrLn $ showGame printBonuses b p
+printGame printBonuses b p = T.putStrLn $ showGame printBonuses b p
 
 -- | Print the current player.
 printPlayer :: Player -> IO ()
-printPlayer p = putStrLn $ showPlayer p
+printPlayer p = T.putStrLn $ showPlayer p
 
 -- | Print the prompt for the current turn.
 printTurn :: Game -> IO ()
-printTurn g = putStrLn $ showTurn g
+printTurn g = T.putStrLn $ showTurn g
 
 -- | Print the board and the prompt for the current turn.
-printBoardAndTurn :: Game -> Maybe String -> IO ()
+printBoardAndTurn :: Game -> Maybe Text -> IO ()
 printBoardAndTurn g msc = do printBoard False (board g) msc
                              printTurn g
 
--- | Stringify the current turn.
-showTurn :: Game -> String
+-- | Textify the current turn.
+showTurn :: Game -> Text
 showTurn g = let p = getPlayer g in
-  showPlayer p ++ "Enter WORD ROW COL DIR[H/V]:\n"
+  showPlayer p `T.append` "Enter WORD ROW COL DIR[H/V]:\n"
 
 -- find the indices of occurences of the first argument in the second argument.
 indices :: Eq a => a -> [a] -> [Int]
@@ -243,9 +247,9 @@ countElem x (y:ys) = if x==y then 1 + countElem x ys else countElem x ys
 
 main :: IO ()
 main = do
-  putStrLn "Enter name of Player 1"
-  p1Str <- getLine
-  putStrLn "Enter name of Player 2"
-  p2Str <- getLine
+  T.putStrLn "Enter name of Player 1"
+  p1Str <- T.getLine
+  T.putStrLn "Enter name of Player 2"
+  p2Str <- T.getLine
   startGame p1Str p2Str
 

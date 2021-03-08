@@ -27,6 +27,7 @@ library
                , containers
                , text
                , text-trie
+               , aeson
   
   exposed-modules:
       Scrabble
@@ -47,7 +48,10 @@ library
       Scrabble.Board.Validation
       Scrabble.Board.Internal
 
-  default-extensions: TupleSections
+  default-extensions: OverloadedStrings
+                    , TupleSections
+                    , DeriveGeneric
+                    , DeriveAnyClass
   
   default-language: Haskell2010
 
@@ -78,6 +82,8 @@ executable scrabble
                      , text-trie
                      , containers
                      , haskeline
+                     , aeson
   hs-source-dirs:      cli
                      , src
+  default-extensions: OverloadedStrings
   default-language:    Haskell2010

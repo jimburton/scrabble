@@ -2,6 +2,7 @@ module Scrabble.Evaluator ( Evaluator(..)
                           , evalBool )
   where
 
+import qualified Data.Text as T
 import Scrabble.Types ( Evaluator(..) )
 -- import Control.Monad.IO.Class ( liftIO )
 
@@ -23,7 +24,7 @@ instance Monad Evaluator where
           Left msg -> Ev (Left msg)
           Right v  -> k v
     return   = pure
-    fail msg = Ev (Left msg)
+    fail msg = Ev (Left (T.pack msg))
 
 -- | Test a bool in the monad
 evalBool :: Bool -> String -> Evaluator Bool

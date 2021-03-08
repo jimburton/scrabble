@@ -7,6 +7,7 @@ import qualified Data.Trie.Text as Trie
 import qualified Data.Map as Map
 import Data.List ( maximumBy )
 import Data.Functor ( (<&>) )
+import Data.Text ( Text )
 import System.Random ( StdGen )
 import Control.Monad ( msum )
 import Scrabble.Evaluator 
@@ -52,7 +53,7 @@ import Scrabble.Lang.Search
 -- =========== AI functions ============ --
 
 -- | Start a new game against the computer.
-newGame1P :: String   -- ^ Name of Player
+newGame1P :: Text   -- ^ Name of Player
           -> StdGen   -- ^ The random generator
           -> DictTrie -- ^ The dictionary
           -> Game

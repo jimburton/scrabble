@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
 module Scrabble.Types
   ( Letter(..)
   , Word
@@ -23,15 +24,20 @@ where
 import Prelude hiding ( Word )
 import Data.Array
 import Data.Trie.Text ( Trie )
+import Data.Text ( Text )
 import qualified Data.Map as Map
 import System.Random ( StdGen )
+import Data.Aeson
+  ( FromJSON
+  , ToJSON )
+import GHC.Generics
 
 -- ============ Types for the application ================ --
 
 data Letter =
   A | B | C | D | E | F | G | H | I | J | K | L | M |
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
-  deriving (Show, Enum, Eq, Ord)
+  deriving (Show, Enum, Eq, Ord, Generic, FromJSON, ToJSON)
 
 -- | A word is a list of letters. 
 type Word = [Letter]
@@ -62,14 +68,14 @@ instance Show Bonus where
   show (Letter i) = 'L' : show i
 
 -- | A player has a name, a rack and a score, and is either an interactive or an AI player.
-data Player = Player { name  :: String
+data Player = Player { name  :: Text
                      , rack  :: Rack
                      , score :: Int
                      , isAI  :: Bool
-                     } deriving (Show, Eq)
+                     } deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 -- | Which player's turn it is within the game. 
-data Turn = P1 | P2 deriving (Show, Eq)
+data Turn = P1 | P2 deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 -- | The bag is a list of letters.
 type Bag = [Letter]
@@ -95,9 +101,10 @@ data Game = Game { board     :: Board    -- ^ The board
 type Playable = Map.Map Pos (Letter, [(FreedomDir, Int)])
 
 -- | A direction on the board (up, down, left or right)
-data FreedomDir = UpD | DownD | LeftD | RightD deriving (Show, Read, Eq)
+data FreedomDir = UpD | DownD | LeftD | RightD
+  deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
 
-newtype Evaluator a = Ev (Either String a)
+newtype Evaluator a = Ev (Either Text a)
 
 -- | Validator is the type of functions that validate words to be played
 type Validator = [WordPut] -> Game -> Evaluator Bool

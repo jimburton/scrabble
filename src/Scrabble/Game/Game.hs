@@ -19,6 +19,8 @@ import Prelude hiding
   , words )
 import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
+import Data.Text ( Text )
+import qualified Data.Text as T
 import Scrabble.Game.Internal
   ( getPlayer
   , setPlayer 
@@ -50,8 +52,8 @@ import Scrabble.Evaluator
 -- ============= Functions for playing the game =============== --
 
 -- | Start a new game.
-newGame :: String   -- ^ Name of Player 1
-        -> String   -- ^ Name of Player 2
+newGame :: Text   -- ^ Name of Player 1
+        -> Text   -- ^ Name of Player 2
         -> StdGen   -- ^ The random generator
         -> DictTrie -- ^ The dictionary
         -> Game
@@ -84,7 +86,7 @@ newGame p1Name p2Name theGen d =
 --   The word is validated by the Validator.
 --   Sets the new board, updates the current player's score, refills their rack with letters, then
 --   toggles the current turn. Returns the updated game and the score.
-move :: Validator -- ^ Function to validate the word against the board.
+move :: Validator -- ^ Validates the word against the board.
      -> Game      -- ^ The game.
      -> WordPut   -- ^ The word to play
      -> [Int]     -- ^ The list positions which were blanks
@@ -109,7 +111,7 @@ swap ls g = do
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
     >>= toggleTurn >>= \g' -> pure g' { bag = theBag', gen = theGen' }
 
--- ^ Take a move by passing.
+-- | Take a move by passing.
 pass :: Game -> Evaluator Game
 pass g = if lastMovePass g
          then endGame g

@@ -29,6 +29,7 @@ import Scrabble.Board.Bag
   ( fillRack
   , takeFromRack )
 import Scrabble.Evaluator ()
+
 -- ======== Internal for games ========= --
 
 -- | Update the current player's rack so that any blanks which have been played
