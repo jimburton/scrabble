@@ -87,3 +87,58 @@ executable scrabble
                      , src
   default-extensions: OverloadedStrings
   default-language:    Haskell2010
+
+  
+executable scrabble-server
+  main-is:            Main.hs
+  other-modules:      ScrabbleWeb.Types
+                    , Scrabble.Types
+                    , Scrabble.Show
+                    , Scrabble.Evaluator
+                    , Scrabble.Game.Game
+                    , Scrabble.Game.AI
+                    , Scrabble.Game.Internal
+                    , Scrabble.Game.Validation
+                    , Scrabble.Lang.Dict
+                    , Scrabble.Lang.Letter
+                    , Scrabble.Lang.Word
+                    , Scrabble.Lang.Search
+                    , Scrabble.Board.Bag
+                    , Scrabble.Board.Board
+                    , Scrabble.Board.Bonus
+                    , Scrabble.Board.Validation
+                    , Scrabble.Board.Internal
+  build-depends:      base >=4.12 && <4.13
+                    , array
+                    , random
+                    , text
+                    , text-trie
+                    , containers
+                    , aeson
+                    , websockets
+  hs-source-dirs:     web/server
+                    , src
+  default-extensions: OverloadedStrings
+                    , DeriveGeneric
+                    , DeriveAnyClass
+  default-language:   Haskell2010
+
+executable scrabble-client
+  main-is:            Main.hs
+  other-modules:      
+  build-depends:      base >=4.12 && <4.13
+                    , array
+                    , random
+                    , text
+                    , text-trie
+                    , containers
+                    , aeson
+                    , websockets
+                    , network
+                    , mtl
+  hs-source-dirs:     web/client
+                    , src
+  default-extensions: OverloadedStrings
+                    , DeriveGeneric
+                    , DeriveAnyClass
+  default-language:   Haskell2010
