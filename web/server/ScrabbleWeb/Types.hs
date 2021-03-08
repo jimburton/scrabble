@@ -8,7 +8,9 @@ module ScrabbleWeb.Types
   , ServerState
   , WebGame(..)
   , Game(..)
-  , Turn(..))
+  , Turn(..)
+  , Evaluator(..)
+  , Score(..) )
   where
 
 import Data.Aeson
@@ -22,7 +24,8 @@ import Scrabble.Types
   , Rack
   , Letter(..)
   , Turn(..)
-  , Game(..))
+  , Game(..)
+  , Evaluator(..))
 
 -- ======== Types for ScrabbleWeb ========== --
 data Move = Move
@@ -39,10 +42,14 @@ data OpponentMove = OpponentMove
 data MoveResponse = MoveResponse (Either String Int)
   deriving ( Show, Generic, FromJSON, ToJSON )
 
+data Score = Score Turn Int
+  deriving ( Show, Generic, FromJSON, ToJSON )
+
 data Msg = MsgAnnounce Text
          | MsgMove Move
          | MsgOppMove OpponentMove
          | MsgMoveRsp MoveResponse
+         | MsgScore (Score, Score)
   deriving ( Show, Generic, FromJSON, ToJSON )
 
 type Client = (Text, WS.Connection)

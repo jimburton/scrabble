@@ -122,7 +122,7 @@ takeTurnManual g = runInputT defaultSettings loop
                  wp  = mkWP wd (row,col) dir is 
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
-                                 liftIO $ takeTurn g $ Just ((T.pack wd)  `T.append` ": NO SCORE")
+                                 liftIO $ takeTurn g $ Just ((T.pack wd)  <> ": NO SCORE")
                Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just (T.pack $ show sc))
 
 -- | Handle the situation when the game ends.
@@ -134,11 +134,11 @@ doGameOver g = do
       winner = if score p1 > score p2
                then p1 else p2
   T.putStrLn "Game over!"
-  T.putStrLn $ name p1 `T.append` ": " `T.append` (T.pack $ show (score p1))
-  T.putStrLn $ name p2 `T.append` ": " `T.append` (T.pack $ show (score p2))
+  T.putStrLn $ name p1 <> ": " <> (T.pack $ show (score p1))
+  T.putStrLn $ name p2 <> ": " <> (T.pack $ show (score p2))
   if draw
     then T.putStrLn "It's a draw!" >> pure g
-    else T.putStrLn ("Congratulations " `T.append` name winner) >> pure g
+    else T.putStrLn ("Congratulations " <> name winner) >> pure g
 
 -- | Datatype for commands entered by the user.
 data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
@@ -234,7 +234,7 @@ printBoardAndTurn g msc = do printBoard False (board g) msc
 -- | Textify the current turn.
 showTurn :: Game -> Text
 showTurn g = let p = getPlayer g in
-  showPlayer p `T.append` "Enter WORD ROW COL DIR[H/V]:\n"
+  showPlayer p <> "Enter WORD ROW COL DIR[H/V]:\n"
 
 -- find the indices of occurences of the first argument in the second argument.
 indices :: Eq a => a -> [a] -> [Int]

@@ -92,6 +92,7 @@ executable scrabble
 executable scrabble-server
   main-is:            Main.hs
   other-modules:      ScrabbleWeb.Types
+                    , ScrabbleWeb.Announce
                     , Scrabble.Types
                     , Scrabble.Show
                     , Scrabble.Evaluator
