@@ -116,6 +116,7 @@ executable scrabble-server
                     , containers
                     , aeson
                     , websockets
+                    , BoundedChan
   hs-source-dirs:     web/server
                     , src
   default-extensions: OverloadedStrings

@@ -7,7 +7,8 @@ module ScrabbleWeb.Types
   , Client
   , ServerState
   , WebGame(..)
-  , Game(..))
+  , Game(..)
+  , Turn(..))
   where
 
 import Data.Aeson
@@ -46,7 +47,7 @@ data Msg = MsgAnnounce Text
 
 type Client = (Text, WS.Connection)
 
-type ServerState = [WebGame]
+type ServerState = [Client]
 
 data WebGame = WebGame
                { p1 :: Client

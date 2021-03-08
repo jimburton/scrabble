@@ -2,68 +2,125 @@
 module Main where
 
 import System.Random ( getStdGen )
-import Data.Char (isPunctuation, isSpace)
+import Data.Char
+  ( isPunctuation
+  , isSpace )
+import Data.Aeson
 import Data.Monoid (mappend)
 import Data.Text (Text)
 import Control.Exception (finally)
-import Control.Monad (forM_, forever)
-import Control.Concurrent (MVar, newMVar, modifyMVar_, modifyMVar, readMVar)
+import Control.Monad
+  ( forM_
+  , forever)
+import Control.Concurrent
+  ( MVar
+  , newMVar
+  , modifyMVar_
+  , modifyMVar
+  , readMVar)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Network.WebSockets as WS
+import Control.Concurrent.BoundedChan 
+import Control.Concurrent
+  ( forkIO
+  , threadDelay )
 import Scrabble.Lang.Dict
   ( englishDictionaryT )
 import qualified Scrabble.Game.Game as G
   ( newGame )
 import ScrabbleWeb.Types
   ( WebGame(..)
-  , Game
+  , Game(..)
   , Client
-  , ServerState )
+  , ServerState
+  , Msg(..)
+  , Turn(..))
 
 newServerState :: ServerState
 newServerState = []
 
-numGames :: ServerState -> Int
-numGames = length
+numClients :: ServerState -> Int
+numClients = length
 
 clientExists :: Client -> ServerState -> Bool
-clientExists client = any (\g -> fst client == fst (p1 g) || fst client == fst (p2 g))
+clientExists c = any ((== fst c) . fst)
 
 -- | Add a client (this does not check if the client already exists, you should do
 --   this yourself using `clientExists`):
 
-addGame :: WebGame -> ServerState -> ServerState
-addGame g games = g : games
+addClient :: Client -> ServerState -> ServerState
+addClient =  (:) 
 
-removeGame :: WebGame -> ServerState -> ServerState
-removeGame g = filter (/= g)
+removeClient :: Client -> ServerState -> ServerState
+removeClient c = filter ((/= fst c) . fst)
 
 broadcast :: Text -> ServerState -> IO ()
-broadcast message gs = do
-    T.putStrLn message
-    forM_ gs $ \g -> do WS.sendTextData (snd (p1 g)) message
-                        WS.sendTextData (snd (p2 g)) message
+broadcast msg cs = do
+    T.putStrLn msg
+    forM_ cs $ \c -> do WS.sendTextData (snd c) msg
 
 main :: IO ()
 main = do
-    state <- newMVar newServerState
-    WS.runServer "127.0.0.1" 9160 $ application state
+    state <- newBoundedChan 2
+    forkIO (gameStarter state)
+    WS.runServer "127.0.0.1" 9160 $ enqueue state
 
--- | Our main application has the type:
-application :: MVar ServerState -> WS.ServerApp
-application state pending = do
-    conn1 <- WS.acceptRequest pending
-    name1 <- WS.receiveData conn1
-    conn2 <- WS.acceptRequest pending
-    name2 <- WS.receiveData conn2
-    theGen <- getStdGen
-    d <- englishDictionaryT
-    let c1 = (name1,conn1)
-        c2 = (name2,conn2)
-        g = newGame c1 c2 (G.newGame name1 name2 theGen d)
-    WS.withPingThread conn1 30 (return ()) (handleGame g state)
+-- | Puts connections into the queue.
+enqueue :: BoundedChan Client -> WS.ServerApp
+enqueue state pending = do
+    conn <- WS.acceptRequest pending
+    msg  <- WS.receiveData conn
+    writeChan state (msg,conn)
+    WS.withPingThread conn 30 (return ()) loop
+      where loop = threadDelay (10000*5) >> loop
+ 
+-- | Watch the list of connections and start games.
+gameStarter :: BoundedChan Client -> IO ()
+gameStarter state = loop
+  where loop = do
+          c1 <- readChan state
+          c2 <- readChan state
+          d <- englishDictionaryT
+          theGen <- getStdGen
+          let ig = G.newGame (fst c1) (fst c2) theGen d
+          forkIO $ playGame (newGame c1 c2 ig)
+          loop
 
+playGame :: WebGame -> IO ()
+playGame wg = do
+  _ <- takeTurn wg (Just "New game")
+  return ()
+
+announceMove :: WebGame -> IO ()
+announceMove wg = do
+  let cur = if turn (theGame wg) == P1 then fst (p1 wg) else fst (p2 wg)
+  announce wg (cur <> "'s move")
+
+announce :: WebGame -> Text -> IO ()
+announce wg txt = do
+  let msg = encode $ MsgAnnounce txt
+  WS.sendTextData (snd (p1 wg)) msg
+  WS.sendTextData (snd (p2 wg)) msg
+  
+maybeAnnounce :: WebGame -> Maybe Text -> IO ()
+maybeAnnounce _ Nothing     = pure ()
+maybeAnnounce wg (Just txt) = announce wg txt
+
+-- | Take a turn.
+takeTurn :: WebGame -- ^ The game
+         -> Maybe Text -- ^ Previous score as text
+         -> IO Game
+takeTurn wg msc = do
+     maybeAnnounce wg msc
+     let g = theGame wg
+     if gameOver g
+       then doGameOver wg
+       else if isAI (getPlayer g)
+            then takeTurnAI wg
+            else takeTurnManual wg
+
+{- 
 handleGame g state = do
   let conn = snd (p1 g)
   msg <- WS.receiveData conn
@@ -95,6 +152,8 @@ handleGame g state = do
                     s <- modifyMVar state $ \s ->
                       let s' = removeGame g s in return (s', s')
                     broadcast (fst client <> " disconnected") s
+
+-}
 
 talk :: Client -> MVar ServerState -> IO ()
 talk (user, conn) state = forever $ do
