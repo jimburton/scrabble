@@ -41,7 +41,8 @@ import ScrabbleWeb.Announce
   , msgOpponent
   , announceScores
   , maybeAnnounce
-  , announceTurn )
+  , announceTurn
+  , sendRack )
 import ScrabbleWeb.Types
   ( WebGame(..)
   , Game(..)
@@ -89,9 +90,13 @@ enqueue :: BoundedChan Client -> WS.ServerApp
 enqueue state pending = do
     conn <- WS.acceptRequest pending
     msg  <- WS.receiveData conn
-    writeChan state (msg,conn)
-    WS.withPingThread conn 30 (return ()) loop
-      where loop = threadDelay (10000*5) >> loop
+    case decode msg of
+      Nothing -> WS.sendTextData conn ("Bad input: " <> msg)
+      Just (MsgJoin name) -> do
+        T.putStrLn ("Accepting: " <> name)
+        writeChan state (name,conn)
+        WS.withPingThread conn 30 (return ()) loop
+          where loop = threadDelay (10000*5) >> loop
  
 -- | Watch the list of connections and start games.
 gameStarter :: BoundedChan Client -> IO ()
@@ -99,6 +104,7 @@ gameStarter state = loop
   where loop = do
           c1 <- readChan state
           c2 <- readChan state
+          T.putStrLn (fst c1 <> " vs " <> fst c2)
           d <- englishDictionaryT
           theGen <- getStdGen
           let ig = G.newGame (fst c1) (fst c2) theGen d
@@ -107,6 +113,8 @@ gameStarter state = loop
 
 playGame :: WebGame -> IO ()
 playGame wg = do
+  sendRack wg P1
+  sendRack wg P2
   _ <- takeTurn wg (Just "New game")
   return ()
 
@@ -152,6 +160,7 @@ doGameOver wg = do
 takeTurnManual :: WebGame -> IO WebGame
 takeTurnManual wg = do
   o <- decode <$> WS.receiveData (snd $ getClient wg)
+  putStrLn ("Received: " ++ show o)
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of

@@ -10,9 +10,16 @@ import           Control.Monad       (forever, unless)
 import           Control.Monad.Trans (liftIO)
 import           Network.Socket      (withSocketsDo)
 import           Data.Text           (Text)
-import qualified Data.Text           as T
+import qualified Data.Text.Lazy    as T
+import qualified Data.Text.Lazy.IO as LT
+import qualified Data.Text.Lazy.Encoding as LTE
+import qualified Data.ByteString.Lazy.UTF8 as B
 import qualified Data.Text.IO        as T
 import qualified Network.WebSockets  as WS
+import Data.Aeson
+import ScrabbleWeb.Types
+  ( Move
+  , Msg(..) )
 
 
 --------------------------------------------------------------------------------
@@ -23,13 +30,20 @@ app conn = do
     -- Fork a thread that writes WS data to stdout
     _ <- forkIO $ forever $ do
         msg <- WS.receiveData conn
-        liftIO $ T.putStrLn msg
+        case decode msg of
+          Nothing          -> LT.putStrLn ("Bad input: " <> (LTE.decodeUtf8 msg))
+          Just m -> case m of
+            MsgAnnounce ann -> LT.putStrLn ("Announcement: " <> T.pack (show ann)) 
+            MsgRack r       -> LT.putStrLn ("Rack: " <> T.pack (show r))
+            _               -> LT.putStrLn ("Unknown message: " <> (LTE.decodeUtf8 msg))
 
     -- Read from stdin and write to WS
     let loop = do
-            line <- T.getLine
-            unless (T.null line) $ WS.sendTextData conn line >> loop
-
+            line <- getLine
+            unless (null line) $ do
+              let msg = read line :: Msg
+              WS.sendTextData conn (encode msg)
+              loop
     loop
     WS.sendClose conn ("Bye!" :: Text)
 

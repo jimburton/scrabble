@@ -3,12 +3,14 @@ module ScrabbleWeb.Announce
   , announceScores
   , msgOpponent
   , announceTurn
-  , maybeAnnounce)
+  , maybeAnnounce
+  , sendRack)
   where
 
 import qualified Network.WebSockets as WS
 import Data.Aeson
 import Data.Text (Text)
+import Scrabble.Game.Game (getPlayer)
 import Scrabble.Types
   ( Player(..) )
 import ScrabbleWeb.Types
@@ -36,7 +38,7 @@ msg :: WebGame -> Msg -> IO ()
 msg wg msg = do
   let o = encode msg
   WS.sendTextData (snd (p1 wg)) o
-  WS.sendTextData (snd (p1 wg)) o
+  WS.sendTextData (snd (p2 wg)) o
 
 announce :: WebGame -> Text -> IO ()
 announce wg txt = msg wg (MsgAnnounce txt)
@@ -49,3 +51,14 @@ msgOpponent :: WebGame -> Msg -> IO ()
 msgOpponent wg msg = do
   let client = if turn (theGame wg) == P1 then p2 wg else p1 wg
   WS.sendTextData (snd client) (encode msg)
+
+msgOne :: Msg -> WebGame -> Turn -> IO ()
+msgOne msg wg turn = do
+  let conn = if turn == P1 then snd (p1 wg) else snd (p2 wg)
+  WS.sendTextData conn (encode msg)
+
+sendRack :: WebGame -> Turn -> IO ()
+sendRack wg turn = do
+  let pf = if turn == P1 then player1 else player2
+      r  = rack (pf (theGame wg))
+  msgOne (MsgRack r) wg turn

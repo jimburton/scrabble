@@ -32,25 +32,27 @@ data Move = Move
   { word   :: WordPut
   , rack   :: Rack
   , player :: Turn }
-  deriving ( Show, Generic, FromJSON, ToJSON )
+  deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 data OpponentMove = OpponentMove
   { wordPlayed :: WordPut }
-  deriving ( Show, Generic, FromJSON, ToJSON )
+  deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 -- | The response to a move -- Either the score or an error message.
 data MoveResponse = MoveResponse (Either String Int)
-  deriving ( Show, Generic, FromJSON, ToJSON )
+  deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 data Score = Score Turn Int
-  deriving ( Show, Generic, FromJSON, ToJSON )
+  deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 data Msg = MsgAnnounce Text
+         | MsgRack Rack
+         | MsgJoin Text
          | MsgMove Move
          | MsgOppMove OpponentMove
          | MsgMoveRsp MoveResponse
          | MsgScore (Score, Score)
-  deriving ( Show, Generic, FromJSON, ToJSON )
+  deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 type Client = (Text, WS.Connection)
 

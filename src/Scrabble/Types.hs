@@ -37,7 +37,7 @@ import GHC.Generics
 data Letter =
   A | B | C | D | E | F | G | H | I | J | K | L | M |
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
-  deriving (Show, Enum, Eq, Ord, Generic, FromJSON, ToJSON)
+  deriving (Show, Read, Enum, Eq, Ord, Generic, FromJSON, ToJSON)
 
 -- | A word is a list of letters. 
 type Word = [Letter]
@@ -75,7 +75,7 @@ data Player = Player { name  :: Text
                      } deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 -- | Which player's turn it is within the game. 
-data Turn = P1 | P2 deriving (Show, Eq, Generic, FromJSON, ToJSON)
+data Turn = P1 | P2 deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
 
 -- | The bag is a list of letters.
 type Bag = [Letter]

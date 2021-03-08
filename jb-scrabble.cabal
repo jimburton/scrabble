@@ -127,7 +127,8 @@ executable scrabble-server
 
 executable scrabble-client
   main-is:            Main.hs
-  other-modules:      
+  other-modules:      ScrabbleWeb.Types
+                    , Scrabble.Types
   build-depends:      base >=4.12 && <4.13
                     , array
                     , random
@@ -138,7 +139,9 @@ executable scrabble-client
                     , websockets
                     , network
                     , mtl
+                    , utf8-string
   hs-source-dirs:     web/client
+                    , web/server
                     , src
   default-extensions: OverloadedStrings
                     , DeriveGeneric
