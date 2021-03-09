@@ -33,8 +33,7 @@ app conn = do
         case decode msg of
           Nothing          -> LT.putStrLn ("Bad input: " <> (LTE.decodeUtf8 msg))
           Just m -> case m of
-            MsgAnnounce ann -> LT.putStrLn ("Announcement: " <> T.pack (show ann))
-            MsgMove mv      -> LT.putStrLn ("Opponent move: " <> T.pack (show mv))
+            MsgAnnounce ann -> LT.putStrLn ("Announcement: " <> T.pack (show ann)) 
             MsgRack r       -> LT.putStrLn ("Rack: " <> T.pack (show r))
             _               -> LT.putStrLn ("Unknown message: " <> (LTE.decodeUtf8 msg))
 

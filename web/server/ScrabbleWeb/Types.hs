@@ -29,7 +29,9 @@ import Scrabble.Types
 
 -- ======== Types for ScrabbleWeb ========== --
 data Move = Move
-  { word   :: WordPut }
+  { word   :: WordPut
+  , rack   :: Rack
+  , player :: Turn }
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 data OpponentMove = OpponentMove
