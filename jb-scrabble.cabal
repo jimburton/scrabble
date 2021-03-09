@@ -140,6 +140,7 @@ executable scrabble-client
                     , network
                     , mtl
                     , utf8-string
+                    , happstack-server
   hs-source-dirs:     web/client
                     , web/server
                     , src

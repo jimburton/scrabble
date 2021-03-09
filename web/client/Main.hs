@@ -1,10 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main
-    ( main
-    ) where
+module Main where
 
-
---------------------------------------------------------------------------------
 import           Control.Concurrent  (forkIO)
 import           Control.Monad       (forever, unless)
 import           Control.Monad.Trans (liftIO)
@@ -16,6 +12,12 @@ import qualified Data.Text.Lazy.Encoding as LTE
 import qualified Data.ByteString.Lazy.UTF8 as B
 import qualified Data.Text.IO        as T
 import qualified Network.WebSockets  as WS
+import Happstack.Server
+  ( Browsing(EnableBrowsing)
+  , nullConf
+  , serveDirectory
+  , simpleHTTP
+  )
 import Data.Aeson
 import ScrabbleWeb.Types
   ( Move
@@ -23,6 +25,11 @@ import ScrabbleWeb.Types
 
 
 --------------------------------------------------------------------------------
+
+main :: IO ()
+main = simpleHTTP nullConf $ serveDirectory EnableBrowsing [] "web/client/html"
+
+{-
 app :: WS.ClientApp ()
 app conn = do
     putStrLn "Connected!"
@@ -51,3 +58,4 @@ app conn = do
 --------------------------------------------------------------------------------
 main :: IO ()
 main = withSocketsDo $ WS.runClient "127.0.0.1" 9160 "/" app
+-}
