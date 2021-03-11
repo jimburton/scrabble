@@ -13,7 +13,7 @@ The emphasis is on refining an initial solution to a clean software design that 
 be extended. The evolution of the code is demonstrated in branches that students should study 
 in this order:
 
-+ `v-0.1`: This branch contains the initial effort. It includes the basic data types (`Letter`
++ **`v-0.1`**: This branch contains the initial effort. It includes the basic data types (`Letter`
   , `Word`, `Board`, `Bag`, `WordPut`, `Player`, `Game`) and functions for starting a game, taking
   turns in which players put words onto the board and showing the board and the score. The 
   dictionary is held as a `Set` of `Text` values. There is no UI but you can start a game and take 
@@ -36,7 +36,6 @@ in this order:
   4, 1, 2, 1, 1, 10, 4
   **********************************************
 
-  Turn: P1
     | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
   ------------------------------------------------
    0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
@@ -91,7 +90,6 @@ in this order:
   **********************************************
   Enter WORD ROW COL DIR[H/V]:
   wode 11 5 h
-  Turn: P1
     | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
   ------------------------------------------------
    0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
@@ -136,7 +134,7 @@ in this order:
   + The main code for playing the game is in `Scrabble.Game`. Start by studying the function
     `playGame` in there. Look for the code that fills a `Bag` with letters then takes letters
 	from the bag to fill the `Rack` of each `Player`. 
-  + Moves are scores according to the rules. Bonuses only count if a
+  + Moves are scored according to the rules. Bonuses only count if a
 	new tile has been placed on them. Every tile in a new word adds
 	its face value multiplied by the letter-bonus of the square it is
 	placed on, if any. Then the score for the whole word is multiplied
@@ -224,29 +222,47 @@ in this order:
   + Blank tiles can't be played for now.
   + There is no way to check whether the game has ended or who won.
   
-+ `v-0.2`:
++ **`v-0.2`**:
   + The code is split into a *library* (in the directory `src`),
     that contains all the code for managing a game of Scrabble, and an
     *executable* (in the directory `cli`), which contains the
     command-line interface (CLI).  This will make it easy to reuse the core game code in
     multiple UIs, such as a web-based one or a mobile app that we might build later. 
-	Study the `cabal` config file to see how this division of code is organised.
-  + To play the game you now need to enter `cabal repl scrabble`.
-  + Code is in the library is reorganised so that related code is kept
+	Study the `cabal` config file to see how this division of code is organised. 
+	
+	Code is in the library is reorganised so that related code is kept
     together and easy to find.  Even though quite a lot more code is
-    added, each module is kept down to a manageable size. See the
-    modules:
-    + `Scrabble.Game.Game`
-	+ `Scrabble.Game.Validation`
-	+ `Scrabble.Board.Board`
-    + `Scrabble.Board.Bag`
-	+ `Scrabble.Board.Bonus`
-	+ `Scrabble.Board.Validation`
-	+ `Scrabble.Lang.Dict`
-	+ `Scrabble.Lang.Letter`
-	+ `Scrabble.Lang.Search`
-	+ `Scrabble.Lang.Word`
-+ `v-0.3`:
+    added, each module is kept down to a manageable size. Each module exports only those
+	datatypes, constructors and functions the outside world needs, and imports only what it 
+	needs. Files in the library:
+	
+	```
+	src
+    ├── Scrabble
+    │   ├── Board
+    │   │   ├── Bag.hs 
+    │   │   ├── Board.hs
+    │   │   ├── Bonus.hs
+    │   │   └── Validation.hs
+    │   ├── Evaluator.hs
+    │   ├── Game
+    │   │   ├── Game.hs
+    │   │   └── Validation.hs
+    │   ├── Lang
+    │   │   ├── Dict.hs
+    │   │   ├── Letter.hs
+    │   │   ├── Search.hs
+    │   │   └── Word.hs
+    │   ├── Show.hs
+    │   └── Types.hs
+    └── Scrabble.hs
+
+	```
+  + To play the game you now need to enter `cabal repl scrabble`.
+  + Use of the `haskeline` library to enable using backspace and arrow keys in the CLI.
+    Note that this changes to the `takeTurn` function in `cli/Main.hs`.
+
++ **`v-0.3`**:
   + The dictionary is now stored in a [trie](https://en.wikipedia.org/wiki/Trie), which is a very
     efficient data structure for storing strings sorted by their prefixes. This speeds up the
     process of checking whether words exist.
@@ -301,7 +317,7 @@ in this order:
 	validateSomething args = <expression that returns a bool>
 	                         `evalBool` "Descriptive error message"
 	```
-+ `v-0.4`:
++ **`v-0.4`**:
   + "Commands" are added to the CLI. These are strings entered by the user that begin
     with a colon. This is supported by the `cmd` function in `cli/Main.hs`.
     + `:HINT` command. The current player is able to ask for hints based on the letters in their rack. 
@@ -316,12 +332,44 @@ in this order:
 	word is passed from the CLI to the `move` function in the library along with a list 
 	of the indices in the `WordPut` that were originally blanks (this is needed so that the code that
 	validates the move doesn't complain about the player not having those letters in their rack).
-+ `v-0.5`:
+	
++ **`v-0.5`**:
   + An AI is added, so games can be played against the computer. A list of playable positions is 
     maintained as part of the game state. The AI player chooses one of these (in a very basic way,
 	not currently trying to get the highest score) and tries to make a word with their tiles that 
 	begins or ends with that letter and fits in the available space.
-+ `v-0.6`:
+  + Because the module `Scrabble.Game.AI` needs to share a lot of code with `Scrabble.Game.Game`,
+    common code is moved in its own module, `Scrabble.Game.Internal`. A similar change is made
+	to the `Board` code, adding `Scrabble.Board.Internal`.
+	
+	Files in the library:
+	
+	```
+	src
+    ├── Scrabble
+    │   ├── Board
+    │   │   ├── Bag.hs
+    │   │   ├── Board.hs
+    │   │   ├── Bonus.hs
+    │   │   ├── Internal.hs
+    │   │   └── Validation.hs
+    │   ├── Evaluator.hs
+    │   ├── Game
+    │   │   ├── AI.hs
+    │   │   ├── Game.hs
+    │   │   ├── Internal.hs
+    │   │   └── Validation.hs
+    │   ├── Lang
+    │   │   ├── Dict.hs
+    │   │   ├── Letter.hs
+    │   │   ├── Search.hs
+    │   │   └── Word.hs
+    │   ├── Show.hs
+    │   └── Types.hs
+    └── Scrabble.hs
+
+	```
++ **`v-0.6`**:
   + A web interface is added, using websockets and the `aeson` library to handle encoding and 
     decoding JSON. Datatypes that need to be sent to the client are made into instances of
     `ToJSON` and `FromJSON`. See `web/server` and `web/client`.
