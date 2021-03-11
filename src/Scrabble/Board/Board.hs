@@ -113,7 +113,7 @@ mkWP w pos dir is = let f  = if dir == HZ then incCol else incRow
 replace :: [a] -> Int -> a -> [a]
 replace xs i e = replaceBy xs i (const e)
 
--- | Replace an element at a certain index in a list using a funtion.
+-- | Replace an element at a certain index in a list using a function.
 replaceBy :: [a] -> Int -> (a -> a) -> [a]
 replaceBy xs i f = case splitAt i xs of
    (before, x:after) -> before ++ f x : after

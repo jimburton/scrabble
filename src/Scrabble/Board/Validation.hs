@@ -34,10 +34,10 @@ validateMove :: Board    -- ^ The board
              -> Bool     -- ^ Is first move
              -> Evaluator ()
 validateMove b p w fm =
-  connects w b fm >>
-  straight w >>
-  firstMoveTouchesCentre w fm >>
-  lettersAvailable w p b
+  connects w b fm
+  >> straight w
+  >> firstMoveTouchesCentre w fm
+  >> lettersAvailable w p b
 
 -- | The letter in this move are available in the player's rack or on the board
 lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()

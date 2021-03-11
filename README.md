@@ -14,11 +14,14 @@ game as on refining an initial solution to a clean, functional software design
 that can easily be extended. The evolution of the code is demonstrated
 in branches that the student should study in this order:
 
-+ **`v-0.1`**: This branch contains the initial effort. It includes the basic data types (`Letter`
-  , `Word`, `Board`, `Bag`, `WordPut`, `Player`, `Game`) and functions for starting a game, taking
-  turns in which players put words onto the board and showing the board and the score. The 
-  dictionary is held as a `Set` of `Text` values. There is no UI but you can start a game and take 
-  a few moves in the REPL like this:
++ **`v-0.1`**: This branch contains the initial effort. It includes
+  the basic data types (`Letter` , `Word`, `Board`, `Bag`, `WordPut`,
+  which is a word along with its position on the board, `Player`,
+  `Game` and so on). There are functions for starting a game, taking turns in which
+  players put words onto the board, and showing the board and the
+  score. The dictionary is held as a `Set` of `Text` values. There is
+  no UI but you can start a game and take a few moves in the REPL like
+  this:
   
   ```
   $ git checkout v-01
@@ -27,7 +30,7 @@ in branches that the student should study in this order:
   **********************************************
   ```
   
-  *Starts by showing both player's names, their score and the contents
+  *The game starts by showing both player's names, their score and the contents
   of their rack, with the score displayed beneath each letter.*
   
   
@@ -45,7 +48,7 @@ in branches that the student should study in this order:
   **********************************************
   ```
   
-  *Displays the empty board, the current player's rack
+  *Then, for each turn it displays the current board, the current player's rack
   and prompts them for a move.*
   
   
@@ -106,7 +109,7 @@ in branches that the student should study in this order:
 
   ```
   
-  *Alice is prompted for a move, and so on.*
+  *Alice is prompted for a move, enters it, and so on.*
   
   
   ``` 
@@ -146,8 +149,8 @@ in branches that the student should study in this order:
   + The `Main` module contains the `startGame` function and the `playGame` and `takeTurn`
     functions that play the game.
 	The use of `getLine` in `takeTurn` means that if you try to use the backspace
-	key when entering a move it will show up as garbage. Type carefully or you will have
-	to quit the game with `Ctrl-C` and start again.
+	key when entering a move it will show up as garbage (we'll fix this in the next version). 
+	Type carefully or you will have to quit the game with `Ctrl-C` and start again.
   + To toggle the display of bonus squares on the board (double and triple letter squares, double
     and triple word squares), go to the `takeTurn` function and  change the boolean in the call to 
 	`printBoard` from `False` to `True`.

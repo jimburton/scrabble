@@ -8,6 +8,7 @@ module Scrabble.Game.Internal
   , updatePlayer )
   where
 
+import Debug.Trace
 import qualified Data.Map as Map
 import Data.List ( (\\) )
 import Scrabble.Types
@@ -18,13 +19,13 @@ import Scrabble.Types
   , Player(..)
   , Turn(..)
   , FreedomDir(..)
-  , Dir(..) )
+  , Dir(..)
+  , Letter(Blank))
 import Scrabble.Board.Board
   ( empty
   , freedomsFromWord
   , getDirection
-  , newTiles
-  , replace )
+  , newTiles )
 import Scrabble.Board.Bag
   ( fillRack
   , takeFromRack )
@@ -39,11 +40,14 @@ setBlanks :: WordPut -- ^ Word that had blanks in it.
           -> Game    -- ^ The game.
           -> Evaluator Game
 setBlanks w bs g = pure (getPlayer g)
-                   >>= \p -> pure (p { rack = setBlanks' bs (rack p)})
+                   >>= \p -> pure (p { rack = setBlanks' (rack p) bs})
                    >>= setPlayer g 
-  where setBlanks' :: [Int] -> Rack -> Rack
-        setBlanks' [] r     = r
-        setBlanks' (i:is) r = setBlanks' is (replace r i (fst (snd (w !! i)))) 
+  where setBlanks' :: Rack -> [Int] -> Rack
+        setBlanks' = foldl (\acc i -> replaceBlank acc (fst (snd (w !! i))))
+        replaceBlank :: Rack -> Letter -> Rack
+        replaceBlank [] _         = []
+        replaceBlank (Blank:rs) l = l : rs
+        replaceBlank (r:rs) l     = r : replaceBlank rs l
 
 -- | Update the score of the current player in the game.
 setScore :: Game -- ^ The game to be updated

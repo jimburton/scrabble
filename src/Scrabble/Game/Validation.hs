@@ -3,6 +3,7 @@ module Scrabble.Game.Validation
   , valGameRules )
   where
 
+import Debug.Trace
 import Scrabble.Types
   ( Validator
   , Game(..)
@@ -36,5 +37,5 @@ valGameRules ws g = do
       p  = getPlayer g
       w  = head ws
       fm = firstMove g
-  validateRack b (rack p) w >> validateMove b p w fm
+  trace (show $ rack p) validateRack b (rack p) w >> validateMove b p w fm
 

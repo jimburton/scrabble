@@ -78,7 +78,7 @@ takeTurn g msc = trace ("Turn: " ++ show (turn g)) $ runInputT defaultSettings l
  where
    loop :: InputT IO Game
    loop  = do
-     liftIO $ printBoard True (board g) msc
+     liftIO $ printBoard False (board g) msc
      if gameOver g
        then liftIO $ doGameOver g
        else if isAI (getPlayer g)
@@ -118,7 +118,8 @@ takeTurnManual g = runInputT defaultSettings loop
                  row = read rowStr :: Int
                  col = read colStr :: Int
                  dir = if map toUpper dirStr == "H" then HZ else VT
-                 wp  = mkWP wd (row,col) dir is 
+                 wp  = mkWP wd (row,col) dir is
+             liftIO $ print wp
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
@@ -191,11 +192,12 @@ hints g = do
   mapM_ print $ findPrefixesT (dict g) w
                
 -- | Interactively query for the value of blanks that have been played.
-replaceBlanks :: String
+replaceBlanks :: String             -- ^ The string with blanks in it
               -> IO (String, [Int]) -- ^ The unblanked string and the positions that were blanks 
 replaceBlanks wd = if countElem '_' wd == 0
                    then return (wd,[])
                    else do ub <- unBlank wd
+                           --print (ub, indices '_' wd)
                            return (ub, indices '_' wd)
   where unBlank :: String -> IO String
         unBlank []       = return []
