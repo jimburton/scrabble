@@ -78,7 +78,7 @@ takeTurn g msc = trace ("Turn: " ++ show (turn g)) $ runInputT defaultSettings l
  where
    loop :: InputT IO Game
    loop  = do
-     liftIO $ printBoard False (board g) msc
+     liftIO $ printBoard True (board g) msc
      if gameOver g
        then liftIO $ doGameOver g
        else if isAI (getPlayer g)
@@ -121,7 +121,7 @@ takeTurnManual g = runInputT defaultSettings loop
                  wp  = mkWP wd (row,col) dir is 
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
-                                 liftIO $ takeTurn g $ Just ((T.pack wd)  <> ": NO SCORE")
+                                 liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
                Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just (T.pack $ show sc))
 
 -- | Handle the situation when the game ends.
@@ -133,8 +133,8 @@ doGameOver g = do
       winner = if score p1 > score p2
                then p1 else p2
   T.putStrLn "Game over!"
-  T.putStrLn $ name p1 <> ": " <> (T.pack $ show (score p1))
-  T.putStrLn $ name p2 <> ": " <> (T.pack $ show (score p2))
+  T.putStrLn $ name p1 <> ": " <> T.pack (show (score p1))
+  T.putStrLn $ name p2 <> ": " <> T.pack (show (score p2))
   if draw
     then T.putStrLn "It's a draw!" >> pure g
     else T.putStrLn ("Congratulations " <> name winner) >> pure g
