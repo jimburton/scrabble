@@ -104,7 +104,7 @@ freedomsFromWord w b =
   let nt = newTiles b w 
       d  = getDirection w 
       fs = filter (\(_,_,(n,s)) -> n>0 || s>0) (map (\(p,(l,_)) -> freedom b p l d) nt) in
-    (trace ("freedoms: "++(show fs))) $ fs
+    trace ("freedoms: "++ show fs) fs
 
 -- | Is this position playable?
 canPlay :: Board -> Pos -> Bool

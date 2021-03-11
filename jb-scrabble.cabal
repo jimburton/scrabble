@@ -127,24 +127,9 @@ executable scrabble-server
 
 executable scrabble-client
   main-is:            Main.hs
-  other-modules:      ScrabbleWeb.Types
-                    , Scrabble.Types
+  other-modules:      
   build-depends:      base >=4.12 && <4.13
-                    , array
-                    , random
-                    , text
-                    , text-trie
-                    , containers
-                    , aeson
-                    , websockets
-                    , network
-                    , mtl
-                    , utf8-string
                     , happstack-server
   hs-source-dirs:     web/client
-                    , web/server
-                    , src
-  default-extensions: OverloadedStrings
-                    , DeriveGeneric
-                    , DeriveAnyClass
+  default-extensions:
   default-language:   Haskell2010

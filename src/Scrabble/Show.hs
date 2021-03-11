@@ -5,7 +5,6 @@ module Scrabble.Show
   , showPlayer )
   where
 
-import Data.List      ( intercalate )
 import Data.Array
 import qualified Data.Map as Map
 import qualified Data.Text as T
@@ -36,15 +35,15 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
                          if printBonuses
                          then case Map.lookup (i,c) bonusMap of
                                 Nothing -> "  |"
-                                Just b' -> (T.pack $ show b') <> "|"
+                                Just b' -> T.pack (show b') <> "|"
                          else "  |"
                        Just (t,_) -> T.pack [' ', toChar t, '|']
-  topNumbers    = "  |" <> (T.concat (map (\i -> showI i <> "|") [0..14])) <> "\n"
+  topNumbers    = "  |" <> T.concat (map (\i -> showI i <> "|") [0..14]) <> "\n"
   showI         :: Int -> Text
-  showI i       = if i < 10 then " " <> (T.pack $ show i) else (T.pack $ show i)
+  showI i       = if i < 10 then " " <> T.pack (show i) else T.pack (show i)
   top           = line '-'
   bottom        = line '-'
-  line        c = (T.pack $ replicate 48 c) <> "\n"
+  line        c = T.pack (replicate 48 c) <> "\n"
 
 -- | Textify the board and the current player.
 showGame :: Bool   -- ^ Whether to show bonus squares.
@@ -58,9 +57,9 @@ showPlayer :: Player -- ^ The player.
            -> Text
 showPlayer p = top <> playerLine <> rackLine <> bottom where
   line       :: Char -> Text
-  line     c = (T.pack $ replicate 46 c) <> "\n"
+  line     c = T.pack (replicate 46 c) <> "\n"
   top        = "\n" <> line '*'
-  playerLine = name p <> " (" <> (T.pack $ show (score p)) <> ")\n"
+  playerLine = name p <> " (" <> T.pack (show (score p)) <> ")\n"
   rackLine   = let strs   = map (T.pack . show) (rack p)
                    scores = map (T.pack . show . scoreLetter) (rack p) in
                  T.intercalate ", " strs <> "\n"

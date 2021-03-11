@@ -11,6 +11,7 @@ import Data.Char        ( toUpper )
 import Prelude hiding   ( Word )
 import Data.Text        ( Text
                         , pack)
+import Data.Monoid ( mconcat )
 import qualified Data.Trie.Text as Trie
 
 import Scrabble.Lang.Letter
@@ -27,12 +28,12 @@ import Scrabble.Types
 -- | Check whether a list of words are all in the dictionary.
 wordsInDictT :: DictTrie
             -> [Text]
-            -> Evaluator Bool
-wordsInDictT t ws = and <$> mapM (dictContainsWordT t) ws
+            -> Evaluator ()
+wordsInDictT t ws = mconcat <$> mapM (dictContainsWordT t) ws
 
 -- | Returns true if the dict contains the given word
-dictContainsWordT :: DictTrie -> Text -> Evaluator Bool
-dictContainsWordT d t = Trie.member t d `evalBool` ("Not in dictionary: " ++ show t)
+dictContainsWordT :: DictTrie -> Text -> Evaluator ()
+dictContainsWordT d t = Trie.member t d `evalBool` ("Not in dictionary: " ++ show t) 
 
 -- | Returns true if the dict contains the given prefix
 dictContainsPrefixT :: DictTrie -> Text -> Bool 

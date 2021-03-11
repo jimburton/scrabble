@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 module Scrabble.Types
   ( Letter(..)
   , Word
@@ -106,8 +106,9 @@ data FreedomDir = UpD | DownD | LeftD | RightD
 
 newtype Evaluator a = Ev (Either Text a)
 
--- | Validator is the type of functions that validate words to be played
-type Validator = [WordPut] -> Game -> Evaluator Bool
+-- | Validator is the type of functions that validate words to be played.
+--   It returns unit or fails with an error message.
+type Validator = [WordPut] -> Game -> Evaluator ()
 
 
 

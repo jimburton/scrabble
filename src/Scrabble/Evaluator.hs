@@ -27,8 +27,8 @@ instance Monad Evaluator where
     fail msg = Ev (Left (T.pack msg))
 
 -- | Test a bool in the monad
-evalBool :: Bool -> String -> Evaluator Bool
-evalBool b e = if b then pure True else fail e
+evalBool :: Bool -> String -> Evaluator ()
+evalBool b e = if b then pure () else fail e
 
 --try :: IO (String -> g) -> IO (g -> g) -> Evaluator g -> IO g
 --try k r e = case e of

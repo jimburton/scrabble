@@ -32,21 +32,25 @@ validateMove :: Board    -- ^ The board
              -> Player   -- ^ The player making the move
              -> WordPut  -- ^ The word to play
              -> Bool     -- ^ Is first move
-             -> Evaluator Bool
+             -> Evaluator ()
 validateMove b p w fm =
   connects w b fm >>
   straight w >>
-  (not fm || touches (7,7) w) `evalBool`
-  "First move must touch centre square" >>
-  all (\(pos,(t,_)) -> maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)) w `evalBool`
-  ("Letters not in rack or not on board: " ++ formatWP w)
+  firstMoveTouchesCentre w fm >>
+  lettersAvailable w p b
 
+-- | The letter in this move are available in the player's rack or on the board
+lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
+lettersAvailable w p b = all available w
+                         `evalBool` ("Letters not in rack or not on board: " ++ formatWP w)
+  where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
+  
 -- | Check that a word to be played is made of tiles that are either in the player's
 --   rack or are already on the board.
 validateRack :: Board
              -> Rack
              -> WordPut
-             -> Evaluator Bool
+             -> Evaluator ()
 validateRack b r w = someNewTiles b w >>
   all (\(pos,(t,_)) -> t `elem` r
            || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
@@ -57,19 +61,26 @@ validateRack b r w = someNewTiles b w >>
 touches :: Pos -> WordPut -> Bool
 touches p = any ((==p) .  fst)
 
+-- | If this is the first move, does it touch the centre square?
+firstMoveTouchesCentre :: WordPut -- ^ The word.
+                       -> Bool    -- ^ Is the first move.
+                       -> Evaluator ()
+firstMoveTouchesCentre w fm = (not fm || touches (7,7) w) `evalBool`
+  "First move must touch centre square"
+
 -- | New words must touch another (apart from the first one to be played)
 connects :: WordPut -- ^ The word to play
          -> Board    -- ^ The board
          -> Bool     -- ^ Is first move
-         -> Evaluator Bool
-connects [] _ fm     = if fm then pure True else fail "Not touching any other tile"
+         -> Evaluator ()
+connects [] _ fm     = if fm then pure () else fail "Not touching any other tile"
 connects (w:ws) b fm = let (pos,_) = w in
   if (not . all null) (occupiedNeighbours b pos)
-  then pure True
+  then pure ()
   else connects ws b fm
 
 -- | Words must contain at least two tiles and must be in a straight line on the board
-straight :: WordPut -> Evaluator Bool
+straight :: WordPut -> Evaluator ()
 straight (w:x:xs) = let (r,_)  = fst w
                         (r',_) = fst x
                         ps     = map fst xs
@@ -79,6 +90,6 @@ straight (w:x:xs) = let (r,_)  = fst w
 straight _         = fail "Too few letters"
 
 -- | Check that a word to be played incudes some tiles that aren't on the board.
-someNewTiles :: Board -> WordPut -> Evaluator Bool
+someNewTiles :: Board -> WordPut -> Evaluator ()
 someNewTiles b w = any (empty b . fst) w `evalBool`
   ("You didn't play any new tiles: " ++ formatWP w ++ show w)

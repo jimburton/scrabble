@@ -20,7 +20,6 @@ import Prelude hiding
 import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
 import Data.Text ( Text )
-import qualified Data.Text as T
 import Scrabble.Game.Internal
   ( getPlayer
   , setPlayer 
