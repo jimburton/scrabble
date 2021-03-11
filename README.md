@@ -308,7 +308,7 @@ in branches that the student should study in this order:
 + **`v-0.3`**:
   + The dictionary is now stored in a [trie](https://en.wikipedia.org/wiki/Trie), which is a very
     efficient data structure for storing strings sorted by their prefixes. This speeds up the
-    process of checking whether words exist.
+    process of checking whether words exist quite a bit.
   + The `String` datatype is used a lot in earlier versions. In this version this is almost all 
     replaced with `Data.Text`, which is much more efficient. 
   + The biggest change in the library is the introduction of monadic `Either` code. A new type
@@ -362,7 +362,7 @@ in branches that the student should study in this order:
 	validateSomething args = <expression that returns a bool>
 	                         `evalBool` "Descriptive error message"
 	```
-## Miscellaneous improvements to make it actually playable
+## Miscellaneous improvements to make the game more playable
 
 + **`v-0.4`**:
   + "Commands" are added to the CLI. These are strings entered by the user that begin
@@ -401,14 +401,45 @@ in branches that the student should study in this order:
 
 + **`v-0.5`**:
   + An AI is added, so games can be played against the computer. In
-    order to achieve this, a list of playable positions is maintained
-    as part of the game state. This is updated after each word is
+    order to achieve this, a list of *playable* positions is
+    maintained. A playable position is one where the AI could play a
+    word, so we need to know the letter at that position, the amount
+    of space around it and the direction of that space. Several new
+    types are added to support this.
+	
+	A `FreedomDir` is a direction on the board -- `Upd`, `DownD`,
+    `LeftD` or `RightD`.
+	
+	A `Freedom` is a `FreedomDir` and a distance. 
+	
+	Then we create a map with the type `Map Pos (Letter, [Freedom])`, which is added
+	to the game state and updated after each move is played. When the AI comes to make a move
+	it needs to repeatedly take a playable position and try to create a word that can be played
+	against it. If the direction of the freedom is `UpD` or `LeftD` the AI needs to find a word
+	that *ends* with the letter in question. If the direction is `RightD` or `DownD` it needs to
+	find a word that *begins* with the letter in question. In each case the freedom tells the AI 
+	the maximum length of the word. The functions that search for words are in `Scrabble.Lang.Search` 
+	and `Scrabble.Lang.Dict` and use the API of the `Trie` datatype.
+	
+	The freedoms map needs to be updated after each word is
     played -- each new word adds new playable positions but also may
     reduce the playable space around existing playable positions or
-    remove them entirely. The AI player chooses one a playable position in a
-    very basic way, not currently trying to get the highest score. It then
-    tries to make a word with their tiles that begins or ends with
-    that letter and fits in the available space.
+    remove them entirely. The figure below shows the freedoms on the board after
+	the first move. The freedom of one of the positions with a tile on it is shown: 
+	`[(LeftD, 7), (RightD, 7)]`. In this case, all of the playable positions have the same freedom.
+	
+    ![Freedoms](/images/freedoms0.png)
+	
+	Note that it would be possible to make a legal move by extending the word with a prefix or suffix.
+	For instance, playing tiles to make the word `FOULED`, or `BEFOUL` or even putting tiles before and
+	after the word to make `BEFOULED`. The AI currently makes no attempt to do this. Nor does it
+	try to get a high score! This could be done by modifying `Scrabble.Game.AI`, especially the
+	`findWord` function and the functions it depends on.
+	
+	![Removing freedoms](/images/freedoms1.png)
+	
+	The figure above shows what happens after more tiles are placed on the board. Several freedoms
+	have been removed. This takes place in the function `Scrabble.Game.Internal.updatePlayables`.
 	
 	*Work in progress*: The AI would be much better if it were more flexible about
 	choosing where to play. At the moment it can only play perpendicularly to en existing word.

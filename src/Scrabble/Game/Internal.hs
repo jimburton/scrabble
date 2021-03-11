@@ -26,7 +26,9 @@ import Scrabble.Board.Board
   , freedomsFromWord
   , getDirection
   , newTiles )
-import Scrabble.Board.Bag
+import Scrabble.Board.Internal 
+  ( adjacent )
+import Scrabble.Board.Bag 
   ( fillRack
   , takeFromRack )
 import Scrabble.Evaluator ()
@@ -70,15 +72,17 @@ updatePlayables w g = do
   let ps  = playable g
       b   = board g
       nt  = newTiles b w
-      ot  = map fst (w \\ nt ) -- assuming these tiles will no longer playable
-      ps' = Map.filterWithKey (\k _ -> k `notElem` ot) ps 
+      ntp = map fst nt
+      ot  = map fst (w \\ nt )
+      -- assuming any tile that is part of the new word or adjacent to it will no longer be playable
+      ps' = Map.filterWithKey (\k _ -> k `notElem` ot && not (any (adjacent k) ntp))  ps
       d   = getDirection w
       fs  = freedomsFromWord nt b
       f (u,p) = if d == HZ
                 then [(UpD,u), (DownD, p)]
-                else [(RightD, p), (LeftD, u)]
+                else [(LeftD, u), (RightD, p)]
       nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
-  pure (g { playable = nps })
+  (trace $ "Playables: \n" ++ show nps) pure (g { playable = nps })
 
 -- | Update the rack of the current player and the bag.
 updatePlayer :: WordPut -> Game -> Evaluator Game

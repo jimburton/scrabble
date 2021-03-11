@@ -97,12 +97,15 @@ data Game = Game { board     :: Board    -- ^ The board
                  , lastMovePass :: Bool  -- ^ Was the last move a pass?
                  }
 
--- | The map of all playable positions on the board, used by the AI player.
-type Playable = Map.Map Pos (Letter, [(FreedomDir, Int)])
-
 -- | A direction on the board (up, down, left or right)
 data FreedomDir = UpD | DownD | LeftD | RightD
   deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
+
+-- | A Freedom is a direction and a distance.
+type Freedom = (FreedomDir, Int)
+
+-- | The map of all playable positions on the board, used by the AI player.
+type Playable = Map.Map Pos (Letter, [Freedom])
 
 newtype Evaluator a = Ev (Either Text a)
 

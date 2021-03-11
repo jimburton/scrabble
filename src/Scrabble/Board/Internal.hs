@@ -15,7 +15,8 @@ module Scrabble.Board.Internal
   , newTilesInMove
   , freedomsFromWord
   , getDirection
-  , newTiles )
+  , newTiles
+  , adjacent )
   where
 
 import Debug.Trace
@@ -68,6 +69,10 @@ gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
                                m = [g pos | isJust (getSquare b (g pos))] in
                         l ++ m
 
+-- | Are two positions adjacent vertically, horizontally or diagonally? 
+adjacent :: Pos -> Pos -> Bool
+adjacent (r1,c1) (r2,c2) = abs (r1-r2) <= 1 && abs (c1-c2) <= 1
+
 -- ========== Playable spaces on the board ================== --
 
 -- ^ The playable spaces around an occupied position on the board.
@@ -104,7 +109,7 @@ freedomsFromWord w b =
   let nt = newTiles b w 
       d  = getDirection w 
       fs = filter (\(_,_,(n,s)) -> n>0 || s>0) (map (\(p,(l,_)) -> freedom b p l d) nt) in
-    trace ("freedoms: "++ show fs) fs
+    fs
 
 -- | Is this position playable?
 canPlay :: Board -> Pos -> Bool
