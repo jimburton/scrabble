@@ -108,7 +108,7 @@ swap ls g = do
       theGen = gen g
   takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
-    >>= toggleTurn >>= \g' -> pure g' { bag = theBag', gen = theGen' }
+    >>= toggleTurn >>= \g' -> pure g' { bag = theBag', gen = theGen', lastMovePass = False }
 
 -- | Take a move by passing.
 pass :: Game -> Evaluator Game
