@@ -363,7 +363,7 @@ in branches that the student should study in this order:
 	```
 	The functions that check aspects of the move are now *combinators*. We can compose
 	them into larger combinators that check several things. If `connects`, or `straight`, 
-	or any of the other checks made in the monadic versions fails
+	or any of the other checks made in the monadic version fails
 	by returning a `Left` with an error message in it, this is handled by the monad instance
 	declaration. Functions at the top level can inspect the result of calling a chain of 
 	computations to see if all went well. For example, the `takeTurn` function in `cli/Main.hs`
@@ -462,7 +462,7 @@ in branches that the student should study in this order:
 	the first move. The freedom of one of the positions with a tile on it is shown: 
 	`[(LeftD, 7), (RightD, 7)]`. In this case, all of the playable positions have the same freedom.
 	
-    ![Freedoms](/images/freedoms0.png)
+    ![](/images/freedoms0.png)
 	
 	Note that it would be possible to make a legal move by extending the word with a prefix or suffix.
 	For instance, playing tiles to make the word `FOULED`, or `BEFOUL` or even putting tiles before and
@@ -470,7 +470,7 @@ in branches that the student should study in this order:
 	try to get a high score! This could be done by modifying `Scrabble.Game.AI`, especially the
 	`findWord` function and the functions it depends on.
 	
-	![Removing freedoms](/images/freedoms1.png)
+	![](/images/freedoms1.png)
 	
 	The figure above shows what happens after more tiles are placed on the board. Several freedoms
 	have been removed. This takes place in the function `Scrabble.Game.Internal.updatePlayables`.
