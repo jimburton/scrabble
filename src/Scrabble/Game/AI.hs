@@ -10,7 +10,7 @@ import Data.Functor ( (<&>) )
 import Data.Text ( Text )
 import System.Random ( StdGen )
 import Control.Monad ( msum )
-import Scrabble.Evaluator 
+import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Types
   ( DictTrie
@@ -19,7 +19,6 @@ import Scrabble.Types
   , FreedomDir(..)
   , Rack
   , WordPut
-  , Validator
   , Pos
   , Playable
   , Dir(..)
@@ -86,21 +85,20 @@ newGame1P pName theGen d =
     g
 
 -- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
---   The word is validated by the Validator.
+--   Validation of the word is carried out when finding the word.
 --   Sets the new board, updates the current player's score, refills their rack with letters, then
 --   toggles the current turn. Returns the updated game and the score.
-moveAI :: Validator -- ^ Function to validate the word against the board.
-       -> Game      -- ^ The game.
+--   TODO if the AI can't find a word, swap tiles instead of passing.
+moveAI :: Game      -- ^ The game.
        -> Evaluator (Game, Int)
-moveAI v g = do
+moveAI g = do
   let r  = rack (getPlayer g)
       mw = findWord (dict g) (filter (/=Blank) r) (playable g) (board g)
   case mw of
     Nothing -> pass g >>= \g' -> pure (g',0)
-    Just (w,aw)  -> do
-      v (w:aw) g >> scoreWords g w aw >>=
-        \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
-        updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
+    Just (w,aw)  -> scoreWords g w aw >>=
+                    \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
+                    updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
 
 -- | Pick a word for the AI to play, along with the additional words it generates. 
 findWord :: DictTrie -- ^ The dictionary.

@@ -87,7 +87,7 @@ takeTurn g msc = runInputT defaultSettings loop
 
 -- | Allow the computer to take a turn.
 takeTurnAI :: Game -> IO Game
-takeTurnAI g = case moveAI valGameRulesAndDict g of
+takeTurnAI g = case moveAI g of
   Ev (Right (g',i)) -> takeTurn g' (Just (T.pack $ show i))
   Ev (Left e)       -> do T.putStrLn e
                           pure g
@@ -111,7 +111,6 @@ takeTurnManual g = runInputT defaultSettings loop
            if head wd == ':'
              then liftIO $ do
              (g',ms) <- cmd (T.map toUpper (T.pack wd), T.pack <$> mLn, g)
-             _ <- traceIO ("LMP:" ++ show (lastMovePass g'))
              takeTurn g' ms
              else do
              let [rowStr,colStr,dirStr] = tail $ words wdStr
@@ -119,7 +118,6 @@ takeTurnManual g = runInputT defaultSettings loop
                  col = read colStr :: Int
                  dir = if map toUpper dirStr == "H" then HZ else VT
                  wp  = mkWP wd (row,col) dir is
-             liftIO $ print wp
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")

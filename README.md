@@ -14,6 +14,8 @@ game as on refining an initial solution to a clean, functional software design
 that can easily be extended. The evolution of the code is demonstrated
 in branches that the student should study in this order:
 
+## The first version
+
 + **`v-0.1`**: This branch contains the initial effort. It includes
   the basic data types (`Letter` , `Word`, `Board`, `Bag`, `WordPut`,
   which is a word along with its position on the board, `Player`,
@@ -259,6 +261,8 @@ in branches that the student should study in this order:
   + Blank tiles can't be played for now.
   + There is no way to check whether the game has ended or who won.
   
+## Organising the code
+
 + **`v-0.2`**:
   + The code is split into a *library* (in the directory `src`),
     that contains all the code for managing a game of Scrabble, and an
@@ -299,10 +303,14 @@ in branches that the student should study in this order:
   + Use of the `haskeline` library to enable using backspace and arrow keys in the CLI.
     Note that this changes to the `takeTurn` function in `cli/Main.hs`.
 
+## Optimising the data structures and making good use of functional design patterns.
+
 + **`v-0.3`**:
   + The dictionary is now stored in a [trie](https://en.wikipedia.org/wiki/Trie), which is a very
     efficient data structure for storing strings sorted by their prefixes. This speeds up the
     process of checking whether words exist.
+  + The `String` datatype is used a lot in earlier versions. In this version this is almost all 
+    replaced with `Data.Text`, which is much more efficient. 
   + The biggest change in the library is the introduction of monadic `Either` code. A new type
     called `Evaluator` is added (see `Scrabble.Types` and `Scrabble.Evaluator`). This type wraps
 	up an `Either String a` type, where the `String` is an error message and the `a` value is
@@ -354,6 +362,8 @@ in branches that the student should study in this order:
 	validateSomething args = <expression that returns a bool>
 	                         `evalBool` "Descriptive error message"
 	```
+## Miscellaneous improvements to make it actually playable
+
 + **`v-0.4`**:
   + "Commands" are added to the CLI. These are strings entered by the user that begin
     with a colon. This is supported by the `cmd` function in `cli/Main.hs`.
@@ -386,12 +396,26 @@ in branches that the student should study in this order:
 	word is passed from the CLI to the `move` function in the library along with a list 
 	of the indices in the `WordPut` that were originally blanks (this is needed so that the code that
 	validates the move doesn't complain about the player not having those letters in their rack).
-	
+
+## AI
+
 + **`v-0.5`**:
-  + An AI is added, so games can be played against the computer. A list of playable positions is 
-    maintained as part of the game state. The AI player chooses one of these (in a very basic way,
-	not currently trying to get the highest score) and tries to make a word with their tiles that 
-	begins or ends with that letter and fits in the available space.
+  + An AI is added, so games can be played against the computer. In
+    order to achieve this, a list of playable positions is maintained
+    as part of the game state. This is updated after each word is
+    played -- each new word adds new playable positions but also may
+    reduce the playable space around existing playable positions or
+    remove them entirely. The AI player chooses one a playable position in a
+    very basic way, not currently trying to get the highest score. It then
+    tries to make a word with their tiles that begins or ends with
+    that letter and fits in the available space.
+	
+	*Work in progress*: The AI would be much better if it were more flexible about
+	choosing where to play. At the moment it can only play perpendicularly to en existing word.
+	It could play words that by adding letters
+	to the beginning or end of existing ones, and could play words with the playable position
+	somewhere in the middle.
+	
   + Because the module `Scrabble.Game.AI` needs to share a lot of code with `Scrabble.Game.Game`,
     common code is moved in its own module, `Scrabble.Game.Internal`. A similar change is made
 	to the `Board` code, adding `Scrabble.Board.Internal`.

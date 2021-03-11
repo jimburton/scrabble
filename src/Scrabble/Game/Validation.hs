@@ -38,4 +38,3 @@ valGameRules ws g = do
       w  = head ws
       fm = firstMove g
   validateRack b (rack p) w >> validateMove b p w fm
-

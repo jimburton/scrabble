@@ -136,7 +136,7 @@ takeTurn wg msc = do
 takeTurnAI :: WebGame -> IO WebGame
 takeTurnAI wg = do
   let g = theGame wg
-  case moveAI valGameRulesAndDict g of
+  case moveAI g of
     Ev (Right (g',i)) -> takeTurn wg { theGame = g' } (Just (T.pack $ show i))
     Ev (Left e)       -> do announce wg e
                             pure wg

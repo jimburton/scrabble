@@ -28,12 +28,13 @@
    Play the highest scoring Candidate.
 
    Keep the map of playable positions up to date after each move.
-*** TODO Basic word selection (max 6 letters, prefix and suffix only) and playing it on the board
+*** DONE Basic word selection (max 6 letters, prefix and suffix only) and playing it on the board
+    CLOSED: [2021-03-11 Thu 19:34]
 *** TODO Select words with the playable position somewhere in the middle  
 *** TODO Make it fast enough for longer words
 *** TODO Handle blanks
 
-*** TODO Selecting playable positions:
+*** TODO Updating playable positions:
 
     This is quite tricky...hard to see how to efficiently check whether you can add to the
     beginning or end of words in the same direction.
@@ -41,10 +42,13 @@
     For positions that are part of horizontally placed words, get the distance between
     the pos and the edge of the board or two spaces before an occupied tile, whichever is
     closer. Vive versa for vertical words...
-*** TODO Help message 
-* Bugs
 
-** TODO AI selecting words that include non-dictionary additional words
+*** TODO Help message
+* Bugs
+** TODO Make the AI swap tiles instead of passing the move when it can't find a word.  
+** TODO Prune playable positions after each move.
+** DONE AI selecting words that include non-dictionary additional words
+   CLOSED: [2021-03-11 Thu 19:33]
 
 ** DONE fillRack
    CLOSED: [2021-03-02 Tue 11:22]
@@ -75,6 +79,7 @@
 ** DONE Too many blanks appearing in the bag
    CLOSED: [2021-03-11 Thu 18:14]
    Possibly other letters too but the blanks stand out.
+
 * Testing
 
 ** TODO Blanks
