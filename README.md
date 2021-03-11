@@ -525,9 +525,7 @@ in branches that the student should study in this order:
   + A web interface is added, using websockets and the `aeson` library
     to handle encoding and decoding JSON, and a client written using HTML and JavaScript. 
 
-### The server
-
-	The `aeson` library is a
+  + **The server:** The `aeson` library is a
     powerful and neat way of converting Haskell values into JSON
     representations and back again, and this is how we will send data
     over the network. Datatypes that need to be sent over the network
