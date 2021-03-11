@@ -472,14 +472,18 @@ in branches that the student should study in this order:
 	
 	![](/images/freedoms1.png)
 	
-	The figure above shows what happens after more tiles are placed on the board. Several freedoms
-	have been removed. This takes place in the function `Scrabble.Game.Internal.updatePlayables`.
+	The figure above shows what happens after more tiles are placed on
+	the board. Several freedoms have been removed (too many, in
+	fact -- see below). This takes place in the function
+	`Scrabble.Game.Internal.updatePlayables`.
 	
 	*Work in progress*: The AI would be much better if it were more flexible about
-	choosing where to play. At the moment it can only play perpendicularly to en existing word.
+	choosing where to play. At the moment it can only play perpendicularly to an existing word.
 	It could play words that by adding letters
 	to the beginning or end of existing ones, and could play words with the playable position
-	somewhere in the middle.
+	somewhere in the middle. It could also be more careful about pruning playable positions. 
+	In the example above the position `(7,7)` which has the letter 'F' on it *is* playable, 
+	but is currently removed from the list for simplicity.
 	
   + Because the module `Scrabble.Game.AI` needs to share a lot of code with `Scrabble.Game.Game`,
     common code is moved in its own module, `Scrabble.Game.Internal`. A similar change is made
