@@ -69,9 +69,12 @@
 14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
 ------------------------------------------------
 
-** TODO Handle bad input in CLI
+** DONE Handle bad input nicely in CLI
+   CLOSED: [2021-03-11 Thu 18:18]
 
-** TODO Too many blanks appearing in the bag
+** DONE Too many blanks appearing in the bag
+   CLOSED: [2021-03-11 Thu 18:14]
+   Possibly other letters too but the blanks stand out.
 * Testing
 
 ** TODO Blanks

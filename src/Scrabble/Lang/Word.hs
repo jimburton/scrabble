@@ -3,7 +3,8 @@ module Scrabble.Lang.Word
   , wordToString
   , stringToWord
   , textToWord
-  , wordToText )
+  , wordToText
+  , wordPutToText )
   where
 
 import Prelude hiding  ( Word )
@@ -13,7 +14,9 @@ import qualified Data.Text as T
 import Scrabble.Lang.Letter
   ( letterFromChar
   , toChar )
-import Scrabble.Types ( Word )
+import Scrabble.Types
+  ( Word
+  , WordPut )
 
 -- ===== Words ===== --
 
@@ -30,3 +33,6 @@ textToWord  t = fromJust $ stringToWord (T.unpack t)
 
 wordToText :: Word -> Text
 wordToText w = T.pack (wordToString w)
+
+wordPutToText :: WordPut -> Text
+wordPutToText = wordToText . map (\(_,(l,_)) -> l)

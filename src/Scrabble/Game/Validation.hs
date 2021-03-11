@@ -37,5 +37,5 @@ valGameRules ws g = do
       p  = getPlayer g
       w  = head ws
       fm = firstMove g
-  trace (show $ rack p) validateRack b (rack p) w >> validateMove b p w fm
+  validateRack b (rack p) w >> validateMove b p w fm
 

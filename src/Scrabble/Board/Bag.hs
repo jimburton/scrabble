@@ -4,6 +4,7 @@ module Scrabble.Board.Bag
   , takeFromRack )
   where
 
+import Debug.Trace
 import Data.List ( delete )
 import Prelude hiding ( Word )
 import System.Random
@@ -49,7 +50,7 @@ fillRack r b g = pure $ fillRack' (7 - length r) r b g
 takeFromRack :: Rack    -- ^ The rack to take from
              -> Word -- ^ The letters to take from the rack
              -> Evaluator Rack
-takeFromRack r = pure . deleteAll r 
+takeFromRack r = pure . deleteAll r
 
 -- Delete the first occurence of each element in the second list from the first list.
 deleteAll :: Eq a => [a] -> [a] -> [a]

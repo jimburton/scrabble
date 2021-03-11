@@ -60,7 +60,7 @@ showPlayer p = top <> playerLine <> rackLine <> bottom where
   line     c = T.pack (replicate 46 c) <> "\n"
   top        = "\n" <> line '*'
   playerLine = name p <> " (" <> T.pack (show (score p)) <> ")\n"
-  rackLine   = let strs   = map (T.pack . show) (rack p)
+  rackLine   = let strs   = map (T.pack . (:"") . toChar) (rack p)
                    scores = map (T.pack . show . scoreLetter) (rack p) in
                  T.intercalate ", " strs <> "\n"
                  <> T.intercalate ", " scores <> "\n"

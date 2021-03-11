@@ -25,7 +25,8 @@ import Scrabble.Types
   , Dir(..)
   , Word
   , Turn(..)
-  , Letter(Blank) )
+  , Letter(Blank)
+  , Board )
 import Scrabble.Board.Board
   ( mkWP
   , updateBoard
@@ -37,8 +38,9 @@ import Scrabble.Board.Bag
   , fillRack )
 import Scrabble.Lang.Letter
   ( toText )
-import Scrabble.Lang.Word (
-  wordToString )
+import Scrabble.Lang.Word
+  ( wordToString
+  , wordPutToText )
 import Scrabble.Game.Game
   ( pass )
 import Scrabble.Game.Internal
@@ -49,6 +51,8 @@ import Scrabble.Game.Internal
   , setScore )
 import Scrabble.Lang.Search
   ( findPrefixesT )
+import Scrabble.Lang.Dict
+  ( wordsInDict )
 
 -- =========== AI functions ============ --
 
@@ -90,28 +94,28 @@ moveAI :: Validator -- ^ Function to validate the word against the board.
        -> Evaluator (Game, Int)
 moveAI v g = do
   let r  = rack (getPlayer g)
-      mw = findWord (dict g) (filter (/=Blank) r) (playable g)
+      mw = findWord (dict g) (filter (/=Blank) r) (playable g) (board g)
   case mw of
     Nothing -> pass g >>= \g' -> pure (g',0)
-    Just w  -> do
-      let aw = additionalWords (board g) w
+    Just (w,aw)  -> do
       v (w:aw) g >> scoreWords g w aw >>=
         \i -> setScore g { firstMove = False } i >>= updatePlayer w >>=
         updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
 
--- | Pick a word for the AI to play. 
+-- | Pick a word for the AI to play, along with the additional words it generates. 
 findWord :: DictTrie -- ^ The dictionary.
          -> Rack     -- ^ The rack.
          -> Playable -- ^ The playable positions.
-         -> Maybe WordPut 
-findWord d r p = msum $ Map.mapWithKey findWord' p
+         -> Board    -- ^ The board.
+         -> Maybe (WordPut, [WordPut])
+findWord d r p b = msum $ Map.mapWithKey findWord' p
   where findWord' k (l,ps) =
           msum $ map (\(fd,i) ->
                          case fd of
-                           UpD    -> findPrefixOfSize d k l r (fd,i)
-                           DownD  -> findSuffixOfSize d k l r (fd,i)
-                           LeftD  -> findPrefixOfSize d k l r (fd,i)
-                           RightD -> findSuffixOfSize d k l r (fd,i)) ps
+                           UpD    -> findPrefixOfSize d k l r (fd,i) b
+                           DownD  -> findSuffixOfSize d k l r (fd,i) b
+                           LeftD  -> findPrefixOfSize d k l r (fd,i) b
+                           RightD -> findSuffixOfSize d k l r (fd,i) b) ps
 
 -- | Find a word of at least a certain size that ends with a certain letter.
 findPrefixOfSize :: DictTrie         -- ^ The dictionary.
@@ -119,9 +123,10 @@ findPrefixOfSize :: DictTrie         -- ^ The dictionary.
                  -> Letter           -- ^ The letter on the board that this word will connect to.
                  -> Rack             -- ^ The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- ^ The direction and max length of the word.
-                 -> Maybe WordPut
+                 -> Board            -- ^ The board.
+                 -> Maybe (WordPut, [WordPut])
 findPrefixOfSize d p l =
-  findWordOfSize (filter ((==l) . last) . findPrefixesT d) p l
+  findWordOfSize d (filter ((==l) . last) . findPrefixesT d) p l
 
 -- | Find a word of at least a certain size that begins with a certain letter.
 findSuffixOfSize :: DictTrie         -- ^ The dictionary.
@@ -129,9 +134,10 @@ findSuffixOfSize :: DictTrie         -- ^ The dictionary.
                  -> Letter           -- ^ The letter on the board that this word will connect to.
                  -> Rack             -- ^ The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- ^ The direction and max length of the word.
-                 -> Maybe WordPut
-findSuffixOfSize d k l =
-  findWordOfSize (findPrefixesT (Trie.submap (toText l) d)) k l
+                 -> Board            -- ^ The board.
+                 -> Maybe (WordPut,[WordPut])
+findSuffixOfSize d p l =
+  findWordOfSize d (findPrefixesT (Trie.submap (toText l) d)) p l
 
 -- | Get the longest sublist in a list of lists. Not safe (list must have something in it).
 longest :: [[a]] -> [a]
@@ -141,13 +147,15 @@ type WordFinder = Word -> [Word]
 
 -- | Find a word of a certain size.
 --   TODO max 6 letter words at the moment. Too slow for seven letter words...
-findWordOfSize :: WordFinder       -- ^ Function that will query the dictionary.
+findWordOfSize :: DictTrie         -- ^ The dictionary.
+               -> WordFinder       -- ^ Function that will query the dictionary.
                -> Pos              -- ^ The start or end point of the word.
                -> Letter           -- ^ The letter on the board that this word will connect to.
                -> Rack             -- ^ The letters from the player's hand to make up the word.
                -> (FreedomDir,Int) -- ^ The direction and max length of the word.
-               -> Maybe WordPut
-findWordOfSize wf k l r (fd,i) =
+               -> Board            -- ^ The board.
+               -> Maybe (WordPut,[WordPut]) -- ^ The word and its additional words.
+findWordOfSize d wf k l r (fd,i) b =
   let r' = l : take 5 (filter (/=Blank) r)
       ws = filter ((<=i) . length) $ wf r' in
     if null ws
@@ -159,5 +167,7 @@ findWordOfSize wf k l r (fd,i) =
                UpD    -> (fst k-len,snd k)
                DownD  -> k
                LeftD  -> (fst k,snd k-len)
-               RightD -> k in
-      Just $ mkWP (wordToString w) pos dir []
+               RightD -> k
+             wp = mkWP (wordToString w) pos dir []
+             aw = additionalWords b wp in
+      if not $ wordsInDict d (map wordPutToText aw) then Nothing else Just (wp,aw)

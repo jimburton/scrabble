@@ -2,6 +2,7 @@ module Scrabble.Lang.Dict
   ( letterFromChar
   , toChar
   , wordsInDictT
+  , wordsInDict
   , englishDictionaryT
   , dictContainsWordT
   , dictContainsPrefixT )
@@ -30,6 +31,13 @@ wordsInDictT :: DictTrie
             -> [Text]
             -> Evaluator ()
 wordsInDictT t ws = mconcat <$> mapM (dictContainsWordT t) ws
+
+-- | Check whether a list of words are all in the dictionary
+--   outside of the Evaluator monad.
+wordsInDict :: DictTrie
+            -> [Text]
+            -> Bool
+wordsInDict d = all (`Trie.member` d) 
 
 -- | Returns true if the dict contains the given word
 dictContainsWordT :: DictTrie -> Text -> Evaluator ()

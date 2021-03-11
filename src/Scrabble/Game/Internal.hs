@@ -80,7 +80,7 @@ updatePlayables w g = do
       nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
   pure (g { playable = nps })
 
--- | Update the rack of the current player
+-- | Update the rack of the current player and the bag.
 updatePlayer :: WordPut -> Game -> Evaluator Game
 updatePlayer w g = do
   let p      = getPlayer g

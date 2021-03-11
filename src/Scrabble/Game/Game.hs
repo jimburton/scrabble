@@ -93,8 +93,8 @@ move :: Validator -- ^ Validates the word against the board.
 move v g w is = do
   let b   = board g
       aw  = additionalWords b w 
-  setBlanks w is g >>= v (w:aw) >> scoreWords g w aw >>=
-    \i -> setScore g { firstMove = False, lastMovePass = False } i >>= updatePlayer w >>=
+  setBlanks w is g >>= \g' -> v (w:aw) g' >> scoreWords g w aw >>=
+    \i -> setScore g' { firstMove = False, lastMovePass = False } i >>= updatePlayer w >>=
     updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
 
 -- | Take a move by swapping tiles.

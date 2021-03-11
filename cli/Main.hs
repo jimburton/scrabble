@@ -74,7 +74,7 @@ playGame g = do
 takeTurn :: Game -- ^ The game
          -> Maybe Text -- ^ Previous score as text
          -> IO Game
-takeTurn g msc = trace ("Turn: " ++ show (turn g)) $ runInputT defaultSettings loop
+takeTurn g msc = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
@@ -104,7 +104,7 @@ takeTurnManual g = runInputT defaultSettings loop
        Nothing -> loop
        Just wdStr -> do
          let wds = words wdStr
-         if length wds /= 4 && head (head wds) /= ':'
+         if null wds || (length wds /= 4 && head (head wds) /= ':')
            then loop
            else do
            (wd,is) <- liftIO $ replaceBlanks (head wds)
