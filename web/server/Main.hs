@@ -177,7 +177,7 @@ getClient :: WebGame -> Client
 getClient wg = if turn (theGame wg) == P1 then p1 wg else p2 wg
 
 newGame :: Client -> Client -> Game -> WebGame
-newGame c1 c2 g = WebGame c1 c2 g
+newGame = WebGame 
 
 wordPutToText :: WordPut -> Text
 wordPutToText = T.pack . wordToString . map (fst . snd)
