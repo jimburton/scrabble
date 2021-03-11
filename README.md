@@ -208,7 +208,8 @@ in branches that the student should study in this order:
       toe 8 6 v
 	  ```
 	  Bob plays the word TOE vertically, starting at position (8,6). 'T' is worth 1 point but is
-	  played on a double-letter bonus square so it contributes 2 to the score for the word. So the 
+	  played on a double-letter bonus square so it contributes 2 to the score for the word. 'O'
+	  and 'E' are each worth one point so the 
 	  score for TOE is 4. Placing this word generates two additional
 	  words, TO ((8,6), horizontal) and EL ((10,6) horizontal). The bonus underneath 'T' is counted 
 	  again in the score for TO. The score for the additional words is added to the 
@@ -250,7 +251,8 @@ in branches that the student should study in this order:
     value of the tile played on them (shown in the ASCII board as `L2`
     and `L3`) and double or triple the value of entire words (`2W` and
     `3W`). However, bonuses are only applied once, when a new tile has been
-    placed on them.
+    placed on them. If all seven tiles are played in a move there is a fifty
+	point bonus.
 	
   + It may be convenient to switch off the dictionary checking in
 	development or while playing with the code so that you don't have to come up with a valid word
@@ -275,7 +277,9 @@ in branches that the student should study in this order:
     together and easy to find.  Even though quite a lot more code is
     added, each module is kept down to a manageable size. Each module exports only those
 	datatypes, constructors and functions the outside world needs, and imports only what it 
-	needs. Files in the library:
+	needs. 
+	
+	The UI code is moved into the directory `cli/`. Source files in the project:
 	
 	```
 	src
@@ -297,6 +301,8 @@ in branches that the student should study in this order:
     │   ├── Show.hs
     │   └── Types.hs
     └── Scrabble.hs
+	cli
+    └── Main.hs
 
 	```
   + To play the game you now need to enter `cabal repl scrabble`.
@@ -309,15 +315,25 @@ in branches that the student should study in this order:
   + The dictionary is now stored in a [trie](https://en.wikipedia.org/wiki/Trie), which is a very
     efficient data structure for storing strings sorted by their prefixes. This speeds up the
     process of checking whether words exist quite a bit.
-  + The `String` datatype is used a lot in earlier versions. In this version this is almost all 
-    replaced with `Data.Text`, which is much more efficient. 
-  + The biggest change in the library is the introduction of monadic `Either` code. A new type
-    called `Evaluator` is added (see `Scrabble.Types` and `Scrabble.Evaluator`). This type wraps
-	up an `Either String a` type, where the `String` is an error message and the `a` value is
-	whatever is being evaluated (e.g. an updated version of the game, or just `()` in cases where
-	moves are validated). By making this type into a monad we are able to replace all of
+  + The `String` datatype is used all over the place in earlier
+    versions. In this version this is almost all replaced with
+    `Data.Text`, which is much more efficient. `Data.Text` contains a
+    lot of function names which clash with names in the `Prelude` so
+    the norm is to import it as a qualified name, except for the
+    `Text` datatype itself which is imported directly:
+	
+	```
+	import qualified Data.Text as T
+	import Data.Text (Text)
+	```
+  + The biggest change in the library is the introduction of monadic `Either` code for handling 
+	errors. A new type called `Evaluator` is added (see `Scrabble.Types` and `Scrabble.Evaluator`). 
+	This type wraps up an `Either String a` type, where the `String` is an error message and the 
+	`a` value is whatever is being evaluated (e.g. an updated version of the game, or just `()` 
+	in cases where moves are validated). By making this type into a monad we are able to replace all of
 	the nested case statements in `takeTurn` with monadic-style code. For example, `validateMove`
 	goes from this:
+	
 	```
 	validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
@@ -345,6 +361,24 @@ in branches that the student should study in this order:
 	   >> firstMoveTouchesCentre w fm 
 	   >> lettersAvailable w p b
 	```
+	The functions that check aspects of the move are now *combinators*. We can compose
+	them into larger combinators that check several things. If `connects`, or `straight`, 
+	or any of the other checks made in the monadic versions fails
+	by returning a `Left` with an error message in it, this is handled by the monad instance
+	declaration. Functions at the top level can inspect the result of calling a chain of 
+	computations to see if all went well. For example, the `takeTurn` function in `cli/Main.hs`
+	calls `move`, which now returns `Evaluator Game`. This is unwrapped to decide whether to 
+	move on to the next turn or to ask the current player to try again:
+	
+	```
+	case move valGameRules g wp is of
+	    -- there was an error, retake the turn with the old game
+        Ev (Left e) -> do liftIO $ T.putStrLn e
+                          liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
+        -- all is well, take the next turn with the new game
+        Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just (T.pack $ show sc))
+	```
+	
   + There are a lot of validation functions in the previous version that checked some 
     boolean condition and returned `Right ()` if it was true or `Left` with an error message if
 	it was false. The type of these is now `Evaluator ()`. The code that checks the condition
