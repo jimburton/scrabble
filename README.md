@@ -478,15 +478,18 @@ in branches that the student should study in this order:
 	`Scrabble.Game.Internal.updatePlayables`.
 	
 	*Work in progress*: The AI would be much better if it were more flexible about
-	choosing where to play. At the moment it can only play perpendicularly to an existing word.
+	choosing where to play. At the moment it can only play perpendicular to an existing word.
 	It could play words that by adding letters
 	to the beginning or end of existing ones, and could play words with the playable position
 	somewhere in the middle. It could also be more careful about pruning playable positions. 
 	In the example above the position `(7,7)` which has the letter 'F' on it *is* playable, 
-	but is currently removed from the list for simplicity.
+	but is currently removed from the list for simplicity. It could also put up more of a fight 
+	by searching for the best move, but smarter strategies would be needed to do this in reasonable 
+	time. These strategies could include trying to make words using high value tiles and 
+	which are placed on bonus tiles.
 	
   + Because the module `Scrabble.Game.AI` needs to share a lot of code with `Scrabble.Game.Game`,
-    common code is moved in its own module, `Scrabble.Game.Internal`. A similar change is made
+    common code is moved into its own module, `Scrabble.Game.Internal`. A similar change is made
 	to the `Board` code, adding `Scrabble.Board.Internal`.
 	
 	Files in the library:
