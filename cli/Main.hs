@@ -66,7 +66,6 @@ startGameAI p1Name = do
 -- | Play the game.
 playGame :: Game -> IO Game
 playGame g = do
-  printBoard False (board g) Nothing
   printPlayer $ player1 g
   printPlayer $ player2 g
   takeTurn g Nothing
