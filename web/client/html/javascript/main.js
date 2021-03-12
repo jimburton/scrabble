@@ -277,8 +277,8 @@ var _Dictionary = function(dictionaryFileURL, maxWordLength, indexedAlphabet)
 {
 	this.IndexedAlphabet = indexedAlphabet;
 	this.MaxWordLength = maxWordLength;
-	this.DAWGReader = new BinFileReader(dictionaryFileURL);
-	this.DAWGReader.movePointerTo(0);
+	//this.DAWGReader = new BinFileReader(dictionaryFileURL);
+	//this.DAWGReader.movePointerTo(0);
 	//var NumberOfNodes = this.DAWGReader.readNumber(4);
 
 //Below: test code, not necessary parseRecursive(1, 0); //dawg_index is NOT zero-based (start with 1)
@@ -359,34 +359,34 @@ var DAWG_OFFSET = 4; //4 bytes initial data at top of file, stores the number of
 _Dictionary.prototype.DAWG_Letter = function(dataIndex)
 {
 	var byteOffset = 4 * dataIndex + DAWG_OFFSET;
-	this.DAWGReader.movePointerTo(byteOffset);
+	//this.DAWGReader.movePointerTo(byteOffset);
 	
-	var alphabetPos = ((this.DAWGReader.readNumber(4) & this.LETTER_BIT_MASK) >> this.LETTER_BIT_SHIFT);
+	//var alphabetPos = ((this.DAWGReader.readNumber(4) & this.LETTER_BIT_MASK) >> this.LETTER_BIT_SHIFT);
 	var letter = this.IndexedAlphabet.substring(alphabetPos, alphabetPos+1);
 	return letter;
 }
 _Dictionary.prototype.DAWG_IsEndOfWord = function(dataIndex)
 {
 	var byteOffset = 4 * dataIndex + DAWG_OFFSET;
-	this.DAWGReader.movePointerTo(byteOffset);
+	//this.DAWGReader.movePointerTo(byteOffset);
 
-	var val = (this.DAWGReader.readNumber(4) & this.END_OF_WORD_BIT_MASK);
+	//var val = (this.DAWGReader.readNumber(4) & this.END_OF_WORD_BIT_MASK);
 	return val == 0 ? false : true;
 }
 _Dictionary.prototype.DAWG_NextIndex = function(dataIndex)
 {
 	var byteOffset = 4 * dataIndex + DAWG_OFFSET;
-	this.DAWGReader.movePointerTo(byteOffset);
+	//this.DAWGReader.movePointerTo(byteOffset);
 	
-	var val = (this.DAWGReader.readNumber(4) & this.END_OF_LIST_BIT_MASK);
+	//var val = (this.DAWGReader.readNumber(4) & this.END_OF_LIST_BIT_MASK);
 	return val == 0 ? (dataIndex + 1) : 0;
 }
 _Dictionary.prototype.DAWG_ChildIndex = function(dataIndex)
 {
 	var byteOffset = 4 * dataIndex + DAWG_OFFSET;
-	this.DAWGReader.movePointerTo(byteOffset);
+	//this.DAWGReader.movePointerTo(byteOffset);
 	
-	var val = (this.DAWGReader.readNumber(4) & this.CHILD_INDEX_BIT_MASK);
+	//var val = (this.DAWGReader.readNumber(4) & this.CHILD_INDEX_BIT_MASK);
 	return val;
 }
 

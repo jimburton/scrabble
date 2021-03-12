@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Debug.Trace
 import Data.Aeson (decode)
 import Control.Concurrent (forkIO, threadDelay)
 import qualified Network.WebSockets as WS
 import Control.Concurrent.BoundedChan
 import qualified Data.Text.IO as T
+import qualified Data.Text.Lazy.Encoding as LE 
 import ScrabbleWeb.Game (gameStarter)
 import ScrabbleWeb.Types (Msg(MsgJoin), Client)
 
@@ -16,8 +18,9 @@ enqueue :: BoundedChan Client -> WS.ServerApp
 enqueue state pending = do
     conn <- WS.acceptRequest pending
     msg  <- WS.receiveData conn
+    --T.putStrLn msg
     case decode msg of
-      Nothing -> WS.sendTextData conn ("Bad input: " <> msg)
+      Nothing -> trace (show msg) $ WS.sendTextData conn ("Bad input: " <> msg)
       Just (MsgJoin name) -> do
         T.putStrLn ("Accepting: \n" <> name)
         writeChan state (name,conn)
@@ -33,6 +36,7 @@ main :: IO ()
 main = do
     state <- newBoundedChan 2
     _ <- forkIO (gameStarter state)
+    T.putStrLn "Starting server..."
     WS.runServer "127.0.0.1" 9160 $ enqueue state
 
 

@@ -6,20 +6,24 @@ module ScrabbleWeb.Announce
   , announceTurn
   , maybeAnnounce
   , sendRack
-  , sendHints )
+  , sendHints
+  , sendJoinAcks )
   where
 
+import Prelude hiding (Word)
 import qualified Network.WebSockets as WS
 import Data.Aeson
 import Data.Text (Text)
 import Scrabble.Types
-  ( Player(..) )
+  ( Player(..)
+  , Word )
 import ScrabbleWeb.Types
   ( WebGame(..)
   , Game(..)
   , Turn(..)
   , Msg(..)
-  , Score(..) )
+  , Score(..)
+  , JoinAck(..))
   
 -- ====== Sending messages to clients =========== --
 
@@ -78,6 +82,16 @@ sendRack wg t = do
   let pf = if t == P1 then player1 else player2
       r  = rack (pf (theGame wg))
   msgOne wg t (MsgRack r)
+
+-- | Send name and rack to both players in a new game.
+sendJoinAcks :: WebGame -> IO ()
+sendJoinAcks wg = do
+  let pl1 = player1 (theGame wg)
+      pl2 = player2 (theGame wg)
+      ja1 = MsgJoinAck (JoinAck { theName = fst (p1 wg), theRack = rack pl1 })
+      ja2 = MsgJoinAck (JoinAck { theName = fst (p2 wg), theRack = rack pl2 })
+  msgCurrent wg ja1
+  msgOpponent wg ja2
 
 -- | Send hints to the player identified by the Turn parameter.
 sendHints :: WebGame -> Turn -> Maybe [Word]  -> IO ()

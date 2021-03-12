@@ -1,204 +1,106 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<meta charset="utf-8" />
-	<!--[if IE]><![endif]-->
-
-	<title>HTML Scrabble</title>
-	<meta name="DC.title" content="HTML Scrabble" />
-	
-	<meta name="description"
-		content="A multiplayer Scrabble clone made with HTML, CSS, JavaScript, and which connects to a server written in Haskell." />
-	<meta name="DC.subject"
-		content="A multiplayer Scrabble clone made with HTML, CSS, JavaScript, and which connects to a server written in Haskell." />
+  <link rel="shortcut icon" href="#" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta charset="utf-8" />
+  <!--[if IE]><![endif]-->
+  
+  <title>HTML Scrabble</title>
+  <meta name="DC.title" content="HTML Scrabble" />
+  
+  <meta name="description"
+	content="A multiplayer Scrabble clone made with HTML, CSS, JavaScript, and which connects to a server written in Haskell." />
+  <meta name="DC.subject"
+	content="A multiplayer Scrabble clone made with HTML, CSS, JavaScript, and which connects to a server written in Haskell." />
 		
-	<meta name="author" content="Daniel Weck" />
-	<meta name="DC.creator" content="Daniel Weck" />
+  <meta name="author" content="Daniel Weck" />
+  <meta name="DC.creator" content="Daniel Weck" />
 
-	<meta name="Copyright" content="Open Source code, LGPL license" />
+  <meta name="Copyright" content="Open Source code, LGPL license" />
 
-	<meta name="Copyright" content="SCRABBLE[tm] is a registered trademark. All intellectual property rights in and to the game are owned in the U.S.A and Canada by Hasbro Inc., and throughout the rest of the world by J.W. Spear &amp; Sons Limited of Maidenhead, Berkshire, England, a subsidiary of Mattel Inc. This web page and associated experiments are not associated with any of the owners." />
+  <meta name="Copyright" content="SCRABBLE[tm] is a registered trademark. All intellectual property rights in and to the game are owned in the U.S.A and Canada by Hasbro Inc., and throughout the rest of the world by J.W. Spear &amp; Sons Limited of Maidenhead, Berkshire, England, a subsidiary of Mattel Inc. This web page and associated experiments are not associated with any of the owners." />
 
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
 
-	<!-- link rel="stylesheet" href="css/main.css" media="all" / -->
-	<style type="text/css" media="all">
-		@import "css/main.css";
-	</style>
-
-	<script type="text/javascript" src="javascript/jquery-1.4.3.min.js"></script>
+  <style type="text/css" media="all">
+    @import "css/main.css";
+  </style>
+  
+  <script type="text/javascript" src="javascript/jquery-1.4.3.min.js"></script>
+  <script type="text/javascript" src="javascript/jquery.blockUI.js"></script>
+  <script type="text/javascript" src="javascript/jquery-css-transform.js"></script>
+  <script type="text/javascript" src="javascript/jquery-animate-css-rotate-scale.js"></script>
+  <script type="text/javascript" src="javascript/rotate3Di.js"></script>
+  <script type="text/javascript" src="javascript/jquery-ui-1.8.7.custom.min.js"></script>
 	
-	<!-- script type="text/javascript" src="javascript/jquery.event.drag-2.0.js"></script>
-	<script type="text/javascript" src="javascript/jquery.event.drop-2.0.js"></script -->
+  <script type="text/javascript" src="javascript/BinFileReader.js"></script>	
 	
-	<!-- script type="text/javascript" src="javascript/jquery.animate-enhanced.min.js"></script -->
+  <script>var _sf_startpt=(new Date()).getTime()</script>
 	
-	<script src="javascript/jquery.blockUI.js" type="text/javascript"></script>
+  <script type="text/javascript" src="javascript/main.js"></script>
 	
-	<script src="javascript/jquery-css-transform.js" type="text/javascript"></script>
-	<script src="javascript/jquery-animate-css-rotate-scale.js" type="text/javascript"></script>
-	<script src="javascript/rotate3Di.js" type="text/javascript"></script>
+  <script type="text/javascript">
 	
-	<script type="text/javascript" src="javascript/jquery-ui-1.8.7.custom.min.js"></script>
+    var game = 0;
+    var board = 0;
+    var rack = 0;
+    var boardUI = 0;
+    
+    function playAction_resetTilesOnRack()
+    {
+	boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
+	rack.TakeTilesBack();
+    }
 	
-	<!-- script type="text/javascript" src="javascript/dictionary_English.js"></script -->
-	<!--
-	var re = /(,[a-z]+)\+/g;
-	var re0 = /(,[a-z])([a-z]*)0/g;
-	var re1 = /(,[a-z]{2})([a-z]*)1/g;
-	var re2 = /(,[a-z]{3})([a-z]*)2/g;
-	var re3 = /(,[a-z]{4})([a-z]*)3/g;
-	var re4 = /(,[a-z]{5})([a-z]*)4/g;
-	var re5 = /(,[a-z]{6})([a-z]*)5/g;
-	var re6 = /(,[a-z]{7})([a-z]*)6/g;
-	var re7 = /(,[a-z]{8})([a-z]*)7/g;
-	var re8 = /(,[a-z]{9})([a-z]*)8/g;
-	var re9 = /(,[a-z]{10})([a-z]*)9/g;
-
-	function checkDictionary(theWord)
-	{
-		theWord = theWord.toLowerCase();
-
-		if (theWord.length == 2)
-		{
-			return (D2.indexOf(theWord) != -1);
-		}
-		first3 = theWord.replace(/^(...).*/, "$1");
-		if (typeof(D[first3]) == "undefined")
-		{
-			return false;
-		}
-		var theEntry = D[first3];
-		if (!theEntry.match(/,$/))
-		{
-			// We've not looked at this entry before - uncompress it, etc.
-			theEntry = theEntry.replace(/W/g, "le");
-			theEntry = theEntry.replace(/K/g, "al");
-			theEntry = theEntry.replace(/F/g, "man");
-			theEntry = theEntry.replace(/U/g, "ous");
-			theEntry = theEntry.replace(/M/g, "ment");
-			theEntry = theEntry.replace(/B/g, "able");
-			theEntry = theEntry.replace(/C/g, "ic");
-			theEntry = theEntry.replace(/X/g, "on");
-			theEntry = theEntry.replace(/Q/g, "ng");
-			theEntry = theEntry.replace(/R/g, "ier");
-			theEntry = theEntry.replace(/S/g, "st");
-			theEntry = theEntry.replace(/Y/g, "ly");
-			theEntry = theEntry.replace(/J/g, "ally");
-			theEntry = theEntry.replace(/E/g, "es");
-			theEntry = theEntry.replace(/L/g, "less");
-			theEntry = theEntry.replace(/Z/g, "ies");
-			theEntry = theEntry.replace(/P/g, "tic");
-			theEntry = theEntry.replace(/I/g, "iti");
-			theEntry = theEntry.replace(/V/g, "tion");
-			theEntry = theEntry.replace(/H/g, "zation");
-			theEntry = theEntry.replace(/A/g, "abiliti");
-			theEntry = theEntry.replace(/O/g, "ologi");
-			theEntry = theEntry.replace(/T/g, "est");
-			theEntry = theEntry.replace(/D/g, "ed");
-			theEntry = theEntry.replace(/N/g, "ness");
-			theEntry = theEntry.replace(/G/g, "ing");
-			theEntry = "," + theEntry + ",";
-			// May have prefixes on prefixes, so need to repeat the replace.
-			var more = true;
-			while (more)
-			{
-				var theLength = theEntry.length;
-				theEntry = theEntry.replace(re, "$1$1");
-				theEntry = theEntry.replace(re0, "$1$2$1");
-				theEntry = theEntry.replace(re1, "$1$2$1");
-				theEntry = theEntry.replace(re2, "$1$2$1");
-				theEntry = theEntry.replace(re3, "$1$2$1");
-				theEntry = theEntry.replace(re4, "$1$2$1");
-				theEntry = theEntry.replace(re5, "$1$2$1");
-				theEntry = theEntry.replace(re6, "$1$2$1");
-				theEntry = theEntry.replace(re7, "$1$2$1");
-				theEntry = theEntry.replace(re8, "$1$2$1");
-				theEntry = theEntry.replace(re9, "$1$2$1");
-				more = (theLength != theEntry.length);
-			}
-			if (theEntry.match(/[0-@+]/))
-			{
-				alert("decompression oops!");
-			}
-			D[first3] = theEntry;
-		}
-		rest = theWord.replace(/^...?/, "");
-		return (D[first3].indexOf("," + rest + ",") != -1);
-	}
-	-->
+    function playAction_submitWords()
+    {}
 	
-	<script type="text/javascript" src="javascript/BinFileReader.js"></script>	
+    function playAction_drawNewTiles()
+    {
+	boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
+	//boardUI.CurrentlySelectedSquare = 0;
 	
-	<script>var _sf_startpt=(new Date()).getTime()</script>
-	
-	<script type="text/javascript" src="javascript/main.js"></script>
-	<!-- script type="text/javascript" src="scripts/dictionary.js"></script -->
-	
-	<script type="text/javascript">
-	
-	var game = 0;
-	var board = 0;
-	var rack = 0;
-	var boardUI = 0;
-
-	function playAction_resetTilesOnRack()
-	{
-		boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-		//boardUI.CurrentlySelectedSquare = 0;
-	
-		rack.TakeTilesBack();
-	}
-	
-	function playAction_submitWords()
-	{}
-	
-	function playAction_drawNewTiles()
-	{
-		boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-		//boardUI.CurrentlySelectedSquare = 0;
-
-		/*
-		rack.EmptyTiles();
-		rack.ReplenishRandomTiles();
-		*/
+	/*
+	 rack.EmptyTiles();
+	 rack.ReplenishRandomTiles();
+	*/
 		
-		rack.GenerateRandomTiles();
+	rack.GenerateRandomTiles();
 		
-		//TODO: pass turn
+	//TODO: pass turn
+    }
+	
+    function playAction_passTurn()
+    {
+	if (!confirm("Are you sure you want to pass your turn ?"))
+	{
+	    return;
 	}
 	
-	function playAction_passTurn()
-	{
-		if (!confirm("Are you sure you want to pass your turn ?"))
-		{
-			return;
-		}
-		
-		//TODO: pass
-	}
+	//TODO: pass
+    }
 	
-	function resetTextField()
-	{
-		$("#text_field").val("");
-	}
+    function resetTextField()
+    {
+	$("#text_field").val("");
+    }
 	
-	function findAnagrams()
+    function findAnagrams()
+    {
+	var text = $("#text_field").val();
+	var anagrams = game.Dictionary.FindAnagrams(text);
+	if (anagrams.length == 1)
 	{
-		var text = $("#text_field").val();
-		var anagrams = game.Dictionary.FindAnagrams(text);
-		if (anagrams.length == 1)
-		{
-			alert("Error: the characters [" + anagrams[0] + "] do not return any anagrams from the \"" + game.Language + "\" dictionary.");
-		}
-		else
-		{
-			//alert("Success: the characters [" + anagrams[0] + "] return " + (anagrams.length-1) + " anagrams from the \"" + game.Language + "\" dictionary.");
+	    alert("Error: the characters [" + anagrams[0] + "] do not return any anagrams from the \"" + game.Language + "\" dictionary.");
+	}
+	else
+	{
+	    //alert("Success: the characters [" + anagrams[0] + "] return " + (anagrams.length-1) + " anagrams from the \"" + game.Language + "\" dictionary.");
+	    
+	    $('#anagrams').html('<p><input type="button" value="Clear Anagrams" onclick="$(\'#anagrams\').html(\'\');"></input></p>');
 			
-			$('#anagrams').html('<p><input type="button" value="Clear Anagrams" onclick="$(\'#anagrams\').html(\'\');"></input></p>');
-			
-			/*
+	    /*
 			for (var i = 1; i < anagrams.length; i++)
 			{
 				$('#anagrams').append('<p>' + anagrams[i] + '</p>');
@@ -520,7 +422,8 @@
 	</style>		
 	<![endif]--> 
 
-	<!--[if !IE]>--> <style type="text/css" media="all">.cnotie {display: block}</style> <!--<![endif]-->
+	 <!--[if !IE]>--> <style type="text/css" media="all">.cnotie {display: block}</style> <!--<![endif]-->
+	<script type="text/javascript" src="javascript/game.js"></script>
 </head>
 <body id="body">
 

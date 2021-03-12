@@ -8,6 +8,8 @@ module ScrabbleWeb.Game
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Maybe (fromJust)
+import Data.List (find)
 import qualified Network.WebSockets as WS
 import Control.Concurrent (forkIO)
 import Control.Concurrent.BoundedChan
@@ -39,6 +41,7 @@ import ScrabbleWeb.Announce
   , announceTurn
   , maybeAnnounce
   , sendRack
+  , sendJoinAcks
   , msgOpponent )
 
 -- ========== Playing a game on the web ================ --
@@ -48,23 +51,27 @@ import ScrabbleWeb.Announce
 gameStarter :: BoundedChan Client -> IO ()
 gameStarter state = loop
   where loop = do
-          c1 <- readChan state
-          c2 <- readChan state
-          T.putStrLn (fst c1 <> " vs " <> fst c2)
+          (n1,c1) <- readChan state
+          (n2,c2) <- readChan state
+          let (n1',n2') = distinctNames (n1,n2)
+          T.putStrLn (n1' <> " vs " <> n2')
           d <- englishDictionaryT
           theGen <- getStdGen
-          let ig = G.newGame (fst c1) (fst c2) theGen d
-          _ <- forkIO $ playGame (newGame c1 c2 ig)
+          let ig = G.newGame n1' n2' theGen d
+          _ <- forkIO $ playGame (newGame (n1',c1) (n2',c2) ig)
           loop
 
+distinctNames :: (Text,Text) -> (Text,Text)
+distinctNames (n1,n2) =
+  (n1, fromJust $ find (/=n1) (n2 : zipWith (\n i -> n <> (T.pack $ show i)) (repeat n2) [1..]))
+  
 newGame :: Client -> Client -> Game -> WebGame
 newGame = WebGame
 
 playGame :: WebGame -> IO ()
 playGame wg = do
-  sendRack wg P1
-  sendRack wg P2
-  _ <- takeTurn wg (Just "New game")
+  sendJoinAcks wg 
+  _ <- takeTurn wg Nothing
   return ()
 
 -- | Take a turn.
