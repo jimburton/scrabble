@@ -26,7 +26,9 @@ enqueue state pending = do
           where loop = threadDelay (10000*5) >> loop
       Just _ -> WS.sendTextData conn ("Not expecting: " <> msg)
  
--- | Entry point for the server.
+-- | Entry point for the server. Creates the Chan which will hold
+--   incoming clients, starts the thread that will watch the Chan and
+--   start games, then listens for connections.
 main :: IO ()
 main = do
     state <- newBoundedChan 2

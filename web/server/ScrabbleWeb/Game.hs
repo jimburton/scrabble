@@ -13,27 +13,33 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.BoundedChan
 import Data.Aeson
 import System.Random (getStdGen)
-import ScrabbleWeb.Types ( WebGame(..)
-                         , Client
-                         , Msg(..)
-                         , Move(..))
-import Scrabble.Types ( Evaluator(..)
-                      , Game(..)
-                      , Turn(..)
-                      , Player(..))
+import ScrabbleWeb.Types
+  ( WebGame(..)
+  , Client
+  , Msg(..)
+  , Move(..))
+import Scrabble.Types
+  ( Evaluator(..)
+  , Game(..)
+  , Turn(..)
+  , Player(..))
 import Scrabble.Lang.Dict (englishDictionaryT)
 import Scrabble.Lang.Word (wordPutToText)
-import qualified Scrabble.Game.Game as G ( move
-                                         , getPlayer
-                                         , newGame )
+import qualified Scrabble.Game.Game as G
+  ( move
+  , getPlayer
+  , newGame )
 import Scrabble.Game.AI (moveAI)
-import Scrabble.Game.Validation (valGameRules)
-import ScrabbleWeb.Announce ( announce
-                            , announceScores
-                            , announceTurn
-                            , maybeAnnounce
-                            , sendRack
-                            , msgOpponent )
+import Scrabble.Game.Validation
+  ( valGameRules
+  , valGameRulesAndDict )
+import ScrabbleWeb.Announce
+  ( announce
+  , announceScores
+  , announceTurn
+  , maybeAnnounce
+  , sendRack
+  , msgOpponent )
 
 -- ========== Playing a game on the web ================ --
 
@@ -84,21 +90,6 @@ takeTurnAI wg = do
     Ev (Left e)       -> do announce wg e
                             pure wg
 
--- | Handle the situation when the game ends.
-doGameOver :: WebGame -> IO WebGame
-doGameOver wg = do
-  let g      = theGame wg
-      pl1    = player1 g
-      pl2    = player2 g
-      draw   = score pl1 == score pl2
-      winner = if score pl1 > score pl2
-               then pl1 else pl2
-  announce wg "Game over!"
-  announceScores wg
-  if draw
-    then announce wg "It's a draw!" >> pure wg
-    else announce wg ("Congratulations " <> name winner) >> pure wg
-
 -- | Take a turn manually.
 takeTurnManual :: WebGame -> IO WebGame
 takeTurnManual wg = do
@@ -120,15 +111,33 @@ takeTurnManual wg = do
                                    takeTurn (wg { theGame = g' }) (Just (T.pack $ show sc))
       _             -> takeTurn wg (Just ("Not expecting that: " <> T.pack (show msg)))
 
+-- | Handle the situation when the game ends.
+doGameOver :: WebGame -> IO WebGame
+doGameOver wg = do
+  let g      = theGame wg
+      pl1    = player1 g
+      pl2    = player2 g
+      draw   = score pl1 == score pl2
+      winner = if score pl1 > score pl2
+               then pl1 else pl2
+  announce wg "Game over!"
+  announceScores wg
+  if draw
+    then announce wg "It's a draw!" >> pure wg
+    else announce wg ("Congratulations " <> name winner) >> pure wg
+
+-- | Send hints to a player.
 doHints :: WebGame -> IO WebGame
 doHints = return
 
+-- | Let the player take a move by passing.
 doPass :: WebGame -> IO WebGame
 doPass = return
 
+-- | Let the player take a move by swapping some tiles.
 doSwap :: WebGame -> IO WebGame
 doSwap = return
 
-
+-- | Get client whose turn it is. 
 getClient :: WebGame -> Client
 getClient wg = if turn (theGame wg) == P1 then p1 wg else p2 wg

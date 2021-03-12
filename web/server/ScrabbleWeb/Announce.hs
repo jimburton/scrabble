@@ -68,8 +68,8 @@ announceScores :: WebGame -> IO ()
 announceScores wg = do
   let pl1 = player1 (theGame wg)
       pl2 = player2 (theGame wg)
-      s1  = Score P1 $ score pl1
-      s2  = Score P2 $ score pl2
+      s1  = Score { theTurn = P1, theScore = score pl1 }
+      s2  = Score { theTurn = P2, theScore = score pl2 }
   msg wg (MsgScore (s1,s2))
 
 -- | Send the rack to the player identified by the Turn parameter.

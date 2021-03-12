@@ -1,13 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Happstack.Server (Browsing(EnableBrowsing)
-                        , nullConf
-                        , serveDirectory
-                        , simpleHTTP
-                        )
+import Happstack.Server
+  ( Browsing(EnableBrowsing)
+  , nullConf
+  , serveDirectory
+  , simpleHTTP
+  )
 
--- ================= Server the client web app ================= --
+-- ================= the client web app just serves static files ================= --
 
 main :: IO ()
 main = simpleHTTP nullConf $ serveDirectory EnableBrowsing [] "web/client/html"

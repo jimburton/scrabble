@@ -3,7 +3,9 @@ module Main
   where
 
 import qualified Data.Text.IO as T
-import ScrabbleCLI.Game (startGame, startGameAI) 
+import ScrabbleCLI.Game (startGame, startGameAI)
+
+-- ========= Entry point for a CLI game of Scrabble =========== --
 
 main :: IO ()
 main = do

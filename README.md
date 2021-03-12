@@ -7,7 +7,7 @@ University of Brighton.
 The Scrabble library is adapted from https://github.com/joshcough/Scrabble, while the UI 
 borrows code from https://github.com/danielweck/scrabble-html-ui.
 
-If you don't know the rules of the game you can read up on them [here](https://www.theukrules.co.uk/rules/children/games/scrabble.html).
+If you don't know the rules of the game you can read up on them [here](https://www.theukrules.co.uk/rules/children/games/scrabble.html). [Disclaimer](#disclaimer).
 
 The emphasis is intended to be not so much on the logic of playing the
 game as on refining an initial solution to a clean, functional software design
@@ -658,4 +658,12 @@ in branches that the student should study in this order:
 ### The client
     See `web/client`.
 
+####Disclaimer
+
+SCRABBLE[tm] is a registered trademark. All intellectual property
+rights in and to the game are owned in the U.S.A and Canada by Hasbro
+Inc., and throughout the rest of the world by J.W. Spear & Sons
+Limited of Maidenhead, Berkshire, England, a subsidiary of Mattel
+Inc. This project and associated experiments are for teaching purposes
+and are not associated with any of the owners.
 
