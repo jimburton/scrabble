@@ -6,7 +6,7 @@ cabal-version:       >=1.10
 name:                jb-scrabble
 version:             0.1.0.0
 -- synopsis:
-description: Adapted from https://github.com/joshcough/Scrabble
+description: 
 -- bug-reports:
 -- license:
 license-file:        LICENSE
@@ -93,6 +93,7 @@ executable scrabble-server
   main-is:            Main.hs
   other-modules:      ScrabbleWeb.Types
                     , ScrabbleWeb.Announce
+                    , ScrabbleWeb.Game
                     , Scrabble.Types
                     , Scrabble.Show
                     , Scrabble.Evaluator
@@ -120,6 +121,7 @@ executable scrabble-server
                     , BoundedChan
   hs-source-dirs:     web/server
                     , src
+  ghc-options: -Wall -fno-warn-orphans
   default-extensions: OverloadedStrings
                     , DeriveGeneric
                     , DeriveAnyClass
@@ -132,4 +134,5 @@ executable scrabble-client
                     , happstack-server
   hs-source-dirs:     web/client
   default-extensions:
+  ghc-options: -Wall -fno-warn-orphans
   default-language:   Haskell2010
