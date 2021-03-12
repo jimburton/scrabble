@@ -57,7 +57,10 @@ library
 
 executable scrabble
   main-is:             Main.hs
-  other-modules:       Scrabble.Types
+  other-modules:       ScrabbleCLI.Game
+                     , ScrabbleCLI.Out
+                     , ScrabbleCLI.Blanks
+                     , Scrabble.Types
                      , Scrabble.Show
                      , Scrabble.Evaluator
                      , Scrabble.Game.Game
