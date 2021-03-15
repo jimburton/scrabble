@@ -76,7 +76,7 @@ playGame wg = do
 
 -- | Take a turn.
 takeTurn :: WebGame    -- ^ The game
-         -> Maybe Text -- ^ A message such as the previous score or a description of an error
+         -> Maybe Text -- ^ An optional message, such as the previous score or a description of an error.
          -> IO WebGame
 takeTurn wg msc = do
      maybeAnnounce wg msc

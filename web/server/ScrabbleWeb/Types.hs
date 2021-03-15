@@ -22,9 +22,9 @@ import Scrabble.Types
   , Rack
   , Letter(..)
   , Turn(..)
-  , Game(..)
+  , Game(..) 
   , Evaluator(..)
-  , Word )
+  , Word ) 
 
 -- ======== Types for ScrabbleWeb ========== --
 
@@ -42,8 +42,10 @@ instance Eq WebGame where
   g1 == g2 = fst (p1 g1) == fst (p1 g2) && fst (p2 g1) == fst (p2 g2)
 
 -- | Acknowledging the player into a game
-data JoinAck = JoinAck { theName :: Text
-                       , theRack :: Rack }
+data JoinAck = JoinAck { jaName :: Text
+                       , jaRack :: Rack
+                       , jaTurn :: Turn
+                       , jaOppName :: Text }
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 -- | A move.
 newtype Move = Move

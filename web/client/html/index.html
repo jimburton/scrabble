@@ -1,488 +1,92 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<html lang="en">
+
 <head>
-  <link rel="shortcut icon" href="#" />
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <meta charset="utf-8" />
-  <!--[if IE]><![endif]-->
-  
-  <title>HTML Scrabble</title>
-  <meta name="DC.title" content="HTML Scrabble" />
-  
-  <meta name="description"
-	content="A multiplayer Scrabble clone made with HTML, CSS, JavaScript, and which connects to a server written in Haskell." />
-  <meta name="DC.subject"
-	content="A multiplayer Scrabble clone made with HTML, CSS, JavaScript, and which connects to a server written in Haskell." />
-		
-  <meta name="author" content="Daniel Weck" />
-  <meta name="DC.creator" content="Daniel Weck" />
-
-  <meta name="Copyright" content="Open Source code, LGPL license" />
-
-  <meta name="Copyright" content="SCRABBLE[tm] is a registered trademark. All intellectual property rights in and to the game are owned in the U.S.A and Canada by Hasbro Inc., and throughout the rest of the world by J.W. Spear &amp; Sons Limited of Maidenhead, Berkshire, England, a subsidiary of Mattel Inc. This web page and associated experiments are not associated with any of the owners." />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-
-  <style type="text/css" media="all">
-    @import "css/main.css";
-  </style>
-  
-  <script type="text/javascript" src="javascript/jquery-1.4.3.min.js"></script>
-  <script type="text/javascript" src="javascript/jquery.blockUI.js"></script>
-  <script type="text/javascript" src="javascript/jquery-css-transform.js"></script>
-  <script type="text/javascript" src="javascript/jquery-animate-css-rotate-scale.js"></script>
-  <script type="text/javascript" src="javascript/rotate3Di.js"></script>
-  <script type="text/javascript" src="javascript/jquery-ui-1.8.7.custom.min.js"></script>
-	
-  <script type="text/javascript" src="javascript/BinFileReader.js"></script>	
-	
-  <script>var _sf_startpt=(new Date()).getTime()</script>
-	
-  <script type="text/javascript" src="javascript/main.js"></script>
-	
-  <script type="text/javascript">
-	
-    var game = 0;
-    var board = 0;
-    var rack = 0;
-    var boardUI = 0;
-    
-    function playAction_resetTilesOnRack()
-    {
-	boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-	rack.TakeTilesBack();
-    }
-	
-    function playAction_submitWords()
-    {}
-	
-    function playAction_drawNewTiles()
-    {
-	boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-	//boardUI.CurrentlySelectedSquare = 0;
-	
-	/*
-	 rack.EmptyTiles();
-	 rack.ReplenishRandomTiles();
-	*/
-		
-	rack.GenerateRandomTiles();
-		
-	//TODO: pass turn
-    }
-	
-    function playAction_passTurn()
-    {
-	if (!confirm("Are you sure you want to pass your turn ?"))
-	{
-	    return;
-	}
-	
-	//TODO: pass
-    }
-	
-    function resetTextField()
-    {
-	$("#text_field").val("");
-    }
-	
-    function findAnagrams()
-    {
-	var text = $("#text_field").val();
-	var anagrams = game.Dictionary.FindAnagrams(text);
-	if (anagrams.length == 1)
-	{
-	    alert("Error: the characters [" + anagrams[0] + "] do not return any anagrams from the \"" + game.Language + "\" dictionary.");
-	}
-	else
-	{
-	    //alert("Success: the characters [" + anagrams[0] + "] return " + (anagrams.length-1) + " anagrams from the \"" + game.Language + "\" dictionary.");
-	    
-	    $('#anagrams').html('<p><input type="button" value="Clear Anagrams" onclick="$(\'#anagrams\').html(\'\');"></input></p>');
-			
-	    /*
-			for (var i = 1; i < anagrams.length; i++)
-			{
-				$('#anagrams').append('<p>' + anagrams[i] + '</p>');
-			}
-			*/
-			
-			var wordsByLength = [];
-			for (var i = 0; i < game.Dictionary.MaxWordLength; i++)
-			{
-				wordsByLength.push([]);
-			}
-			
-			for (var i = 1; i < anagrams.length; i++)
-			{
-				var word = anagrams[i];
-				wordsByLength[word.length].push(word);
-			}
-			
-			var charInput = anagrams[0];
-			
-			var table = "<table>";
-			
-			for (var i = game.Dictionary.MaxWordLength - 1; i >= 2 ; i--)
-			{
-				var words = wordsByLength[i];
-				
-				if (words.length <= 0) continue;
-				
-				table += "<tr>";
-				
-				if (charInput.length == i)
-				{
-					table += "<th>[" + i + "]</th>";
-				}
-				else
-				{
-					table += "<th>" + i + "</th>";
-				}
-				
-				table += "<td>";
-				
-				for (var j = 0; j < words.length; j++)
-				{
-					var word = words[j];
-					table += word;
-					if (j < (words.length - 1))
-					{
-						table += " - ";
-					}
-				}
-				
-				table += "</td>";
-				table += "<tr>";
-			}
-			
-			table += "</table>";
-			
-			$('#anagrams').append(table);
-		}
-	}
-	
-	function checkWord()
-	{
-		var text = $("#text_field").val();
-		var ok = game.Dictionary.CheckWord(text);
-		if (ok)
-		{
-			alert("Success: [" + text + "] is in the \"" + game.Language + "\" dictionary.");
-		}
-		else
-		{
-			alert("Error: [" + text + "] is not in the \"" + game.Language + "\" dictionary.");
-		}
-	}
-	
-	function verifyBoard()
-	{
-		boardUI.CleanupErrorLayer();
-		
-		var valid = board.CheckDictionary();
-
-		if (!valid)
-		{
-			Scrabble.UI.Html.prototype.OnUnblockUIFunction = function() { boardUI.CleanupErrorLayer(); };
-			
-			$.blockUI({
-				message: "<p>Invalid words or tile placement !</p><input type=\"submit\" value=\"Return\" onclick=\"boardUI.UnblockUIFunction();\"></input>",
-				focusInput: true,
-				bindEvents: true,
-				constrainTabKey: true,
-				fadeIn: 0,
-				fadeOut: 0,
-				showOverlay: true,
-				centerY: true,
-				css: { position: "absolute", padding: "1em", backgroundColor: "black", color: "white", width: "100%", left: 0, top: $("#rack").offset().top, border: "none", textAlign: "center" },
-				overlayCSS: { backgroundColor: '#FFFFFF', opacity: 0.2 },
-				onBlock: function()
-				{
-					//console.log("modal activated");
-				}
-			}); 
-
-			$('.blockOverlay').attr('title','Click to return to the game');
-			$('.blockOverlay').click(
-				boardUI.UnblockUIFunction
-			);
-		}
-		else
-		{
-			setTimeout(function()
-			{
-				boardUI.CleanupErrorLayer(); 
-			}, 1000);
-		}
-
-		//if (!valid) alert("Some words are invalid !");
-		//else alert("All words are valid !");
-	}
-	
-	function emptyBoardAndRack()
-	{
-		boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-		//boardUI.CurrentlySelectedSquare = 0;
-		
-		board.EmptyTiles();
-		rack.EmptyTiles();
-	}
-	
-	function replenishRack()
-	{
-		boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-		//boardUI.CurrentlySelectedSquare = 0;
-		
-		rack.ReplenishRandomTiles();
-	}
-	
-	function placeRandomTiles_Rack()
-	{
-		boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-		//boardUI.CurrentlySelectedSquare = 0;
-		
-		rack.GenerateRandomTiles();
-	}
-	
-	function placeRandomTiles_Board()
-	{
-		boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-		//boardUI.CurrentlySelectedSquare = 0;
-		
-		board.GenerateRandomTiles();
-	}
-	
-	function setLanguage(lang)
-	{
-		game.SetLanguage(lang);
-	}
-	
-	function placeTileSet()
-	{
-		boardUI.SetCurrentlySelectedSquareUpdateTargets(0);
-		//boardUI.CurrentlySelectedSquare = 0;
-		
-		board.GenerateTilesLetterDistribution();
-		//rack.GenerateRandomTiles();
-	}
-
-	function init() {
-
-		// quit if this function has already been called
-		if (arguments.callee.done) return;
-
-		// flag this function so we don't do the same thing twice
-		arguments.callee.done = true;
-		
-		boardUI = new window.Scrabble.UI.Html(); // must be instantiated first (to listen to Core events)
-
-		board = new window.Scrabble.Core.Board();
-		rack = new window.Scrabble.Core.Rack();
-
-		game = new window.Scrabble.Core.Game(board, rack);
-		
-		/*
-		if (false)
-		{
-			board.GenerateRandomTiles();
-		}
-		else
-		{
-			board.GenerateTilesLetterDistribution();
-		}
-		*/
-		
-		//rack.GenerateRandomTiles();
-		
-		$(document).ready(function(){
-			
-							/*
-								$(this).animate({left: "+=200px", width:320 }, 1500, function() {
-
-										$(this).animate({left: "-=200px", width:280 }, 1500, function() {
-
-										});
-									});
-									*/
-			//$("#board").fadeOut();
-								//	table.fadeIn("fast");
-								//		table.animate({rotate: '+=45deg'});
-
-
-			var obj = $("#title");
-
-			//obj.effect("pulsate", { times:2 }, 500);
-
-			//obj.css({opacity: 0.5});
-			//obj.scale(0.5);
-
-			//obj.animate({opacity: 1}, 500);
-
-		//obj.show("clip", {}, 500);
-
-		//obj.effect("transfer", { to: $("#title") }, 1000);
-
-		//obj.effect("bounce", { times: 3, direction: "right" }, 500);
-
-			obj.rotate3Di(360, 1000,
-			        {
-			            sideChange: function(front) {
-						    if (front) {
-						        //
-						    } else {
-			//			        obj.animate({scale: 1}, 500);
-						    }
-						}
-						,
-			            complete: function() {
-						    //
-						}
-			        }
-			    );
-
-		/*
-				$('.drag')
-					.drag("start",function( ev, dd ){
-
-						return $( this ).clone()
-							.css("opacity", .75 )
-							.appendTo(this.parentNode );
-					})
-					.drag(function( ev, dd ){
-
-						$( dd.proxy ).css({
-							top: dd.offsetY,
-							left: dd.offsetX
-						},{ relative:true });
-					})
-					.drag("end",function( ev, dd ){
-					$( dd.proxy ).animate({
-					            top: dd.originalY,
-					            left: dd.originalX
-					         }, 420 );
-						$( dd.proxy ).remove();
-					});
-				$('.drop')
-				.drop("start",function(){
-				         $( this ).addClass("dropActive");
-				      })
-				      .drop(function( ev, dd ){
-				         $( this ).toggleClass("dropped");
-				      })
-				      .drop("end",function(){
-				         $( this ).removeClass("dropActive");
-				      });
-						*/
-		   });
-
-	};
-
-	/* for Mozilla */
-	if (document.addEventListener) {
-		document.addEventListener("DOMContentLoaded", init, false);
-	}
-
-	/* for Internet Explorer */
-	/*@cc_on @*/
-	/*@if (@_win32)
-	document.write("<script defer src=ie_onload.js><"+"/script>");
-	/*@end @*/
-
-	/* for other browsers */
-	window.onload = init;
-	</script>
-
-	<!--[if IE]> 
-	<style type="text/css" media="all">
-	div.surroundShade table,
-	div.bottomShade table
-	{
-	zoom: 1;
-	filter: progid:DXImageTransform.Microsoft.Shadow(color='#333333', Direction=135, Strength=3);
-	}
-	</style>
-	<![endif]--> 
-
-	<!--[if lt IE 7]>
-	<style type="text/css" media="all">
-	.cie654 {display: block}
-	</style>
-	<![endif]--> 
-
-	<!--[if !lt IE 7]>
-	<style type="text/css" media="all">
-	.cie7 {display: block}
-	</style>		
-	<![endif]--> 
-
-	<!--[if IE 8]>
-	<style type="text/css" media="all">
-	.cie8 {display: block}
-	</style>		
-	<![endif]--> 
-
-	 <!--[if !IE]>--> <style type="text/css" media="all">.cnotie {display: block}</style> <!--<![endif]-->
-	<script type="text/javascript" src="javascript/game.js"></script>
+    <meta charset="UTF-8">
+    <title>Scrabbλe</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="shortcut icon" href="">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./main.js"></script>
 </head>
-<body id="body">
 
-	<audio id="audio0" src="audio/20258__Koops__Page_Turn_24.wav" preload="auto" type="audio/wav"></audio>
-	<audio id="audio1" src="audio/1257__Anton__hit_on_wood.wav" preload="auto" type="audio/wav"></audio>
-	<audio id="audio2" src="audio/1258__Anton__hit_on_wood2.wav" preload="auto" type="audio/wav"></audio>
-	<audio id="audio3" src="audio/37161__volivieri__soccer_stomp_01.wav" preload="auto" type="audio/wav"></audio>
-	<audio id="audio4" src="audio/54405__KorgMS2000B__Button_Click.wav" preload="auto" type="audio/wav"></audio>
-	<audio id="audio5" src="audio/32435__HardPCM__Wood012.wav" preload="auto" type="audio/wav"></audio>
+<body>
+    <!-- INSTRUCTIONS -->
+    <div class="instructions">
+        <h1>INSTRUCTIONS</h1>
+        <ul class="instructionsList">
+            <li>Place tiles on the board to spell out words.  Click on the letter on your rack and then click again on the location you'd like to place it.</li>
+            <li>Except for the first turn, at least one of your letters must touch a letter already in play, and your new letters must all be in the same row or column, and be touching another tile.</li>
+            <li>The letter values of each tile can be accessed by clicking the tab on the right side of the screen.</li>
+            <li>At the beginning of your turn, click "SHOW TILES" to reveal the letters on your rack.</li>
+            <li>After you click "Submit Word" your score is tallied and your rack refreshed from the tile bag.</li>
+            <li>Clicking "Back to Rack" will return the tiles from your current turn back to your rack.</li>
+            <li>Clicking "Refresh Tiles" will give you a brand new rack and shuffle your current tiles back into the bag.  Doing this forfeits your current turn.</li>
+            <li>When one player clears their rack and the bag is empty, the game ends.  The other player's score will decrease by the total value of the letters still in his/her rack.</li>
+            <li>Enter both player's names and click "START" to begin!</li>
+        </ul>
+        <div class="playerNameHolder">
+            <input type="text" placeholder="Player Name" class="playerName">
+        </div>
+        <button class="start">START</button>
+    </div>
 
+    <!-- LETTER VALUES KEY -->
+    <div class="letterValuesBox">
+        <div class="tab">
+            <hr>
+            <hr>
+            <hr>
+        </div>
+        <div class="letterValues">
+            <ul class="letterValueList"></ul>
+        </div>
+    </div>
 
-<div id="title">
-<span>ELBBARCS</span>
-</div>
+    <!-- MAIN GAME BOARD -->
+    <div class="container">
+        <div class="title">Scrabbλe</div>
+        <div class="gameBoard">
+        </div>
+        <div class="playerOneScoreBox textBox">
+            <h3 class="playerOneDisplayName">Player 1 Score</h3>
+            <div class="playerOneScore"></div>
+	    <h3 class="playerTwoDisplayName">Player 2 Score</h3>
+            <div class="playerTwoScore"></div>
+        </div>
+        <div class="playerTwoScoreBox textBox">
+	    <h3 class="serverMessagesTitle">Server Messages</h3>
+            <div id="serverMessages"></div>
+        </div>
+        <div class="remainingTilesBox textBox">
+            <h3>Remaining Tiles</h3>
+            <div class="remainingTiles"></div>
+        </div>
+        <h2 id="playerTitle">Player Tiles</h2>
+        <div class="playerTiles">
+          <div class="playerTilesRow">
+	    <div class="playerTile tileBox" id="playerTile0"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile1"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile2"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile3"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile4"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile5"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile6"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+            </div>
+        </div>
+        <button class="backToRack button" disabled>Back to Rack</button>
+        <button class="submitWord button" disabled>Submit Word</button>
+    </div>
 
-<div style="background-color: black; padding: 1em;">
-
-<p>
-Language:&nbsp;
-<span id="language">
-</span>&nbsp;
-	<input type="submit" onclick="setLanguage('French');" value="French"></input>
-	<input type="submit" onclick="setLanguage('English');" value="English"></input>
-</p>
-
-<p>
-	<input id="text_field" type="text" onmousedown="resetTextField();" value="[type word here]" size="15" style="width: 25em"></input>
-	<input type="submit" onclick="checkWord();" value="Check dictionary"></input>
-	<input type="submit" onclick="findAnagrams();" value="Find anagrams"></input>
-</p>
-	<div id="anagrams" class="tableDivWrap"></div>
-</div>
-
-<p>
-	<input type="submit" onclick="emptyBoardAndRack();" value="Empty board and rack"></input>
-</p>
-<p>
-	<input type="submit" onclick="replenishRack();" value="Replenish rack"></input>
-	<input type="submit" onclick="placeRandomTiles_Rack();" value="Randomize rack"></input>
-</p>
-<p>
-	<input type="submit" onclick="placeRandomTiles_Board();" value="Randomize board"></input>
-	<input type="submit" onclick="placeTileSet();" value="Display entire tile set"></input>
-</p>
-
-<div id="rack" class="tableDivWrap bottomShade"></div>
-
-<!-- p>
-	<input type="submit" onclick="playAction_resetTilesOnRack();" value="Take tiles back"></input>
-	<input type="submit" onclick="playAction_submitWords();" value="Submit word(s)"></input>
-	<input type="submit" onclick="playAction_drawNewTiles();" value="Draw new tiles (pass turn)"></input>
-	<input type="submit" onclick="playAction_passTurn();" value="Pass turn"></input>
-</p -->
-<p>
-	<input type="submit" onclick="verifyBoard();" value="Verify board"></input>
-</p>
-<div id="board" class="tableDivWrap surroundShade"></div>
-
-<div id="letters" class="tableDivWrap" style="display:none;"></div>
-
+    <!-- PLAY AGAIN BUTTON -->
+    <button class="playAgain">PLAY AGAIN</button>
 </body>
+
 </html>

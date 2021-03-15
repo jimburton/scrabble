@@ -88,8 +88,14 @@ sendJoinAcks :: WebGame -> IO ()
 sendJoinAcks wg = do
   let pl1 = player1 (theGame wg)
       pl2 = player2 (theGame wg)
-      ja1 = MsgJoinAck (JoinAck { theName = fst (p1 wg), theRack = rack pl1 })
-      ja2 = MsgJoinAck (JoinAck { theName = fst (p2 wg), theRack = rack pl2 })
+      ja1 = MsgJoinAck (JoinAck { jaName = fst (p1 wg)
+                                , jaRack = rack pl1
+                                , jaTurn = P1
+                                , jaOppName = fst (p2 wg)})
+      ja2 = MsgJoinAck (JoinAck { jaName = fst (p2 wg)
+                                , jaRack = rack pl2
+                                , jaTurn = P2
+                                , jaOppName = fst (p1 wg)})
   msgCurrent wg ja1
   msgOpponent wg ja2
 
