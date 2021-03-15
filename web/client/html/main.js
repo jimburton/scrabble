@@ -72,7 +72,8 @@ function Client(socket) {
 	    toggleActive(player.turn==="P1");
 	    break;
 	case "MsgMove":
-	    console.log("Received move. Word: "+d.word);
+	    console.log("Received move. Word: "+d.contents.word);
+	    addMoveToBoard(d.contents.word);
 	    break;
 	case "MsgHint":
 	    console.log("Received hints: "+d.contents);
@@ -100,6 +101,15 @@ function Client(socket) {
 	    console.log("Couldn't match the tag: "+d.tag);
 	} 
     }
+}
+
+function addMoveToBoard(move) {
+    move.forEach((el,i,a) => {
+	console.log("el: "+el);
+	var r = el[0][0];
+	var c = el[0][1];
+	$("div[data-row='"+r+"'][data-column='"+c+"']").text(el[1][0]);
+    });
 }
 
 function drag(ev) {
