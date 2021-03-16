@@ -257,12 +257,15 @@ function swap() {
 	var letters = $('.selected').text();
 	if (confirm(msg+letters+"?")) {
 	    doSwap(letters);
+	    $('.selected').removeClass('selected');
 	}
     }
 }
 
 function doSwap(letters) {
     console.log("Do swap: "+letters);
+    var sw = {"contents":letters.split(''),"tag":"MsgSwap"};
+    socket.send(JSON.stringify(sw));
 }
 
 function hints() {

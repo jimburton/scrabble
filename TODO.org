@@ -79,7 +79,7 @@
 ** DONE Too many blanks appearing in the bag
    CLOSED: [2021-03-11 Thu 18:14]
    Possibly other letters too but the blanks stand out.
-
+** TODO Web client: can't swap blanks?
 * Testing
 
 ** TODO Blanks

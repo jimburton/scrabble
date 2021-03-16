@@ -25,7 +25,8 @@ import Scrabble.Types
   ( Evaluator(..)
   , Game(..)
   , Turn(..)
-  , Player(..))
+  , Player(..)
+  , Letter)
 import Scrabble.Lang.Dict (englishDictionaryT)
 import Scrabble.Lang.Search (findPrefixesT)
 import Scrabble.Lang.Word (wordPutToText)
@@ -114,7 +115,7 @@ takeTurnManual wg = do
     Just msg -> case msg of
       MsgHint _  -> doHints wg >> takeTurn wg 
       MsgPass    -> doPass wg >>= takeTurn 
-      MsgSwap _  -> doSwap wg >>= takeTurn 
+      MsgSwap w -> doSwap wg w >>= takeTurn 
       MsgMove (Move wp) -> do
         let g = theGame wg
             w = wordPutToText wp
@@ -160,8 +161,16 @@ doPass wg = do
                         pure wg
 
 -- | Let the player take a move by swapping some tiles.
-doSwap :: WebGame -> IO WebGame
-doSwap = return
+doSwap :: WebGame -> [Letter] -> IO WebGame
+doSwap wg ls = do
+  let g = theGame wg
+  case G.swap ls g of
+    Ev (Right g') -> do let wg' = wg { theGame = g'}
+                        sendRackOpponent wg'
+                        announce wg' "Swapped tiles"
+                        pure wg'
+    Ev (Left e)   -> do T.putStrLn e
+                        pure wg
 
 -- | Get client whose turn it is. 
 getClient :: WebGame -> Client
