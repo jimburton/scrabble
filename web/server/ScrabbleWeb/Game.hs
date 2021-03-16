@@ -49,7 +49,8 @@ import ScrabbleWeb.Announce
   , sendJoinAcks
   , msgCurrent
   , msgOpponent
-  , msgMoveAck )
+  , msgMoveAck
+  , msgEog )
 
 -- ========== Playing a game on the web ================ --
 
@@ -135,8 +136,7 @@ doGameOver wg = do
       draw   = score pl1 == score pl2
       winner = if score pl1 > score pl2
                then pl1 else pl2
-  announce wg "Game over!"
-  msgScores wg
+  msgEog wg
   if draw
     then announce wg "It's a draw!" >> pure wg
     else announce wg ("Congratulations " <> name winner) >> pure wg

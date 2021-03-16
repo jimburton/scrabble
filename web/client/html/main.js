@@ -86,7 +86,7 @@ function Client(socket) {
 	    doHints(d.contents);
 	    break;
 	case "MsgAnnounce":
-	    ServerMessage("Announcement: "+d.contents);
+	    serverMessage(d.contents);
 	    break;
 	case "MsgRack":
 	    console.log("Received rack: "+d.contents);
@@ -127,6 +127,10 @@ function Client(socket) {
 		serverMessage("It's your turn!");
 	    }
 	    break;
+	case "MsgEog":
+	    console.log("Received Game Over");
+	    serverMessage("Game over!")
+	    toggleActive(false);
 	default:
 	    console.log("Couldn't match the tag: "+d.tag);
 	} 
@@ -193,9 +197,11 @@ function join(name) {
 }
 
 function sendMove(w) {
-    var m = {"contents":{"word":w},"tag":"MsgMove"}
-    console.log(JSON.stringify(m));
-    socket.send(JSON.stringify(m));
+    if (w.length>0) {
+	var m = {"contents":{"word":w},"tag":"MsgMove"}
+	console.log(JSON.stringify(m));
+	socket.send(JSON.stringify(m));
+    }
 }
 
 function setRack(letters) {
@@ -244,7 +250,20 @@ function pass() {
     }
 }
 
-function swap() {}
+function swap() {
+    var len = $('.selected').length;
+    if (len > 0) {
+	var msg = (len===1) ? "Do you want to swap the letter " : "Do you want to swap the letters ";
+	var letters = $('.selected').text();
+	if (confirm(msg+letters+"?")) {
+	    doSwap(letters);
+	}
+    }
+}
+
+function doSwap(letters) {
+    console.log("Do swap: "+letters);
+}
 
 function hints() {
     var h = {"contents":null,"tag":"MsgHint"};
@@ -503,15 +522,19 @@ $(function() {
     //---------BEGIN EVENT LISTENERS---------------
 
     //visually marks a tile as 'selected' when clicked
-    $(document.body).on('click', '.tileBox', function() {
-        $('.tileBox').removeClass('selected');
+    $(document.body).on('click', '.tileBox', function(ev) {
+	if ( !ev.ctrlKey ) {
+	    $('.tileBox').removeClass('selected');
+	}
         $(this).addClass('selected');
         selected = true;
     });
 
     //adds a tile to the board if nothing occupies that space already
     $(document.body).on('click', '.box', function() {
-        if (selected && player.turn===turn) {
+	if ($('.selected').length > 1) {
+	    alert("Select a single tile to place on the board");
+	} else if (selected && player.turn===turn) {
             if (!($(this).hasClass('permInPlay')) && (!$(this).hasClass('tempInPlay'))) {
                 $(this).text($('.selected').text());
                 $(this).addClass('tempInPlay')

@@ -5,6 +5,7 @@ module ScrabbleWeb.Announce
   , msgCurrent
   , msgMoveAck
   , msgTurn
+  , msgEog
   , maybeAnnounce
   , sendRack
   , sendRackOpponent
