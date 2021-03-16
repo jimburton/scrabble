@@ -234,7 +234,15 @@ function returnToRack() {
     $('.emptyRackSpace').removeClass('emptyRackSpace');
 }
 
-function pass() {}
+function pass() {
+    if (confirm("Do you really want to pass?")) {
+	returnToRack();
+	var p = {"tag":"MsgPass"};
+	socket.send(JSON.stringify(p));
+    } else {
+	return false;
+    }
+}
 
 function swap() {}
 

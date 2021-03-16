@@ -11,7 +11,8 @@ module Scrabble.Board.Board
   , empty
   , freedomsFromWord
   , getDirection
-  , newTiles )
+  , newTiles
+  , rackValue )
   where
 
 import Debug.Trace
@@ -33,7 +34,8 @@ import Scrabble.Types
   , WordPut
   , Bonus(..)
   , Dir(..)
-  , Letter ) 
+  , Letter
+  , Rack ) 
 import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Board.Validation
@@ -126,4 +128,8 @@ zeroScore xs i = replaceBy xs i (\(p,(l,_)) -> (p,(l,0)))
 -- | Place a word onto the board.
 updateBoard :: WordPut -> Game -> Evaluator Game
 updateBoard w g = pure g { board = foldl updateSquare (board g) w}
+
+-- | Get the value of the tiles in the rack.
+rackValue :: Rack -> Int
+rackValue = sum . map scoreLetter
 

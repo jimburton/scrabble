@@ -5,7 +5,8 @@ module Scrabble.Game.Internal
   , getPlayer
   , setPlayer 
   , toggleTurn
-  , updatePlayer )
+  , updatePlayer
+  , endGame )
   where
 
 import Debug.Trace
@@ -25,7 +26,8 @@ import Scrabble.Board.Board
   ( empty
   , freedomsFromWord
   , getDirection
-  , newTiles )
+  , newTiles
+  , rackValue )
 import Scrabble.Board.Internal 
   ( adjacent )
 import Scrabble.Board.Bag 
@@ -112,7 +114,18 @@ toggleTurn :: Game -- ^ The game in which to toggle the turn
 toggleTurn g = let eog = null (bag g) 
                      && null (rack (player1 g)) 
                      && null (rack (player2 g)) in
-  pure g { turn = if turn g == P1 then P2 else P1 , gameOver = eog}
+  if eog
+  then endGame g
+  else pure g { turn = if turn g == P1 then P2 else P1 }
+
+-- | Ends the game and subtracts the tiles in each players rack from their score. 
+endGame :: Game -> Evaluator Game
+endGame g = do
+  let p1Score = score (player1 g) - rackValue (rack (player1 g))
+      p2Score = score (player2 g) - rackValue (rack (player2 g))
+  pure g { player1 = (player1 g) { score = p1Score }
+         , player2 = (player2 g) { score = p2Score }
+         , gameOver = True }
 
   
 

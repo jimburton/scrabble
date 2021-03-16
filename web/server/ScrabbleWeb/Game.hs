@@ -32,7 +32,9 @@ import Scrabble.Lang.Word (wordPutToText)
 import qualified Scrabble.Game.Game as G
   ( move
   , getPlayer
-  , newGame )
+  , newGame
+  , pass
+  , swap )
 import Scrabble.Game.AI (moveAI)
 import Scrabble.Game.Validation
   ( valGameRules
@@ -76,15 +78,13 @@ newGame = WebGame
 playGame :: WebGame -> IO ()
 playGame wg = do
   sendJoinAcks wg 
-  _ <- takeTurn wg Nothing
+  _ <- takeTurn wg 
   return ()
 
 -- | Take a turn.
 takeTurn :: WebGame    -- ^ The game
-         -> Maybe Text -- ^ An optional message, such as the previous score or a description of an error.
          -> IO WebGame
-takeTurn wg msc = do
-     --maybeAnnounce wg msc
+takeTurn wg = do
      msgTurn wg
      msgScores wg
      let g = theGame wg
@@ -99,7 +99,7 @@ takeTurnAI :: WebGame -> IO WebGame
 takeTurnAI wg = do
   let g = theGame wg
   case moveAI g of
-    Ev (Right (g',i)) -> takeTurn wg { theGame = g' } (Just (T.pack $ show i))
+    Ev (Right (g',i)) -> takeTurn wg { theGame = g' }
     Ev (Left e)       -> do announce wg e
                             pure wg
 
@@ -111,20 +111,20 @@ takeTurnManual wg = do
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
-      MsgHint _  -> doHints wg >> takeTurn wg Nothing 
-      MsgPass    -> doPass wg >> takeTurn wg (Just "pass") 
-      MsgSwap _  -> doSwap wg >> takeTurn wg (Just "swap") 
+      MsgHint _  -> doHints wg >> takeTurn wg 
+      MsgPass    -> doPass wg >>= takeTurn 
+      MsgSwap _  -> doSwap wg >>= takeTurn 
       MsgMove (Move wp) -> do
         let g = theGame wg
             w = wordPutToText wp
         case G.move valGameRules g wp [] of
           Ev (Left e) -> do msgCurrent wg (MsgMoveAck (MoveAck (Left e)))
-                            takeTurn wg $ Just (w  <> ": NO SCORE")
+                            takeTurn wg 
           Ev (Right (g',sc)) -> do msgMoveAck wg wp sc
                                    let wg' = wg { theGame = g' }
                                    sendRackOpponent wg'
-                                   takeTurn wg' (Just (T.pack $ show sc))
-      _             -> takeTurn wg (Just ("Not expecting that: " <> T.pack (show msg)))
+                                   takeTurn wg'
+      _             -> takeTurn wg
 
 -- | Handle the situation when the game ends.
 doGameOver :: WebGame -> IO WebGame
@@ -151,7 +151,13 @@ doHints wg = do
 
 -- | Let the player take a move by passing.
 doPass :: WebGame -> IO WebGame
-doPass = return
+doPass wg = do
+  let g = theGame wg
+  msgOpponent wg (MsgAnnounce "Opponent passed.")
+  case G.pass g of
+    Ev (Right g') -> pure wg { theGame = g' }
+    Ev (Left e)   -> do T.putStrLn e
+                        pure wg
 
 -- | Let the player take a move by swapping some tiles.
 doSwap :: WebGame -> IO WebGame

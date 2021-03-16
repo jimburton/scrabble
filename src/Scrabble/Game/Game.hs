@@ -27,7 +27,8 @@ import Scrabble.Game.Internal
   , setScore
   , updatePlayables
   , toggleTurn
-  , updatePlayer ) 
+  , updatePlayer
+  , endGame ) 
 import Scrabble.Types
   ( Game(..)
   , Turn(..)
@@ -116,7 +117,4 @@ pass g = if lastMovePass g
          then endGame g
          else toggleTurn g { lastMovePass = True }
 
--- | End the game.
-endGame :: Game -> Evaluator Game
-endGame g = pure g { gameOver = True }
   

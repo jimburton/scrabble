@@ -77,11 +77,23 @@ msgMoveAck wg w i = do
 -- | Send the scores to both players.
 msgScores :: WebGame -> IO ()
 msgScores wg = do
+  let ss = getScores wg
+  msg wg (MsgScore ss)
+
+-- | Send the End of Game message to both players
+msgEog :: WebGame -> IO ()
+msgEog wg = do
+  let ss = getScores wg
+  msg wg (MsgEog ss)
+
+-- Get the scores of both players.
+getScores :: WebGame -> (Score,Score)
+getScores wg =
   let pl1 = player1 (theGame wg)
       pl2 = player2 (theGame wg)
       s1  = Score { theTurn = P1, theScore = score pl1 }
-      s2  = Score { theTurn = P2, theScore = score pl2 }
-  msg wg (MsgScore (s1,s2))
+      s2  = Score { theTurn = P2, theScore = score pl2 } in
+  (s1,s2)
 
 -- | Send the rack to the player identified by the Turn parameter.
 sendRack :: WebGame -> Turn -> IO ()
