@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 module ScrabbleWeb.Types
   ( Move(..)
-  , MoveResponse(..)
+  , MoveAck(..)
   , Msg(..)
   , Client
   , WebGame(..)
@@ -52,8 +52,8 @@ newtype Move = Move
   { word   :: WordPut }
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
--- | The response to a move -- Either the score or an error message.
-newtype MoveResponse = MoveResponse (Either String Int)
+-- | The response to a move -- Either an error message or a pair of the the wordput and score.
+newtype MoveAck = MoveAck (Either Text (WordPut,Int))
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 -- | A score and a player, identified by the turn.
@@ -64,14 +64,15 @@ data Score = Score
 
 -- | The protocol for communication between the server and clients.
 data Msg =
-    MsgJoin Text            -- ^ CLIENT  -> SERV   Client joins a game
-  | MsgJoinAck JoinAck      -- ^ Client <-  SERV   Client is accepted into a game
-  | MsgMove Move            -- ^ CLIENT <-> SERV   A client's move
-  | MsgHint (Maybe [Word])  -- ^ CLIENT <-> SERV   Ask for/receive hints
-  | MsgPass                 -- ^ CLIENT  -> SERV   Client passes move
-  | MsgSwap [Letter]        -- ^ CLIENT  -> SERV   Letters to swap
-  | MsgAnnounce Text        -- ^ CLIENT <-  SERV   An announcement
-  | MsgRack Rack            -- ^ CLIENT <-  SERV   Send rack to client
-  | MsgMoveRsp MoveResponse -- ^ CLIENT <-  SERV   Was the move acceptable? 
-  | MsgScore (Score, Score) -- ^ CLIENT <-  SERV   The scores of both players
+    MsgJoin Text            -- ^ CLIENT  -> SERV   Client joins a game.
+  | MsgJoinAck JoinAck      -- ^ CLIENT <-  SERV   Client is accepted into a game.
+  | MsgTurn Turn            -- ^ CLIENT <-  SERV   Send the current turn.
+  | MsgMove Move            -- ^ CLIENT <-> SERV   A client's move.
+  | MsgHint (Maybe [Word])  -- ^ CLIENT <-> SERV   Ask for/receive hints.
+  | MsgPass                 -- ^ CLIENT  -> SERV   Client passes move.
+  | MsgSwap [Letter]        -- ^ CLIENT  -> SERV   Letters to swap.
+  | MsgAnnounce Text        -- ^ CLIENT <-  SERV   An announcement.
+  | MsgRack Rack            -- ^ CLIENT <-  SERV   Send rack to client.
+  | MsgMoveAck MoveAck      -- ^ CLIENT <-  SERV   Was the move acceptable? If so, score and word. 
+  | MsgScore (Score, Score) -- ^ CLIENT <-  SERV   The scores of both players.
          deriving ( Show, Read, Generic, FromJSON, ToJSON )

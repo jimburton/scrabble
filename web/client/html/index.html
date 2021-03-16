@@ -48,21 +48,16 @@
         <div class="title">Scrabbλe</div>
         <div class="gameBoard">
         </div>
-        <div class="playerOneScoreBox textBox">
-            <h3 class="playerOneDisplayName">Player 1 Score</h3>
-            <div class="playerOneScore"></div>
-	    <h3 class="playerTwoDisplayName">Player 2 Score</h3>
-            <div class="playerTwoScore"></div>
+        <div class="playerScoreBox textBox">
+            <h3  id="playerDisplayName">Player Score</h3>
+            <div id="playerDisplayScore">&nbsp;</div>
+	    <h3  id="opponentDisplayName">Opponent Score</h3>
+            <div id="opponentDisplayScore">&nbsp;</div>
         </div>
-        <div class="playerTwoScoreBox textBox">
+        <div class="serverMessagesBox textBox">
 	    <h3 class="serverMessagesTitle">Server Messages</h3>
             <div id="serverMessages"></div>
         </div>
-        <div class="remainingTilesBox textBox">
-            <h3>Remaining Tiles</h3>
-            <div class="remainingTiles"></div>
-        </div>
-        <h2 id="playerTitle">Player Tiles</h2>
         <div class="playerTiles">
           <div class="playerTilesRow">
 	    <div class="playerTile tileBox" id="playerTile0"
@@ -81,12 +76,14 @@
 		 draggable="true" ondragstart="drag(event)"><div></div></div>
             </div>
         </div>
-        <button class="backToRack button" disabled>Back to Rack</button>
-        <button class="submitWord button" disabled>Submit Word</button>
+	<div id="buttonsRow">
+          <button class="backToRack button" disabled>Back to Rack</button>
+	  <button class="hints button" disabled>Hints</button>
+	  <button class="swap button" disabled>Swap tiles</button>
+	  <button class="pass button" disabled>Pass</button>
+          <button class="submitWord button" disabled>Submit Word</button>
+	</div>
     </div>
-
-    <!-- PLAY AGAIN BUTTON -->
-    <button class="playAgain">PLAY AGAIN</button>
 </body>
 
 </html>

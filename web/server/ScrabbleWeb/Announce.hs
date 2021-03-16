@@ -1,11 +1,13 @@
 module ScrabbleWeb.Announce
   ( announce
-  , announceScores
+  , msgScores
   , msgOpponent
   , msgCurrent
-  , announceTurn
+  , msgMoveAck
+  , msgTurn
   , maybeAnnounce
   , sendRack
+  , sendRackOpponent
   , sendHints
   , sendJoinAcks )
   where
@@ -16,14 +18,16 @@ import Data.Aeson
 import Data.Text (Text)
 import Scrabble.Types
   ( Player(..)
-  , Word )
+  , Word
+  , WordPut )
 import ScrabbleWeb.Types
   ( WebGame(..)
   , Game(..)
   , Turn(..)
   , Msg(..)
   , Score(..)
-  , JoinAck(..))
+  , JoinAck(..)
+  , MoveAck(..))
   
 -- ====== Sending messages to clients =========== --
 
@@ -61,15 +65,18 @@ maybeAnnounce :: WebGame -> Maybe Text -> IO ()
 maybeAnnounce _ Nothing     = pure ()
 maybeAnnounce wg (Just txt) = announce wg txt
 
--- | Tell both players whose turn it it is.
-announceTurn :: WebGame -> IO ()
-announceTurn wg = do
-  let cur = if turn (theGame wg) == P1 then fst (p1 wg) else fst (p2 wg)
-  announce wg (cur <> "'s move")
+-- | Tell both players whose turn it is.
+msgTurn :: WebGame -> IO ()
+msgTurn wg = msg wg (MsgTurn $ turn (theGame wg))
+
+-- | Acknowledge to a legal move, sending the move to both players.
+msgMoveAck :: WebGame -> WordPut -> Int -> IO ()
+msgMoveAck wg w i = do
+  msg wg (MsgMoveAck (MoveAck (Right (w,i))))
 
 -- | Send the scores to both players.
-announceScores :: WebGame -> IO ()
-announceScores wg = do
+msgScores :: WebGame -> IO ()
+msgScores wg = do
   let pl1 = player1 (theGame wg)
       pl2 = player2 (theGame wg)
       s1  = Score { theTurn = P1, theScore = score pl1 }
@@ -82,6 +89,12 @@ sendRack wg t = do
   let pf = if t == P1 then player1 else player2
       r  = rack (pf (theGame wg))
   msgOne wg t (MsgRack r)
+
+-- | Send the rack to the player identified by the Turn parameter.
+sendRackOpponent :: WebGame -> IO ()
+sendRackOpponent wg = do
+  let t = if turn (theGame wg) == P1 then P2 else P1
+  sendRack wg t
 
 -- | Send name and rack to both players in a new game.
 sendJoinAcks :: WebGame -> IO ()

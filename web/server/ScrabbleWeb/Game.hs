@@ -19,13 +19,15 @@ import ScrabbleWeb.Types
   ( WebGame(..)
   , Client
   , Msg(..)
-  , Move(..))
+  , Move(..)
+  , MoveAck(..))
 import Scrabble.Types
   ( Evaluator(..)
   , Game(..)
   , Turn(..)
   , Player(..))
 import Scrabble.Lang.Dict (englishDictionaryT)
+import Scrabble.Lang.Search (findPrefixesT)
 import Scrabble.Lang.Word (wordPutToText)
 import qualified Scrabble.Game.Game as G
   ( move
@@ -37,12 +39,15 @@ import Scrabble.Game.Validation
   , valGameRulesAndDict )
 import ScrabbleWeb.Announce
   ( announce
-  , announceScores
-  , announceTurn
+  , msgScores
+  , msgTurn
   , maybeAnnounce
   , sendRack
+  , sendRackOpponent
   , sendJoinAcks
-  , msgOpponent )
+  , msgCurrent
+  , msgOpponent
+  , msgMoveAck )
 
 -- ========== Playing a game on the web ================ --
 
@@ -79,8 +84,9 @@ takeTurn :: WebGame    -- ^ The game
          -> Maybe Text -- ^ An optional message, such as the previous score or a description of an error.
          -> IO WebGame
 takeTurn wg msc = do
-     maybeAnnounce wg msc
-     announceTurn wg
+     --maybeAnnounce wg msc
+     msgTurn wg
+     msgScores wg
      let g = theGame wg
      if gameOver g
        then doGameOver wg
@@ -112,10 +118,12 @@ takeTurnManual wg = do
         let g = theGame wg
             w = wordPutToText wp
         case G.move valGameRules g wp [] of
-          Ev (Left e) -> do announce wg e
+          Ev (Left e) -> do msgCurrent wg (MsgMoveAck (MoveAck (Left e)))
                             takeTurn wg $ Just (w  <> ": NO SCORE")
-          Ev (Right (g',sc)) -> do msgOpponent wg msg
-                                   takeTurn (wg { theGame = g' }) (Just (T.pack $ show sc))
+          Ev (Right (g',sc)) -> do msgMoveAck wg wp sc
+                                   let wg' = wg { theGame = g' }
+                                   sendRackOpponent wg'
+                                   takeTurn wg' (Just (T.pack $ show sc))
       _             -> takeTurn wg (Just ("Not expecting that: " <> T.pack (show msg)))
 
 -- | Handle the situation when the game ends.
@@ -128,14 +136,18 @@ doGameOver wg = do
       winner = if score pl1 > score pl2
                then pl1 else pl2
   announce wg "Game over!"
-  announceScores wg
+  msgScores wg
   if draw
     then announce wg "It's a draw!" >> pure wg
     else announce wg ("Congratulations " <> name winner) >> pure wg
 
 -- | Send hints to a player.
-doHints :: WebGame -> IO WebGame
-doHints = return
+doHints :: WebGame -> IO ()
+doHints wg = do
+  let g  = theGame wg
+      w  = rack (G.getPlayer g) 
+      hs = findPrefixesT (dict g) w
+  msgCurrent wg (MsgHint (Just hs))
 
 -- | Let the player take a move by passing.
 doPass :: WebGame -> IO WebGame
