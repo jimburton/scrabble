@@ -82,11 +82,11 @@ connects (w:ws) b fm = let (pos,_) = w in
 
 -- | Words must contain at least two tiles and must be in a straight line on the board
 straight :: WordPut -> Evaluator ()
-straight (w:x:xs) = let ws     = map fst (w:x:xs)
-                        (r,_)  = fst w
-                        (r',_) = fst x
-                        sel    = if r == r'-1 then fst else snd
-                        f      = \(x',y') -> sel x' == sel y' - 1 in 
+straight (w:x:xs) = let ws      = map fst (w:x:xs)
+                        (r,_)   = fst w
+                        (r',_)  = fst x
+                        (s1,s2) = if r == r'-1 then (fst,snd) else (snd,fst)
+                        f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
                       (all f . zip ws $ tail ws) `evalBool` "Not in a straight line"
 straight _         = fail "Too few letters"
 
