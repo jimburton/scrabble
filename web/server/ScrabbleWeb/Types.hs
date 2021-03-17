@@ -53,7 +53,7 @@ newtype Move = Move
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 -- | The response to a move -- Either an error message or a pair of the the wordput and score.
-newtype MoveAck = MoveAck (Either Text (WordPut,Int))
+newtype MoveAck = MoveAck (Either Text (WordPut,([Word],Int)))
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 -- | A score and a player, identified by the turn.

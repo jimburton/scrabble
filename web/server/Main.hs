@@ -7,7 +7,6 @@ import Control.Concurrent (forkIO, threadDelay)
 import qualified Network.WebSockets as WS
 import Control.Concurrent.BoundedChan
 import qualified Data.Text.IO as T
-import qualified Data.Text.Lazy.Encoding as LE 
 import ScrabbleWeb.Game (gameStarter)
 import ScrabbleWeb.Types (Msg(MsgJoin), Client)
 

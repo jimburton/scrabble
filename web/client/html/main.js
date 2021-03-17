@@ -19,7 +19,7 @@
 // MsgMoveAck (MoveAck (Left "Error!"))
 //   <-> {"contents":{"Left":"Error!"},"tag":"MsgMoveAck"} CLIENT <- SERV
 // MsgMoveAck (MoveAck (Right ([((0,0),(C,3)), ((0,1),(A,1)), ((0,2),(T,1))],42)))
-//   <-> {"contents":{"Right":[[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],42]}
+//   <-> {"contents":{"Right":[[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],[[["C","A","T"],["M","A","T"]],42]]}
 //         ,"tag":"MsgMoveAck"}
 //
 // MsgHint (Just [[C,A,T],[M,A,T]])
@@ -54,10 +54,11 @@ function Client(socket) {
     socket.onopen = function () {
     }
     socket.onclose = function () {
-      console.log("closed web socket")
+	console.log("closed web socket");
+	alert("Server not available.");
     }
     socket.onerror = function (event) {
-      console.log(event)
+	console.log(event);
     }
     socket.onmessage = function (event) {
 	var d = JSON.parse(event.data);
@@ -98,7 +99,12 @@ function Client(socket) {
 		serverMessage("Error! "+d.contents.Left);
 		returnToRack();
 	    } else {
-		serverMessage(wordPutToWord(d.contents.Right[0])+": "+d.contents.Right[1]);
+		var additionalWords = "";
+		if (d.contents.Right[1][0].length > 1) {
+		    additionalWords = " ("+d.contents.Right[1][0].map(a => a.join(''))+")";
+		}
+		serverMessage(wordPutToWord(d.contents.Right[0])+": "+d.contents.Right[1][1]
+			      +additionalWords);
 		if (isCurrentPlayer()) {
 		    $('.tempInPlay').addClass("permInPlay");
 		    $('.tempInPlay').removeClass("tempInPlay");
@@ -237,6 +243,7 @@ function returnToRack() {
     $('.tempInPlay').text("");
     $('.tempInPlay').removeClass('tempInPlay');
     $('.emptyRackSpace div').attr('display','inline-block');
+    $('.emptyRackSpace').addClass('playerTile');
     $('.emptyRackSpace').removeClass('emptyRackSpace');
 }
 
@@ -245,6 +252,7 @@ function pass() {
 	returnToRack();
 	var p = {"tag":"MsgPass"};
 	socket.send(JSON.stringify(p));
+	serverMessage("You passed.");
     } else {
 	return false;
     }

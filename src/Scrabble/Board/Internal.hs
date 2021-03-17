@@ -16,10 +16,12 @@ module Scrabble.Board.Internal
   , freedomsFromWord
   , getDirection
   , newTiles
-  , adjacent )
+  , adjacent
+  , wordPutToWord )
   where
 
 import Debug.Trace
+import Prelude hiding (Word)
 import Data.Maybe
   ( isNothing
   , isJust )
@@ -32,7 +34,8 @@ import Scrabble.Types
   , Letter
   , Dir(..)
   , WordPut
-  , PosTransform )
+  , PosTransform
+  , Word )
 import Scrabble.Lang.Word
   ( wordToString )
   
@@ -118,6 +121,10 @@ canPlay b p = onBoard p && isNothing (getSquare b p)
 formatWP :: WordPut -> String
 formatWP w = wordToString (map (fst . snd) w) ++ ": " ++ show (fst (head w))
              ++ " " ++ show (getDirection w)
+
+-- | Convert a WordPut to a Word.
+wordPutToWord :: WordPut -> Word
+wordPutToWord = map (fst . snd)
 
 -- ==================== Manipulating and querying the board =================--
 

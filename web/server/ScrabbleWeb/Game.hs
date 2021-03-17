@@ -44,8 +44,6 @@ import ScrabbleWeb.Announce
   ( announce
   , msgScores
   , msgTurn
-  , maybeAnnounce
-  , sendRack
   , sendRackOpponent
   , sendJoinAcks
   , msgCurrent
@@ -101,7 +99,7 @@ takeTurnAI :: WebGame -> IO WebGame
 takeTurnAI wg = do
   let g = theGame wg
   case moveAI g of
-    Ev (Right (g',i)) -> takeTurn wg { theGame = g' }
+    Ev (Right (g',_)) -> takeTurn wg { theGame = g' }
     Ev (Left e)       -> do announce wg e
                             pure wg
 
@@ -113,20 +111,18 @@ takeTurnManual wg = do
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
-      MsgHint _  -> doHints wg >> takeTurn wg 
-      MsgPass    -> doPass wg >>= takeTurn 
-      MsgSwap w -> doSwap wg w >>= takeTurn 
+      MsgHint _         -> doHints wg >> takeTurn wg 
+      MsgPass           -> doPass wg >>= takeTurn 
+      MsgSwap w         -> doSwap wg w >>= takeTurn 
       MsgMove (Move wp) -> do
-        let g = theGame wg
-            w = wordPutToText wp
-        case G.move valGameRules g wp [] of
+        case G.move valGameRules (theGame wg) wp [] of
           Ev (Left e) -> do msgCurrent wg (MsgMoveAck (MoveAck (Left e)))
                             takeTurn wg 
-          Ev (Right (g',sc)) -> do msgMoveAck wg wp sc
-                                   let wg' = wg { theGame = g' }
-                                   sendRackOpponent wg'
-                                   takeTurn wg'
-      _             -> takeTurn wg
+          Ev (Right (g',(ws,sc))) -> do msgMoveAck wg wp (ws,sc)
+                                        let wg' = wg { theGame = g' }
+                                        sendRackOpponent wg'
+                                        takeTurn wg'
+      _                 -> takeTurn wg
 
 -- | Handle the situation when the game ends.
 doGameOver :: WebGame -> IO WebGame

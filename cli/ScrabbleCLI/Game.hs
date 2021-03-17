@@ -111,7 +111,7 @@ takeTurnManual g = runInputT defaultSettings loop
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-               Ev (Right (g',sc)) -> liftIO $ takeTurn g' (Just (T.pack $ show sc))
+               Ev (Right (g',(_,sc))) -> liftIO $ takeTurn g' (Just (T.pack $ show sc))
 
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game

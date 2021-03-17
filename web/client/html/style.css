@@ -13,7 +13,7 @@ body {
     margin-top: -300px;
     margin-left: -450px;
     width: 900px;
-    height: 600px;
+    height: 700px;
     color: white;
     z-index: 5;
 }
@@ -231,6 +231,7 @@ h3 {
 
 .emptyRackSpace {
     background-color: gray;
+    background-image: none;
 }
 
 

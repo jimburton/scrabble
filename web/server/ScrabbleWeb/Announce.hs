@@ -71,7 +71,7 @@ msgTurn :: WebGame -> IO ()
 msgTurn wg = msg wg (MsgTurn $ turn (theGame wg))
 
 -- | Acknowledge to a legal move, sending the move to both players.
-msgMoveAck :: WebGame -> WordPut -> Int -> IO ()
+msgMoveAck :: WebGame -> WordPut -> ([Word],Int) -> IO ()
 msgMoveAck wg w i = do
   msg wg (MsgMoveAck (MoveAck (Right (w,i))))
 

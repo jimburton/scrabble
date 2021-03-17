@@ -42,6 +42,8 @@ import Scrabble.Board.Board
   , newBoard
   , additionalWords
   , updateBoard )
+import Scrabble.Board.Internal
+  ( wordPutToWord )
 import Scrabble.Board.Bag
   ( newBag
   , fillRack
@@ -85,18 +87,19 @@ newGame p1Name p2Name theGen d =
 --   and resetting their rack. Returns the new game and the score of this move.
 --   The word is validated by the Validator.
 --   Sets the new board, updates the current player's score, refills their rack with letters, then
---   toggles the current turn. Returns the updated game and the score.
+--   toggles the current turn. Returns the updated game and a pair of the words played (including
+--   additional words generated) and the score.
 move :: Validator -- ^ Validates the word against the board.
      -> Game      -- ^ The game.
      -> WordPut   -- ^ The word to play
      -> [Int]     -- ^ The list positions which were blanks
-     -> Evaluator (Game, Int)
+     -> Evaluator (Game, ([Word],Int))
 move v g w is = do
   let b   = board g
       aw  = additionalWords b w 
   setBlanks w is g >>= \g' -> v (w:aw) g' >> scoreWords g w aw >>=
     \i -> setScore g' { firstMove = False, lastMovePass = False } i >>= updatePlayer w >>=
-    updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,i)
+    updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,(map wordPutToWord (w:aw),i))
 
 -- | Take a move by swapping tiles.
 swap :: Word -- ^ The tiles to swap.
