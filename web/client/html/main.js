@@ -164,6 +164,7 @@ function addMoveToBoard(move) {
 
 function drag(ev) {
     ev.dataTransfer.setData("text", ev.target.innerText);
+    ev.dataTransfer.setData("theID", ev.target.id);
 }
 
 function toggleActive(p) {
@@ -295,7 +296,7 @@ $(function(){
 })
 
 //////////////////////////////////////////
-// Game code
+// Game init code
 //////////////////////////////////////////
 
 $(function() {
@@ -369,8 +370,8 @@ $(function() {
     }
 
     //////////////////
-// Bonus squares
-//////////////////
+    // Bonus squares
+    //////////////////
     var createBonusSquares = function() {
 	bonusSquares = [{"row":0, "cols": [{"c":0,"b":"W3"}, {"c":3,"b": "L2"}
 					   , {"c":7,"b": "W3"}, {"c":11,"b": "L2"}
@@ -416,16 +417,15 @@ $(function() {
                 newBox.attr("data-row", i);
                 newBox.attr("data-column", j);
 		$(newBox).on('drop dragdrop',function(ev){
+		    var b = this;
 		    ev.preventDefault();
-		    console.log('dropped: '+ev);
-		    var keys = [];
-		    for(var key in ev){
-			keys.push(key);
-		    }
-		    for(var i;i<keys.length;i++) {
-			var k = keys[i];
-			console.log(k+": "+ev.k);
-		    }
+		    ev.dataTransfer = ev.originalEvent.dataTransfer;
+		    console.log('dropped: '+ev.dataTransfer.getData("text"));
+		    $(b).text(ev.dataTransfer.getData("text"));
+		    $(b).addClass("tempInPlay");
+		    var pt = ev.dataTransfer.getData("theID");
+		    console.log("Dropped from "+pt);
+		    $('#'+pt).addClass("emptyRackSpace");
 		});
 		$(newBox).on('dragover',function(ev){
 		    ev.preventDefault();
