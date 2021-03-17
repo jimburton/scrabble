@@ -2,7 +2,8 @@ module Scrabble.Board.Validation
   ( validateMove
   , validateRack
   , touches
-  , connects )
+  , connects
+  , straight )
   where
 
 import Data.Maybe
@@ -81,12 +82,12 @@ connects (w:ws) b fm = let (pos,_) = w in
 
 -- | Words must contain at least two tiles and must be in a straight line on the board
 straight :: WordPut -> Evaluator ()
-straight (w:x:xs) = let (r,_)  = fst w
+straight (w:x:xs) = let ws     = map fst (w:x:xs)
+                        (r,_)  = fst w
                         (r',_) = fst x
-                        ps     = map fst xs
                         sel    = if r == r'-1 then fst else snd
                         f      = \(x',y') -> sel x' == sel y' - 1 in 
-                      (all f . zip ps $ tail ps) `evalBool` "Not in a straight line"
+                      (all f . zip ws $ tail ws) `evalBool` "Not in a straight line"
 straight _         = fail "Too few letters"
 
 -- | Check that a word to be played incudes some tiles that aren't on the board.
