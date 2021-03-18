@@ -73,7 +73,8 @@ When you start writing any software you need to think about modelling the proble
 in hand. When the problem is a board game, this is easy to do because the first things
 we need to model in the software correspond to real world objects.
 
-![Source: https://www.argos.co.uk](/images/scrabble.jpeg)
+![](/images/scrabble.jpeg | width=100)
+Image&copy; https://www.argos.co.uk
 
 In the image above we can see the most basic objects we will need to handle:
 
@@ -90,7 +91,7 @@ the **rules** of the game and a **dictionary**.
 
 ## Tiles, letters and words
 
-![Source: https://www.ebay.co.uk](/images/tile.jpg)
+![Source: https://www.ebay.co.uk](/images/tile.jpg | width=20)
 
 A tile consists of a **letter** and a **value**. We could create a type alias such
 as
@@ -179,7 +180,7 @@ type Board = Array (Int,Int) (Maybe Tile)
 
 ```
 Then, if we have a board called `b`, we can access the value in row `r`
-column `c` by `b ! (r,c)`. These `(r,c)` pairs are going to be used a lot,
+column `c` by `b ! (r,c)`. These `(r,c)` pairs are going to be used a lot
 so we make a type for those too.
 
 ```haskell
