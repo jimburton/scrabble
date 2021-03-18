@@ -47,13 +47,21 @@ data JoinAck = JoinAck { jaName :: Text
                        , jaTurn :: Turn
                        , jaOppName :: Text }
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
+
 -- | A move.
-newtype Move = Move
-  { word   :: WordPut }
+data Move = Move
+  { word   :: WordPut
+  , blanks :: [Int] }
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
--- | The response to a move -- Either an error message or a pair of the the wordput and score.
-newtype MoveAck = MoveAck (Either Text (WordPut,([Word],Int)))
+-- | The response to a move -- Either an error message or
+--   a pair of the WordPut and a triple of the additional words,
+--   indices of blanks, and score.
+newtype MoveAck = MoveAck ( Either Text -- Error message
+                           ( WordPut    -- The WordPut
+                           , ( [Word]   -- Additional words 
+                             , [Int]    -- Indices of blanks
+                             , Int)))    -- Score
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 -- | A score and a player, identified by the turn.
@@ -64,7 +72,7 @@ data Score = Score
 
 -- | The protocol for communication between the server and clients.
 data Msg =
-    MsgJoin Text            -- ^ CLIENT  -> SERV   Client joins a game.
+    MsgJoin (Text,Bool)     -- ^ CLIENT  -> SERV   Client (Name, isAi) joins a game.
   | MsgJoinAck JoinAck      -- ^ CLIENT <-  SERV   Client is accepted into a game.
   | MsgTurn Turn            -- ^ CLIENT <-  SERV   Send the current turn.
   | MsgMove Move            -- ^ CLIENT <-> SERV   A client's move.

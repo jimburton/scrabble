@@ -2,9 +2,11 @@
 module ScrabbleWeb.Game
   ( gameStarter
   , playGame
-  , newGame )
+  , newGame
+  , aiGame )
   where
 
+import Debug.Trace
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -27,16 +29,15 @@ import Scrabble.Types
   , Turn(..)
   , Player(..)
   , Letter)
-import Scrabble.Lang.Dict (englishDictionaryT)
-import Scrabble.Lang.Search (findPrefixesT)
-import Scrabble.Lang.Word (wordPutToText)
+import Scrabble.Lang.Dict (englishDictionary)
+import Scrabble.Lang.Search (findPrefixes)
 import qualified Scrabble.Game.Game as G
   ( move
   , getPlayer
   , newGame
   , pass
   , swap )
-import Scrabble.Game.AI (moveAI)
+import Scrabble.Game.AI (moveAI, newGame1P)
 import Scrabble.Game.Validation
   ( valGameRules
   , valGameRulesAndDict )
@@ -62,7 +63,7 @@ gameStarter state = loop
           (n2,c2) <- readChan state
           let (n1',n2') = distinctNames (n1,n2)
           T.putStrLn (n1' <> " vs " <> n2')
-          d <- englishDictionaryT
+          d <- englishDictionary
           theGen <- getStdGen
           let ig = G.newGame n1' n2' theGen d
           _ <- forkIO $ playGame (newGame (n1',c1) (n2',c2) ig)
@@ -70,7 +71,7 @@ gameStarter state = loop
 
 distinctNames :: (Text,Text) -> (Text,Text)
 distinctNames (n1,n2) =
-  (n1, fromJust $ find (/=n1) (n2 : zipWith (\n i -> n <> (T.pack $ show i)) (repeat n2) [1..]))
+  (n1, fromJust $ find (/=n1) (n2 : map ((\n i -> n <> T.pack (show i)) n2) [1..]))
   
 newGame :: Client -> Client -> Game -> WebGame
 newGame = WebGame
@@ -79,6 +80,15 @@ playGame :: WebGame -> IO ()
 playGame wg = do
   sendJoinAcks wg 
   _ <- takeTurn wg 
+  return ()
+
+-- | Start a new game against the computer.
+aiGame :: Client -> IO ()
+aiGame (n,conn) = do
+  theGen <- getStdGen
+  d      <- englishDictionary
+  let ig = newGame1P n theGen d
+  playGame (newGame (n,conn) ("Haskell",conn) ig)
   return ()
 
 -- | Take a turn.
@@ -99,9 +109,14 @@ takeTurnAI :: WebGame -> IO WebGame
 takeTurnAI wg = do
   let g = theGame wg
   case moveAI g of
-    Ev (Right (g',_)) -> takeTurn wg { theGame = g' }
-    Ev (Left e)       -> do announce wg e
-                            pure wg
+    Ev (Right (g',(w,ws,bs,sc))) -> do
+      msgMoveAck wg w (ws,bs,sc)
+      let wg' = wg { theGame = g' }
+      sendRackOpponent wg'
+      takeTurn wg'
+    Ev (Left e)       -> do
+      announce wg e
+      pure wg
 
 -- | Take a turn manually.
 takeTurnManual :: WebGame -> IO WebGame
@@ -114,11 +129,11 @@ takeTurnManual wg = do
       MsgHint _         -> doHints wg >> takeTurn wg 
       MsgPass           -> doPass wg >>= takeTurn 
       MsgSwap w         -> doSwap wg w >>= takeTurn 
-      MsgMove (Move wp) -> do
-        case G.move valGameRules (theGame wg) wp [] of
+      MsgMove (Move wp bs) -> do
+        case G.move valGameRules (theGame wg) wp bs of
           Ev (Left e) -> do msgCurrent wg (MsgMoveAck (MoveAck (Left e)))
                             takeTurn wg 
-          Ev (Right (g',(ws,sc))) -> do msgMoveAck wg wp (ws,sc)
+          Ev (Right (g',(ws,sc))) -> do msgMoveAck wg wp (ws,bs,sc)
                                         let wg' = wg { theGame = g' }
                                         sendRackOpponent wg'
                                         takeTurn wg'
@@ -143,7 +158,7 @@ doHints :: WebGame -> IO ()
 doHints wg = do
   let g  = theGame wg
       w  = rack (G.getPlayer g) 
-      hs = findPrefixesT (dict g) w
+      hs = findPrefixes (dict g) w
   msgCurrent wg (MsgHint (Just hs))
 
 -- | Let the player take a move by passing.

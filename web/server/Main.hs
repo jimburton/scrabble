@@ -6,8 +6,9 @@ import Data.Aeson (decode)
 import Control.Concurrent (forkIO, threadDelay)
 import qualified Network.WebSockets as WS
 import Control.Concurrent.BoundedChan
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import ScrabbleWeb.Game (gameStarter)
+import ScrabbleWeb.Game (gameStarter, aiGame) 
 import ScrabbleWeb.Types (Msg(MsgJoin), Client)
 
 -- =========== Entry point for the web server ========= --
@@ -19,13 +20,17 @@ enqueue state pending = do
     msg  <- WS.receiveData conn
     --T.putStrLn msg
     case decode msg of
-      Nothing -> trace (show msg) $ WS.sendTextData conn ("Bad input: " <> msg)
-      Just (MsgJoin name) -> do
-        T.putStrLn ("Accepting: \n" <> name)
-        writeChan state (name,conn)
-        -- keep the connection alive by having a thread that listens to it
-        WS.withPingThread conn 30 (return ()) loop
-          where loop = threadDelay (10000*5) >> loop
+      Nothing -> WS.sendTextData conn ("Bad input: " <> msg)
+      Just (MsgJoin (name,ai)) -> do
+        T.putStrLn ("Accepting: \n" <> name <> "\nAI Game: " <> T.pack (show ai))
+        -- If the client wants an AI game, start right away. Otherwise, put them in the queue.
+        if ai
+          then WS.withPingThread conn 30 (return ()) (aiGame (name,conn))
+          else do
+          writeChan state (name,conn) 
+          -- keep the connection alive by having a thread that listens to it
+          WS.withPingThread conn 30 (return ()) loop
+            where loop = threadDelay (10000*5) >> loop
       Just _ -> WS.sendTextData conn ("Not expecting: " <> msg)
  
 -- | Entry point for the server. Creates the Chan which will hold

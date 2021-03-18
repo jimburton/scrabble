@@ -9,26 +9,36 @@ import Data.Array
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Data.Text ( Text )
+import Data.List.Split (chunksOf) 
 import Scrabble.Board.Board
   ( bonusMap )
 import Scrabble.Types
   ( Board
   , Player(..)
-  , Letter )
+  , Letter
+  , Tile )
 import Scrabble.Lang.Letter
   ( toChar
   , scoreLetter ) 
 
 -- =============== Functions for turning boards into text =========== --
 
+-- Get a row from the board
+row :: Board -> Int -> [Maybe Tile]
+row a i = map (\j -> a ! (i,j)) [snd (fst (bounds a)) .. snd (snd (bounds a))]
+
+-- Get all rows from the board
+rows :: Board -> [[Maybe Tile]]
+rows b = chunksOf 15 (elems b) 
+
 -- | Textify a board.
 showBoard :: Bool  -- ^ Whether to show bonus squares.
           -> Board -- ^ The board.
           -> Text
 showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
-  showRows      = T.intercalate "\n" (zipWith showRow [0..14] (elems b)) <> "\n"
+  showRows      = T.intercalate "\n" (zipWith showRow [0..14] (rows b)) <> "\n"
   showRow     i r = showI i <> "|" <>
-                    T.concat (zipWith (showSquare i) [0..14] (elems r))
+                    T.concat (zipWith (showSquare i) [0..14] r)
   showSquare :: Int -> Int -> Maybe (Letter,Int) -> Text
   showSquare i c s = case s of
                        Nothing    ->

@@ -35,7 +35,8 @@ import Scrabble.Types
   , Dir(..)
   , WordPut
   , PosTransform
-  , Word )
+  , Word
+  , Tile ) 
 import Scrabble.Lang.Word
   ( wordToString )
   
@@ -129,15 +130,14 @@ wordPutToWord = map (fst . snd)
 -- ==================== Manipulating and querying the board =================--
 
 -- | Retrieve a position on the board.
-getSquare :: Board -> Pos -> Maybe (Letter,Int)
-getSquare b (r,c) = if onBoard (r,c)
-                    then (b ! r) ! c
+getSquare :: Board -> Pos -> Maybe Tile
+getSquare b pos = if onBoard pos
+                    then b ! pos
                     else Nothing
 
 -- | Place a tile onto the board.
-updateSquare :: Board -> (Pos, (Letter,Int)) -> Board
-updateSquare b ((r,c),l) = let row = (b ! r) // [(c, Just l)] in
-                             b // [(r, row)]
+updateSquare :: Board -> (Pos, Tile) -> Board
+updateSquare b (pos,t) = b // [(pos, Just t)]
 
 -- | Get direction of a word on the board. WordPuts must be at least two tiles
 --   long.

@@ -13,7 +13,7 @@ import Scrabble.Game.Internal
 import Scrabble.Lang.Word
   ( wordToText )
 import Scrabble.Lang.Dict
-  ( wordsInDictT )
+  ( wordsInDictM )
 import Scrabble.Board.Validation
   ( validateRack
   , validateMove )
@@ -25,7 +25,7 @@ valGameRulesAndDict :: Validator
 valGameRulesAndDict ws g = do
   let d  = dict g
       ts = map (wordToText . map (fst .snd)) ws
-  valGameRules ws g >> wordsInDictT d ts 
+  valGameRules ws g >> wordsInDictM d ts 
 
 -- | Validate a set of words against the rack (are all tiles in the current
 --   player's rack or on the board?) and that the move is in the rules of the

@@ -5,21 +5,21 @@
 // Examples of Haskell to JSON datatypes forming the game protocol
 //
 // HASKELL           JSON                               DIRECTION
-// MsgJoin "Jim" <-> {"contents":"Jim","tag":"MsgJoin"} CLIENT -> SERV
+// MsgJoin ("Jim", True) <-> {"contents":["Jim",true],"tag":"MsgJoin"} CLIENT -> SERV
 //
 // MsgJoinAck (JoinAck { jaName="Jim", jaRack=[A, B, C], jaTurn=P1, jaOppName="Joe", jaOppTurn=P2})
 //   <-> {"contents":{"jaName":"Jim","jaRack":["A","B","C"],"jaTurn":"P1","jaOppName":"Joe","jaOppTurn":"P2"}
 //       ,"tag":"MsgJoinAck"}
 //   CLIENT <- SERV
 //
-// MsgMove (Move {word=[((0,0), (C, 3)), ((0,1), (A,1)), ((0,2),(T,1))]})
-//  <-> {"contents":{"word":[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]]},"tag":"MsgMove"}
+// MsgMove (Move {word=[((0,0), (C, 0)), ((0,1), (A,0)), ((0,2),(T,1))], blanks=[0,1]})
+//  <-> {"contents":{"word":[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],"blanks":[0,1]},"tag":"MsgMove"}
 //  CLIENT <-> SERV
 //
 // MsgMoveAck (MoveAck (Left "Error!"))
 //   <-> {"contents":{"Left":"Error!"},"tag":"MsgMoveAck"} CLIENT <- SERV
-// MsgMoveAck (MoveAck (Right ([((0,0),(C,3)), ((0,1),(A,1)), ((0,2),(T,1))],42)))
-//   <-> {"contents":{"Right":[[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],[[["C","A","T"],["M","A","T"]],42]]}
+// MsgMoveAck (MoveAck (Right ([((0,0),(C,0)), ((0,1),(A,0)), ((0,2),(T,1))],42)))
+//   <-> {"contents":{"Right":[[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],[[["C","A","T"],["M","A","T"]],[0,1],42]]}
 //         ,"tag":"MsgMoveAck"}
 //
 // MsgHint (Just [[C,A,T],[M,A,T]])
@@ -100,11 +100,14 @@ function Client(socket) {
 		returnToRack();
 	    } else {
 		var additionalWords = "";
+		var wp = d.contents.Right[0];
+		var aw = d.contents.Right[1][0];
+		var bs = d.contents.Right[1][1];
+		var sc = d.contents.Right[1][2];
 		if (d.contents.Right[1][0].length > 1) {
 		    additionalWords = " ("+d.contents.Right[1][0].map(a => a.join(''))+")";
 		}
-		serverMessage(wordPutToWord(d.contents.Right[0])+": "+d.contents.Right[1][1]
-			      +additionalWords);
+		serverMessage(wordPutToWord(wp)+": " + sc + additionalWords);
 		if (isCurrentPlayer()) {
 		    $('.tempInPlay').addClass("permInPlay");
 		    $('.tempInPlay').removeClass("tempInPlay");
@@ -112,7 +115,7 @@ function Client(socket) {
 		    $('.emptyRackSpace').text('');
 		    $('.emptyRackSpace').removeClass('emptyRackSpace');
 		} else {
-		    addMoveToBoard(d.contents.Right[0]);
+		    addMoveToBoard(wp);
 		}
 	    }
 	    break;
@@ -198,17 +201,25 @@ function serverMessageRaw(msg) {
     $('#serverMessages').prepend(msg);
 }
 
-function join(name) {
-    var p = {"contents":name,"tag":"MsgJoin"};
+function join(name, isAi) {
+    var p = {"contents":[name,isAi],"tag":"MsgJoin"};
     socket.send(JSON.stringify(p));
 }
 
-function sendMove(w) {
-    if (w.length>0) {
-	var m = {"contents":{"word":w},"tag":"MsgMove"}
+function sendMove(wordput, blanks) {
+    if (wordput.length>0) {
+	// each blank is of the form [index,letter] and
+	// each element in the wordput is of the form [[row,col],[letter,score]]
+	blanks.forEach(b => w[b[0]][1][0] = b[1]);
+	var m = {"contents":{"word":w,"blanks":blanks.map(b => b[0])},"tag":"MsgMove"}
 	console.log(JSON.stringify(m));
 	socket.send(JSON.stringify(m));
     }
+}
+
+function setCharAt(str,index,chr) {
+    if(index > str.length-1) return str;
+    return str.substring(0,index) + chr + str.substring(index+1);
 }
 
 function setRack(letters) {
@@ -365,7 +376,8 @@ $(function() {
             { letter: "J", score: 8, count: 1 },
             { letter: "X", score: 8, count: 1 },
             { letter: "Q", score: 10, count: 1 },
-            { letter: "Z", score: 10, count: 1 }
+            { letter: "Z", score: 10, count: 1 },
+	    { letter: "_", score: 0, count: 2 }
         ]
     }
 
@@ -417,15 +429,17 @@ $(function() {
                 newBox.attr("data-row", i);
                 newBox.attr("data-column", j);
 		$(newBox).on('drop dragdrop',function(ev){
-		    var b = this;
-		    ev.preventDefault();
-		    ev.dataTransfer = ev.originalEvent.dataTransfer;
-		    console.log('dropped: '+ev.dataTransfer.getData("text"));
-		    $(b).text(ev.dataTransfer.getData("text"));
-		    $(b).addClass("tempInPlay");
-		    var pt = ev.dataTransfer.getData("theID");
-		    console.log("Dropped from "+pt);
-		    $('#'+pt).addClass("emptyRackSpace");
+		    if (player.turn===turn) {
+			var b = this;
+			ev.preventDefault();
+			ev.dataTransfer = ev.originalEvent.dataTransfer;
+			console.log('dropped: '+ev.dataTransfer.getData("text"));
+			$(b).text(ev.dataTransfer.getData("text"));
+			$(b).addClass("tempInPlay");
+			var pt = ev.dataTransfer.getData("theID");
+			console.log("Dropped from "+pt);
+			$('#'+pt).addClass("emptyRackSpace");
+		    }
 		});
 		$(newBox).on('dragover',function(ev){
 		    ev.preventDefault();
@@ -491,9 +505,16 @@ $(function() {
 	$('.tempInPlay').each(function (i) {
 	    var r = parseInt(this.dataset.row);
 	    var c = parseInt(this.dataset.column);
-	    w.push([[r,c],[this.innerText,letterValue(this.innerText)]]);
+	    var l = this.innerText
+	    w.push([[r,c],[l,letterValue(l)]]);
 	});
-	sendMove(w);
+	var blanks = [];
+	w.forEach(l i => {
+	    if (l[1][0]==='_') {
+		var b = prompt("Enter the letter to replace the blank at position "+(i+1)+" in "+w.join(''));
+		blanks.push([i,b]);
+	    }});
+	sendMove(w, blanks);
     }
 
     //opens or closes the letter key on right side of the screen
@@ -510,13 +531,12 @@ $(function() {
 
     //checks that each player entered a name and removes the instruction screen and initializes the board screen
     var startGame = function() {
-	console.log($('.playerName'));
-	console.log($('.playerName').val());
+	var isAi = $('#aiCheck').is(':checked');
 	thename = $('.playerName').val();
         if (thename !== "") {
             $('.instructions').fadeOut(1000);
             players[0].name = thename;
-	    join(thename);
+	    join(thename, isAi);
         } else {
             alert("You must enter a name.");
         }

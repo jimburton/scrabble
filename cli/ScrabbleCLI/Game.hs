@@ -9,9 +9,9 @@ import Data.Maybe (fromJust)
 import Data.Char (toUpper)
 import System.Console.Haskeline
 import System.Random (getStdGen)
-import Scrabble.Lang.Search (findPrefixesT)
+import Scrabble.Lang.Search (findPrefixes)
 import Scrabble.Lang.Word (stringToWord)
-import Scrabble.Lang.Dict (englishDictionaryT)
+import Scrabble.Lang.Dict (englishDictionary)
 import Scrabble.Board.Board (mkWP)
 import Scrabble.Game.Game
   ( newGame
@@ -40,7 +40,7 @@ startGame :: Text -- ^ Name of Player 1
           -> IO ()
 startGame p1Name p2Name = do
   theGen <- getStdGen
-  d      <- englishDictionaryT
+  d      <- englishDictionary
   _ <- playGame (newGame p1Name p2Name theGen d)
   return ()
 
@@ -49,7 +49,7 @@ startGameAI :: Text -- ^ Name of Player 1
             -> IO ()
 startGameAI p1Name = do
   theGen <- getStdGen
-  d      <- englishDictionaryT
+  d      <- englishDictionary
   _ <- playGame (newGame1P p1Name theGen d)
   return ()
 
@@ -68,7 +68,7 @@ takeTurn g msc = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
-     liftIO $ printBoard False (board g) msc
+     liftIO $ printBoard True (board g) msc
      if gameOver g
        then liftIO $ doGameOver g
        else if isAI (getPlayer g)
@@ -177,4 +177,4 @@ hints :: Game -> IO ()
 hints g = do
   let w = rack (getPlayer g) 
   T.putStrLn "HINTS:"
-  mapM_ print $ findPrefixesT (dict g) w
+  mapM_ print $ findPrefixes (dict g) w

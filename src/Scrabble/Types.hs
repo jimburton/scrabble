@@ -12,12 +12,13 @@ module Scrabble.Types
   , Turn(..)
   , Game(..)
   , Bag
-  , DictTrie
+  , Dict
   , Playable
   , FreedomDir(..)
   , PosTransform
   , Evaluator(..)
-  , Validator )
+  , Validator
+  , Tile )
 
 where
 
@@ -39,11 +40,14 @@ data Letter =
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
   deriving (Show, Read, Enum, Eq, Ord, Generic, FromJSON, ToJSON)
 
+-- | A tile is a letter and a value.
+type Tile = (Letter,Int)
+
 -- | A word is a list of letters. 
 type Word = [Letter]
 
 -- | The board, a 2D array of Maybe letters and their scores.
-type Board = Array Int (Array Int (Maybe (Letter, Int)))
+type Board = Array (Int,Int) (Maybe Tile)
 
 -- | A position on the board.
 type Pos = (Int, Int)
@@ -52,7 +56,7 @@ type Pos = (Int, Int)
 type PosTransform = Pos -> Pos
 
 -- | A word placed on the board (tiles plus positions).
-type WordPut = [(Pos, (Letter, Int))]
+type WordPut = [(Pos, Tile)]
 
 -- | A direction on the board (row or column).
 data Dir = HZ | VT deriving (Show, Read, Eq)
@@ -61,11 +65,8 @@ data Dir = HZ | VT deriving (Show, Read, Eq)
 type Rack = [Letter]
 
 -- | The datatype of bonuses on the board.
-data Bonus = Word Int | Letter Int 
-
-instance Show Bonus where
-  show (Word i)   = 'W' : show i
-  show (Letter i) = 'L' : show i
+data Bonus = W2 | W3 | L2 | L3
+  deriving Show
 
 -- | A player has a name, a rack and a score, and is either an interactive or an AI player.
 data Player = Player { name  :: Text
@@ -81,7 +82,7 @@ data Turn = P1 | P2 deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
 type Bag = [Letter]
 
 -- | The dictionary is stored in a trie.
-type DictTrie = Trie Bool
+type Dict = Trie ()
 
 -- | A game is comprised of all the state that is needed to play a game. 
 data Game = Game { board     :: Board    -- ^ The board
@@ -91,7 +92,7 @@ data Game = Game { board     :: Board    -- ^ The board
                  , turn      :: Turn     -- ^ Which player's turn it is.
                  , gen       :: StdGen   -- ^ The StdGen for all things random.
                  , firstMove :: Bool     -- ^ Is it the first move?
-                 , dict      :: DictTrie -- ^ The dictionary.
+                 , dict      :: Dict     -- ^ The dictionary.
                  , gameOver  :: Bool     -- ^ Is the game over?
                  , playable  :: Playable -- ^ The map of playable positions.
                  , lastMovePass :: Bool  -- ^ Was the last move a pass?

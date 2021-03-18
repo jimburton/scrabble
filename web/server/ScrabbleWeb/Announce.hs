@@ -13,10 +13,12 @@ module ScrabbleWeb.Announce
   , sendJoinAcks )
   where
 
+import Debug.Trace
 import Prelude hiding (Word)
 import qualified Network.WebSockets as WS
 import Data.Aeson
 import Data.Text (Text)
+import Data.Text as T
 import Scrabble.Types
   ( Player(..)
   , Word
@@ -28,22 +30,28 @@ import ScrabbleWeb.Types
   , Msg(..)
   , Score(..)
   , JoinAck(..)
-  , MoveAck(..))
+  , MoveAck(..)
+  , Client)
   
 -- ====== Sending messages to clients =========== --
+
+-- | Send a message if the player is not AI
+send :: Player -> Client -> Msg -> IO ()
+send p (_,conn) m =
+  let o = encode m in
+    if not (isAI p) then WS.sendTextData conn o else pure ()
 
 -- | Send a message to both players.
 msg :: WebGame -> Msg -> IO ()
 msg wg m = do
-  let o = encode m
-  WS.sendTextData (snd (p1 wg)) o
-  WS.sendTextData (snd (p2 wg)) o
+  send (player1 (theGame wg)) (p1 wg) m
+  send (player2 (theGame wg)) (p2 wg) m
 
 -- | Send a message to one player, identified by the Turn parameter.
 msgOne :: WebGame -> Turn -> Msg -> IO ()
 msgOne wg t m = do
-  let conn = if t == P1 then snd (p1 wg) else snd (p2 wg)
-  WS.sendTextData conn (encode m)
+  let (pl,cl) = if t == P1 then (player1 (theGame wg),p1 wg) else (player2 (theGame wg),p2 wg)
+  send pl cl m
 
 -- | Send a message to the player whose turn it currently is.
 msgCurrent :: WebGame -> Msg -> IO ()
@@ -71,7 +79,10 @@ msgTurn :: WebGame -> IO ()
 msgTurn wg = msg wg (MsgTurn $ turn (theGame wg))
 
 -- | Acknowledge to a legal move, sending the move to both players.
-msgMoveAck :: WebGame -> WordPut -> ([Word],Int) -> IO ()
+msgMoveAck :: WebGame            -- ^ The webgame.
+           -> WordPut            -- ^ The wordput that was played.
+           -> ([Word],[Int],Int) -- ^ The additional words, the indices of blanks and the score.
+           -> IO ()
 msgMoveAck wg w i = do
   msg wg (MsgMoveAck (MoveAck (Right (w,i))))
 

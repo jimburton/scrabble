@@ -34,7 +34,7 @@ import Scrabble.Types
   , Turn(..)
   , WordPut
   , Player(..)
-  , DictTrie
+  , Dict
   , Word
   , Validator )
 import Scrabble.Board.Board
@@ -57,7 +57,7 @@ import Scrabble.Evaluator
 newGame :: Text   -- ^ Name of Player 1
         -> Text   -- ^ Name of Player 2
         -> StdGen   -- ^ The random generator
-        -> DictTrie -- ^ The dictionary
+        -> Dict -- ^ The dictionary
         -> Game
 newGame p1Name p2Name theGen d = 
   let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen

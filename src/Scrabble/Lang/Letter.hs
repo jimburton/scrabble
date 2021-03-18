@@ -43,7 +43,7 @@ letterToCharMap = Map.fromList letterToCharList
 charToLetterMap :: Map Char Letter
 charToLetterMap = Map.fromList (swap <$> letterToCharList)
 
--- private value.
+-- lookup table for the score of a letter
 letterToScoreList :: [(Letter,Int)]
 letterToScoreList = [
   (A, 1), (B, 3), (C, 3), (D, 2), (E, 1), (F, 4), (G, 2),
@@ -51,7 +51,7 @@ letterToScoreList = [
   (O, 1), (P, 3), (Q, 10), (R, 1), (S, 1), (T, 1), (U, 1),
   (V, 4), (W, 4), (X, 8), (Y, 4), (Z, 10), (Blank, 0) ]
 
--- private value.
+-- map to find the score of a letter
 letterToScoreMap :: Map Letter Int
 letterToScoreMap = Map.fromList letterToScoreList
 

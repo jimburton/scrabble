@@ -81,6 +81,7 @@ executable scrabble
   build-depends:       base >=4.12 && <4.13
                      , random
                      , array
+                     , split
                      , text
                      , text-trie
                      , containers

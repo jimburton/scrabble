@@ -7,6 +7,7 @@
    CLOSED: [2021-03-02 Tue 13:50]
 
 * Features
+** TODO Logging
 ** DONE Handle blanks 
    CLOSED: [2021-03-03 Wed 15:25]
 
@@ -44,11 +45,9 @@
     closer. Vive versa for vertical words...
 
 *** TODO Help message
+*** TODO allow temp tiles on board to be dragged and dropped
 * Bugs
-** TODO Make the AI swap tiles instead of passing the move when it can't find a word.  
 ** TODO Prune playable positions after each move.
-** DONE AI selecting words that include non-dictionary additional words
-   CLOSED: [2021-03-11 Thu 19:33]
 
 ** DONE fillRack
    CLOSED: [2021-03-02 Tue 11:22]
@@ -79,7 +78,58 @@
 ** DONE Too many blanks appearing in the bag
    CLOSED: [2021-03-11 Thu 18:14]
    Possibly other letters too but the blanks stand out.
-** TODO Web client: can't swap blanks?
+
+** AI
+*** TODO Managing playable positions properly
+Currently the AI crashes due to garbage playable positions and running out of playable
+positions when really there should be some available.
+
+*** TODO Enable AI to play with blanks
+*** TODO Make the AI swap tiles instead of passing the move when it can't find a word.  
+*** DONE AI selecting words that include non-dictionary additional words
+   CLOSED: [2021-03-11 Thu 19:33]
+
+
+** Web
+*** TODO Web client: can't swap blanks?
+*** TODO Web client: drag and drop temp tiles on board
+*** TODO Additional words picking substrings of the main word
+   Happens (at least) if you play a horizontal word ending on an existing one.
+
+
 * Testing
 
+** TODO Play one AI player against another.
+And make sure the game is played to a conclusion, hopefully not ending by two passes in a row.
+
 ** TODO Blanks
+
+* Book
+
+** Chapter One
+
+   Setting up the project and basic datatypes for modelling the game.
+
+** Chapter Two
+
+   Validating moves.
+
+** Chapter Three 
+
+   Playing the game.
+
+** Chapter Four
+
+   Playing against the computer.
+
+** Chapter Five
+
+   The CLI client.
+
+** Chapter Six
+
+   The web client.
+
+** Chapter Seven
+
+   Logging.

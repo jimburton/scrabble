@@ -57,7 +57,7 @@ import Scrabble.Board.Bonus
   ( bonusMap )
 
 newBoard :: Board
-newBoard = listArray (0,14) $ replicate 15 (listArray (0,14) $ replicate 15 Nothing)
+newBoard = array ((0,0),(14,14)) [((i,j), Nothing) | i <- [0..14], j <- [0..14]]
 
 -- | Calculate the score of playing a word onto the board, including
 --   bonuses and other words that may be created.
@@ -81,8 +81,10 @@ scoreWord fpb = scoreWord' 0 1 where
     else case Map.lookup pos bonusMap of
       Nothing -> scoreWord' (snd t + s) b ws
       Just b'  -> case b' of
-                   (Word i)   -> scoreWord' (snd t + s) (i*b) ws
-                   (Letter i) -> scoreWord' ((snd t * i) + s) b ws
+                   W2 -> scoreWord' (snd t + s) (2*b) ws
+                   W3 -> scoreWord' (snd t + s) (3*b) ws
+                   L2 -> scoreWord' ((snd t * 2) + s) b ws
+                   L3 -> scoreWord' ((snd t * 3) + s) b ws
 
 
 -- | Find the additional words that are created by placing a word on the board.
