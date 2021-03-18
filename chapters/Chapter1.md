@@ -73,7 +73,7 @@ When you start writing any software you need to think about modelling the proble
 in hand. When the problem is a board game, this is easy to do because the first things
 we need to model in the software correspond to real world objects.
 
-<img src="images/scrabble.jpeg" alt="alt text" width="100px">
+<img src="images/scrabble.jpeg" alt="alt text" width="100px" />
 Image&copy; https://www.argos.co.uk
 
 In the image above we can see the most basic objects we will need to handle:
