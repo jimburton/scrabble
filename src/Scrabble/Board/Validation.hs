@@ -76,11 +76,12 @@ connects :: WordPut -- ^ The word to play
          -> Board    -- ^ The board
          -> Bool     -- ^ Is first move
          -> Evaluator ()
-connects [] _ fm     = if fm then pure () else fail "Not touching any other tile"
-connects (w:ws) b fm = let (pos,_) = w in
-  if (not . all null) (occupiedNeighbours b pos)
-  then pure ()
-  else connects ws b fm
+connects ws b fm =
+  let end = if fm then pure () else fail "Not touching any other tile" in
+    foldl (\acc (pos,_) -> if (not . all null) (occupiedNeighbours b pos)
+                           then pure ()
+                           else acc) end ws
+
 
 -- | Words must contain at least two tiles and must be in a straight line on the board
 straight :: WordPut -> Evaluator ()

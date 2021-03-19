@@ -27,7 +27,7 @@ would be as follows:
 ```haskell
 straight :: WordPut -> Bool
 straight wp | length wp > 2 = 
-                let ps      = map fst wp
+                let ps  = map fst wp
                 (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
                 f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
                   (all f . zip ps $ tail ps)
@@ -81,11 +81,11 @@ occupiedNeighbours :: Board -> Pos -> [Pos]
 occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
 
 connects :: WordPut -> Board -> Bool -> Either Text ()
-connects [] _ fm     = if fm then Right () else Left "Not touching any other tile"
-connects (w:ws) b fm = let (pos,_) = w in
-  if (not . all null) (occupiedNeighbours b pos)
-  then Right ()
-  else connects ws b fm
+connects ws b fm =
+  let end = if fm then Right () else Left "Not touching any other tile" in
+    foldl (\acc (pos,_) -> if (not . all null) (occupiedNeighbours b pos)
+                           then Right ()
+                           else acc) end ws
 ```
 Checking that a word is on the board just means checking that every position is on
 the board.
