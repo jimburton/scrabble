@@ -223,7 +223,7 @@ validateMove b p w fm =
 	   >> straight w 
 	   >> firstMoveTouchesCentre w fm 
 	   >> lettersAvailable w p b
-	```
+```
 	
 The functions that check aspects of the move are now *combinators*. We can compose
 them into larger combinators that check several things. If `connects`, or `straight`, 
