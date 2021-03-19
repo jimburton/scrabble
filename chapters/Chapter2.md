@@ -199,8 +199,8 @@ to return `Evaluator a`. The ones we have seen so far tested a boolean condition
 make an abstraction for this pattern.
 
 ```haskell
-evalBool :: Bool -> String -> Evaluator ()
-evalBool b e = if b then pure () else fail e
+evalBool :: Bool -> Text -> Evaluator ()
+evalBool b e = if b then pure () else fail (T.unpack e)
 ```
 Now our validation functions will all have a similar structure to the new version 
 of `lettersAvailable` below -- a call to `evalBool` where the first argument is a boolean 
@@ -211,9 +211,11 @@ lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
 lettersAvailable w p b = all available w `evalBool`"Letters not in rack or not on board."
   where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
 
-```
-Monadic style allows us to remove all those case statments and write `validateMove` in
-a far nicer style:
+``` 
+
+Monadic style allows us to remove all those case statments and
+write `validateMove` in a far nicer style. If any of the validation
+functions encounters an error, the appropriate message is delivered.
 
 ```
 validateMove :: Board   -- ^ The board
@@ -228,12 +230,10 @@ validateMove b p w fm =
 	   >> lettersAvailable w p b
 ```
 	
-The functions that check aspects of the move are now *combinators*. We can compose
-them into larger combinators that check several things. If `connects`, or `straight`, 
-or any of the other checks made in the monadic version fails
-by returning a `Left` with an error message in it, this is handled by the monad instance
-declaration. Functions at the top level can inspect the result of calling a chain of 
-computations to see if all went well. 	```
+The validation functions are now *combinators*. We can combine small
+combinators into larger ones that check several things. Functions at
+the top level can run an evaluator then unpack the result in a single case
+statement to see if all went well or, if not, exactly what went wrong.
 								 
 ## Checking words in the dictionary
 
@@ -241,9 +241,10 @@ We have already seen how to check that a word is in the dictionary
 using `dictContainsWord`. Instead of returning a boolean we now want this to fit in
 with the combinator style of validation, so we alter it to run in the `Evaluator`
 monad.
+
 ```haskell
 dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " ++ show t) 
+dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> T.pack(show t)) 
 ```
 
 We need to apply this function to the new
@@ -267,10 +268,10 @@ NOT and BE.
    MOB
  PASTE
 ```
-The new letters (O and B) benefit from any bonus squares
-they are played on but no bonuses are counted for the letters that are 
-already on the board. In the next move the word BIT is played, generating 
-the additional words PI and AT.
+Any bonus squares under the new letters (O and B) add to the score but no bonuses 
+are counted for the letters that are already on the board. In the next move the 
+word BIT is played, generating the additional words PI and AT.
+
 ```
    F
    A

@@ -22,6 +22,8 @@ module Scrabble.Board.Internal
 
 import Debug.Trace
 import Prelude hiding (Word)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Maybe
   ( isNothing
   , isJust )
@@ -38,7 +40,7 @@ import Scrabble.Types
   , Word
   , Tile ) 
 import Scrabble.Lang.Word
-  ( wordToString )
+  ( wordToText )
   
 -- ======== Internal for Board ========== --
 
@@ -118,9 +120,9 @@ freedomsFromWord w b =
 canPlay :: Board -> Pos -> Bool
 canPlay b p = onBoard p && isNothing (getSquare b p)
 
-formatWP :: WordPut -> String
-formatWP w = wordToString (map (fst . snd) w) ++ ": " ++ show (fst (head w))
-             ++ " " ++ show (getDirection w)
+formatWP :: WordPut -> Text
+formatWP w = wordToText (map (fst . snd) w) <> ": " <> T.pack (show (fst (head w)))
+             <> " " <> T.pack (show (getDirection w))
 
 -- | Convert a WordPut to a Word.
 wordPutToWord :: WordPut -> Word

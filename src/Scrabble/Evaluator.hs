@@ -2,6 +2,7 @@ module Scrabble.Evaluator ( Evaluator(..)
                           , evalBool )
   where
 
+import Data.Text (Text)
 import qualified Data.Text as T
 import Scrabble.Types ( Evaluator(..) )
 -- import Control.Monad.IO.Class ( liftIO )
@@ -27,8 +28,8 @@ instance Monad Evaluator where
     fail msg = Ev (Left (T.pack msg))
 
 -- | Test a bool in the monad
-evalBool :: Bool -> String -> Evaluator ()
-evalBool b e = if b then pure () else fail e
+evalBool :: Bool -> Text -> Evaluator ()
+evalBool b e = if b then pure () else fail (T.unpack e)
 
 --try :: IO (String -> g) -> IO (g -> g) -> Evaluator g -> IO g
 --try k r e = case e of

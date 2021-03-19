@@ -10,8 +10,8 @@ module Scrabble.Lang.Dict
 
 import Data.Char        ( toUpper )
 import Prelude hiding   ( Word )
-import Data.Text        ( Text
-                        , pack)
+import Data.Text        ( Text )
+import qualified Data.Text as T
 import Data.Monoid ( mconcat )
 import qualified Data.Trie.Text as Trie
 
@@ -41,7 +41,7 @@ wordsInDict d = all (`Trie.member` d)
 
 -- | Returns true if the dict contains the given word
 dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " ++ show t) 
+dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> T.pack (show t)) 
 
 -- | Returns true if the dict contains the given prefix
 dictContainsPrefix :: Dict -> Text -> Bool 
@@ -51,7 +51,7 @@ dictContainsPrefix d t = not $ Trie.null $ Trie.submap t d
 readDictionary :: FilePath -> IO Dict
 readDictionary dict = do
   ls <- lines <$> readFile dict
-  pure (Trie.fromList [(pack (map toUpper l), ()) | l <- ls])
+  pure (Trie.fromList [(T.pack (map toUpper l), ()) | l <- ls])
 
 {- ===== English Dictionary ===== -}
 

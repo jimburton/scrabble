@@ -6,8 +6,8 @@ module Scrabble.Board.Validation
   , straight )
   where
 
-import Data.Maybe
-  ( fromJust )
+import Data.Maybe (fromJust)
+import qualified Data.Text as T  
 import Scrabble.Types
   ( Board
   , Player(..)
@@ -45,7 +45,7 @@ validateMove b p w fm =
 -- | The letter in this move are available in the player's rack or on the board
 lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
 lettersAvailable w p b = all available w
-                         `evalBool` ("Letters not in rack or not on board: " ++ formatWP w)
+                         `evalBool` ("Letters not in rack or not on board: " <> formatWP w)
   where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
   
 -- | Check that a word to be played is made of tiles that are either in the player's
@@ -57,7 +57,7 @@ validateRack :: Board
 validateRack b r w = someNewTiles b w >>
   all (\(pos,(t,_)) -> t `elem` r
            || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
-  `evalBool` ("Not all tiles in rack or on board: " ++ formatWP w)
+  `evalBool` ("Not all tiles in rack or on board: " <> formatWP w)
 
 
 -- | Does the word touch the pos on the board?
@@ -95,4 +95,4 @@ straight wp | length wp > 2 =
 -- | Check that a word to be played incudes some tiles that aren't on the board.
 someNewTiles :: Board -> WordPut -> Evaluator ()
 someNewTiles b w = any (empty b . fst) w `evalBool`
-  ("You didn't play any new tiles: " ++ formatWP w ++ show w)
+  ("You didn't play any new tiles: " <> formatWP w <> T.pack (show w))
