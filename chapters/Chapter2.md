@@ -136,20 +136,20 @@ validateMove b p w fm = case connects w b fm of
                    Right _ -> case firstMoveTouchesCentre w fm of
 				                Right _ -> case lettersAvailable w p b of
 								             Right -> Right ()
-											 Left e -> Left e
+                                             Left e -> Left e
                                 Left e -> Left e
                Left e -> Left e
      Left e -> Left e
  ```
  
-The technical term for this kind of code is "filthy". Deeply nested
-and indented code like this is hard to read, hard to maintain and hard
-to extend.  Fortunately, what we can do in this situation is to use a
-monad to encapsulate the checks for `Left` and `Right`. We make our
-`Either` type into a monad, where the monad instance says what to do
-when we encounter a `Left` value, and then when wen we use the monad
-we just carry on as if everything is a `Right` value -- no more case
-statements.
+The technical term for this kind of code is "filthy". Such deeply
+nested and indented code as this is very hard to read, hard to
+maintain and hard to extend.  Fortunately, what we can do here is to
+use a monad to encapsulate the checks for `Left` and `Right`. We make
+our `Either` type into a monad, where the monad instance says what to
+do when we encounter a `Left` value, and then when wen we use the
+monad we just carry on as if everything is a `Right` value -- no more
+case statements.
 
 We create a new type for arbitrary "evaluations" in the game, called
 `Evaluator`. 
