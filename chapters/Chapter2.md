@@ -55,8 +55,8 @@ straight wp | length wp > 2 =
                     (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
                     f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
                   if (all f . zip ps $ tail ps)
-				   then Right ()
-				   else Left "Not in a straight line"
+                   then Right ()
+                   else Left "Not in a straight line"
             | otherwise    = Left "Too few letters"
 ```
 
@@ -106,7 +106,7 @@ touches p = any ((==p) .  fst)
 firstMoveTouchesCentre :: WordPut -> Bool -> Either Text ()
 firstMoveTouchesCentre w fm = if (not fm || touches (7,7) w) 
                                then Right ()
-							   else Left "First move must touch the centre square"
+                               else Left "First move must touch the centre square"
 ```
 We also need to check that the letters in the word to be played are actually in the player's 
 rack or are already on the board.
