@@ -94,7 +94,7 @@ the board.
 wordOnBoard :: WordPut -> Either String ()
 wordOnBoard w = if all (onBoard . fst) w
                  then Right ()
-				 else Left "Word not on board"
+                 else Left "Word not on board"
 ```
 Checking that the first word touches the centre square is also pretty
 straightforward with the `touches` function.
@@ -115,7 +115,7 @@ rack or are already on the board.
 lettersAvailable :: WordPut -> Player -> Board -> Either Text ()
 lettersAvailable w p b = if all available w
                           then Right ()
-						  else "Letters not in rack or not on board."
+                          else "Letters not in rack or not on board."
   where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
 
 ``` 
@@ -146,14 +146,13 @@ validateMove b p w fm = case connects w b fm of
   Left e -> Left e
  ```
  
-The technical term for this kind of code is "filthy". Such deeply
-nested and indented code as this is very hard to read, hard to
-maintain and hard to extend.  Fortunately, what we can do here is to
-use a monad to encapsulate the checks for `Left` and `Right`. We make
-our `Either` type into a monad, where the monad instance says what to
-do when we encounter a `Left` value, and then when we use the
-monad we can carry on as if everything is a `Right` value -- no more
-case statements.
+The technical term for this kind of code is "filthy". Such a deeply
+nested and indented structure is hard to read, hard to maintain and
+hard to extend.  Fortunately, what we can do here is to use a monad to
+encapsulate the checks for `Left` and `Right`. We make our `Either`
+type into a monad, where the monad instance says what to do when we
+encounter a `Left` value, and then when we use the monad we can carry
+on as if everything is a `Right` value -- no more case statements.
 
 We create a new type for arbitrary "evaluations" in the game, called
 `Evaluator`. 
