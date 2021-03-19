@@ -33,33 +33,36 @@ straight (w:x:xs) =
       (s1,s2) = if r == r'-1 then (fst,snd) else (snd,fst)
       f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
     (all f . zip ws $ tail ws)
-straight _        = error "Too few letters"
+straight _  = error "Too few letters"
 ```
 
 But we don't want to throw a runtime error that crashes the program if
-words are less than two letters long. Also, there are lots of ways in
-which a move might be invalid so we'd like to give a descriptive
-message explaining what went wrong. A common solution to writing a
-function that returns a value of type `a` or an error message is to
-use the type `Either Text a`. Values of this type are either `Left e`,
-where `e` is an error message, or `Right x` where `x :: a`. In the
-case of `straight`, if it returns any type of `Right` value then we
-know things went well. So there's no need to return a `Bool`, we can
-just return `Left` for an error or `Right ()` if things went
-well. `()` ("unit") is the type with exactly one value in it (which is
-also `()`):
+words are less than two letters long. Equally, if the word isn't straight
+, we'd like to return a descriptive error message. As there are lots of ways in
+which a move might be invalid we'd like to be able to let the user know
+exactly what went wrong. 
+
+A common solution to writing a function that returns a value of type
+`a` or an error message is to use the type `Either Text a`. Values of
+this type are either `Left e`, where `e` is an error message, or
+`Right x` where `x :: a`. In the case of `straight`, if it returns any
+type of `Right` value then we know things went well. So there's no
+need to return a `Bool`, we can just return `Left e` for an error or
+`Right ()` if things went well. `()` ("unit") is the type with exactly
+one value in it (which is also `()`):
 
 ```haskell
 straight :: WordPut -> Either String ()
-straight (w:x:xs) = let ws      = map fst (w:x:xs)
-                        (r,_)   = fst w
-                        (r',_)  = fst x
-                        (s1,s2) = if r == r'-1 then (fst,snd) else (snd,fst)
-                        f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
-                      if (all f . zip ws $ tail ws)
-					   then Right ()
-					   else Left "Word not in a straight line" 
-straight _         = Left "Too few letters"
+straight (w:x:xs) = 
+  let ws      = map fst (w:x:xs)
+      (r,_)   = fst w
+      (r',_)  = fst x
+      (s1,s2) = if r == r'-1 then (fst,snd) else (snd,fst)
+      f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
+    if (all f . zip ws $ tail ws)
+	then Right ()
+	else Left "Word not in a straight line" 
+straight _ = Left "Too few letters"
 ```
 
 To check whether a word connects with an existing word, we need to look at the
