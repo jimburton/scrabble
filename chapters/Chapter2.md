@@ -135,7 +135,7 @@ validateMove b p w fm = case connects w b fm of
       Right _ -> case straight w of
                    Right _ -> case firstMoveTouchesCentre w fm of
 				                Right _ -> case lettersAvailable w p b of
-								             Right -> Right ()
+                                             Right -> Right ()
                                              Left e -> Left e
                                 Left e -> Left e
                Left e -> Left e
