@@ -13,7 +13,8 @@ import Scrabble.Types
   , Player(..)
   , WordPut
   , Pos
-  , Rack )
+  , Rack
+  , Dir(..))
 import Scrabble.Evaluator
   ( Evaluator
   , evalBool )
@@ -21,7 +22,8 @@ import Scrabble.Board.Internal
   ( getSquare
   , empty
   , formatWP
-  , occupiedNeighbours )
+  , occupiedNeighbours
+  , getDirection )
 
 -- ================= Validation for boards ===============--
 
@@ -82,13 +84,12 @@ connects (w:ws) b fm = let (pos,_) = w in
 
 -- | Words must contain at least two tiles and must be in a straight line on the board
 straight :: WordPut -> Evaluator ()
-straight (w:x:xs) = let ws      = map fst (w:x:xs)
-                        (r,_)   = fst w
-                        (r',_)  = fst x
-                        (s1,s2) = if r == r'-1 then (fst,snd) else (snd,fst)
-                        f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
-                      (all f . zip ws $ tail ws) `evalBool` "Not in a straight line"
-straight _         = fail "Too few letters"
+straight wp | length wp > 2 =
+                let ps      = map fst wp
+                    (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
+                    f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
+                  (all f . zip ps $ tail ps) `evalBool` "Not in a straight line"
+            | otherwise    = fail "Too few letters"
 
 -- | Check that a word to be played incudes some tiles that aren't on the board.
 someNewTiles :: Board -> WordPut -> Evaluator ()

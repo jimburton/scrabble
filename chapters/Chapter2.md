@@ -26,21 +26,18 @@ would be as follows:
 
 ```haskell
 straight :: WordPut -> Bool
-straight (w:x:xs) = 
-  let ws      = map fst (w:x:xs)
-      (r,_)   = fst w
-      (r',_)  = fst x
-      (s1,s2) = if r == r'-1 then (fst,snd) else (snd,fst)
-      f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
-    (all f . zip ws $ tail ws)
-straight _  = error "Too few letters"
+straight wp | length wp > 2 = 
+                let ps      = map fst wp
+                (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
+                f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
+                  (all f . zip ps $ tail ps)
+            | otherwise    = False
 ```
 
-But we don't want to throw a runtime error that crashes the program if
-words are less than two letters long. Equally, if the word isn't straight
-, we'd like to return a descriptive error message. As there are lots of ways in
-which a move might be invalid we'd like to be able to let the user know
-exactly what went wrong. 
+But there are lots of ways in which a move might be invalid we'd
+like to be able to let the user know exactly what went wrong. If we
+carry on with validation checks that return true or false we will need lots
+of if statements that work out what to report back to the user.
 
 A common solution to writing a function that returns a value of type
 `a` or an error message is to use the type `Either Text a`. Values of
@@ -53,16 +50,14 @@ one value in it (which is also `()`):
 
 ```haskell
 straight :: WordPut -> Either String ()
-straight (w:x:xs) = 
-  let ws      = map fst (w:x:xs)
-      (r,_)   = fst w
-      (r',_)  = fst x
-      (s1,s2) = if r == r'-1 then (fst,snd) else (snd,fst)
-      f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
-    if (all f . zip ws $ tail ws)
-	then Right ()
-	else Left "Word not in a straight line" 
-straight _ = Left "Too few letters"
+straight wp | length wp > 2 =
+                let ps      = map fst wp
+                    (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
+                    f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
+                  if (all f . zip ps $ tail ps)
+				   then Right ()
+				   else Left "Not in a straight line"
+            | otherwise    = Left "Too few letters"
 ```
 
 To check whether a word connects with an existing word, we need to look at the
