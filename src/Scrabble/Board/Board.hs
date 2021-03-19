@@ -36,7 +36,8 @@ import Scrabble.Types
   , Bonus(..)
   , Dir(..)
   , Letter
-  , Rack ) 
+  , Rack
+  , Tile ) 
 import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Board.Validation
@@ -73,7 +74,7 @@ scoreWords g w aw = do
 --   Pos and Tile, i.e. whether this is the first time it has been
 --   counted.
 scoreWord :: Int -- ^ Starting bonus. This applies only for the seven letter word bonus.
-          -> [(Pos, (Letter, Int), Bool)] -- ^ (Position on board, letter, apply bonus)
+          -> [(Pos, Tile, Bool)] -- ^ (Position on board, tile, apply bonus)
           -> Int
 scoreWord fpb = scoreWord' 0 1 where
   scoreWord' s b [] = (s * b) + fpb

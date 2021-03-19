@@ -12,8 +12,8 @@ import Scrabble.Types
   , Player(..)
   , Board )
 import Scrabble.Game.Game (getPlayer)
-import Scrabble.Show
-  ( showPlayer
+import Scrabble.Board.Pretty
+  ( showPlayer 
   , showBoard )
        
 -- ========= Output for CLI Scrabble games ========== --  

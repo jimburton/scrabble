@@ -185,10 +185,10 @@ wordOnCol b pos = wordFromSquare b incRow (startOfWord b decRow pos)
 
 -- | How many new tiles are being played in a move?
 newTilesInMove :: Board -> WordPut -> Int
-newTilesInMove b w = length $ newTiles b w
+newTilesInMove b = length . newTiles b 
 
 -- | The new tiles that are being played in a move.
-newTiles :: Board -> WordPut -> [(Pos, (Letter,Int))]
+newTiles :: Board -> WordPut -> [(Pos, Tile)]
 newTiles b = filter (\(p,_) -> isNothing (getSquare b p))  
 
 -- | Retrieve the word that crosses this pos on the board

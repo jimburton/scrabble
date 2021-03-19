@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Scrabble.Show
+module Scrabble.Board.Pretty
   ( showBoard
   , showGame
   , showPlayer )
@@ -22,10 +22,6 @@ import Scrabble.Lang.Letter
   , scoreLetter ) 
 
 -- =============== Functions for turning boards into text =========== --
-
--- Get a row from the board
-row :: Board -> Int -> [Maybe Tile]
-row a i = map (\j -> a ! (i,j)) [snd (fst (bounds a)) .. snd (snd (bounds a))]
 
 -- Get all rows from the board
 rows :: Board -> [[Maybe Tile]]

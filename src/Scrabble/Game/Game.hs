@@ -28,7 +28,9 @@ import Scrabble.Game.Internal
   , updatePlayables
   , toggleTurn
   , updatePlayer
-  , endGame ) 
+  , checkEndOfGame
+  , endGame
+  , endNonPassMove )  
 import Scrabble.Types
   ( Game(..)
   , Turn(..)
@@ -94,10 +96,11 @@ move :: Validator -- ^ Validates the word against the board.
      -> WordPut   -- ^ The word to play
      -> [Int]     -- ^ The list positions which were blanks
      -> Evaluator (Game, ([Word],Int))
-move v g w is = additionalWords g w >>= \aw -> setBlanks w is g >>= \g' -> v (w:aw) g'
-    >> scoreWords g w aw >>= \i -> setScore g' { firstMove = False, lastMovePass = False } i
-    >>= updatePlayer w >>= updatePlayables w >>= updateBoard w
-    >>= toggleTurn <&> (,(map wordPutToWord (w:aw),i))
+move validate g w is = additionalWords g w >>= \aw -> setBlanks w is g
+  >>= \g' -> validate (w:aw) g' >> scoreWords g w aw
+  >>= \sc -> setScore g' sc 
+  >>= updatePlayer w >>= updatePlayables w >>= updateBoard w
+  >>= endNonPassMove >>= checkEndOfGame <&> (,(map wordPutToWord (w:aw),sc))
 
 -- | Take a move by swapping tiles.
 swap :: Word -- ^ The tiles to swap.
@@ -110,14 +113,15 @@ swap ls g = do
       theGen = gen g
   takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
     >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
-    >>= toggleTurn >>= \g' -> pure g' { bag = ls++theBag'
-                                      , gen = theGen'
-                                      , lastMovePass = False }
+    >>= endNonPassMove >>= checkEndOfGame
+    >>= \g' -> pure g' { bag = ls++theBag'
+                       , gen = theGen'
+                       , lastMovePass = False }
 
 -- | Take a move by passing.
 pass :: Game -> Evaluator Game
 pass g = if lastMovePass g
          then endGame g
-         else toggleTurn g { lastMovePass = True }
+         else toggleTurn g { lastMovePass = True } >>= checkEndOfGame
 
   

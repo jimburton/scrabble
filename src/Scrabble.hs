@@ -1,10 +1,10 @@
 module Scrabble (
   module Scrabble.Types
- , module Scrabble.Show
  , module Scrabble.Game.Game
  , module Scrabble.Game.AI
  , module Scrabble.Board.Board
  , module Scrabble.Board.Bag
+ , module Scrabble.Board.Pretty
  , module Scrabble.Lang.Dict
  , module Scrabble.Lang.Search
  , module Scrabble.Lang.Letter
@@ -13,11 +13,11 @@ module Scrabble (
 
 
 import Scrabble.Types
-import Scrabble.Show
 import Scrabble.Game.Game
 import Scrabble.Game.AI
 import Scrabble.Board.Board
 import Scrabble.Board.Bag
+import Scrabble.Board.Pretty
 import Scrabble.Lang.Dict
 import Scrabble.Lang.Search
 import Scrabble.Lang.Letter

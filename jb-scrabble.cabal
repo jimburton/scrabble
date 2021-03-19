@@ -33,7 +33,6 @@ library
   exposed-modules:
       Scrabble
       Scrabble.Types
-      Scrabble.Show
       Scrabble.Evaluator
       Scrabble.Game.Game
       Scrabble.Game.AI
@@ -46,6 +45,7 @@ library
       Scrabble.Board.Bag
       Scrabble.Board.Board
       Scrabble.Board.Bonus
+      Scrabble.Board.Pretty
       Scrabble.Board.Validation
       Scrabble.Board.Internal
 
@@ -62,7 +62,6 @@ executable scrabble
                      , ScrabbleCLI.Out
                      , ScrabbleCLI.Blanks
                      , Scrabble.Types
-                     , Scrabble.Show
                      , Scrabble.Evaluator
                      , Scrabble.Game.Game
                      , Scrabble.Game.AI
@@ -75,6 +74,7 @@ executable scrabble
                      , Scrabble.Board.Bag
                      , Scrabble.Board.Board
                      , Scrabble.Board.Bonus
+                     , Scrabble.Board.Pretty
                      , Scrabble.Board.Validation
                      , Scrabble.Board.Internal
   -- ghc-options: -Wall -Werror -fno-warn-name-shadowing
@@ -100,7 +100,6 @@ executable scrabble-server
                     , ScrabbleWeb.Announce
                     , ScrabbleWeb.Game
                     , Scrabble.Types
-                    , Scrabble.Show
                     , Scrabble.Evaluator
                     , Scrabble.Game.Game
                     , Scrabble.Game.AI
@@ -113,6 +112,7 @@ executable scrabble-server
                     , Scrabble.Board.Bag
                     , Scrabble.Board.Board
                     , Scrabble.Board.Bonus
+                    , Scrabble.Board.Pretty
                     , Scrabble.Board.Validation
                     , Scrabble.Board.Internal
   build-depends:      base >=4.12 && <4.13

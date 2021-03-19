@@ -24,8 +24,7 @@ import Scrabble.Types
   , Dir(..)
   , Word
   , Turn(..)
-  , Letter(Blank)
-  , Board )
+  , Letter(Blank))
 import Scrabble.Board.Board
   ( mkWP
   , updateBoard

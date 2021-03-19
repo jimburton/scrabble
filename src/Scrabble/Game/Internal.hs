@@ -6,6 +6,8 @@ module Scrabble.Game.Internal
   , setPlayer 
   , toggleTurn
   , updatePlayer
+  , checkEndOfGame
+  , endNonPassMove
   , endGame )
   where
 
@@ -111,20 +113,34 @@ getPlayer g = if turn g == P1 then player1 g else player2 g
 -- | Toggle the turn in the game (between P1 and P2)
 toggleTurn :: Game -- ^ The game in which to toggle the turn
            -> Evaluator Game
-toggleTurn g = let eog = null (bag g) 
-                     && null (rack (player1 g)) 
-                     && null (rack (player2 g)) in
+toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
+
+-- | Checks whether this game has ended because the bag and one
+--   of the racks are empty, and calls endGame if so.
+checkEndOfGame :: Game -> Evaluator Game
+checkEndOfGame g =
+  let eog = null (bag g) &&
+        (null (rack (player1 g)) || null (rack (player2 g))) in
   if eog
   then endGame g
-  else pure g { turn = if turn g == P1 then P2 else P1 }
+  else pure g
 
--- | Ends the game and subtracts the tiles in each players rack from their score. 
+-- | Finishes a move that is not a pass by updating the firstMove and lastMovePass fields
+--   then toggling the turn.
+endNonPassMove :: Game -> Evaluator Game
+endNonPassMove g = toggleTurn $ g { firstMove = False, lastMovePass = False }
+
+-- | Ends the game and subtracts the tiles in each players rack from their score. If
+--   One player has used all of their tiles the value of the opponent's tiles is added
+--   to their score.
 endGame :: Game -> Evaluator Game
 endGame g = do
-  let p1Score = score (player1 g) - rackValue (rack (player1 g))
-      p2Score = score (player2 g) - rackValue (rack (player2 g))
-  pure g { player1 = (player1 g) { score = p1Score }
-         , player2 = (player2 g) { score = p2Score }
+  let r1v = rackValue (rack (player1 g))
+      r2v = rackValue (rack (player1 g))
+      p1s = (score (player1 g) - r1v) + r2v
+      p2s = (score (player2 g) - r2v) + r1v
+  pure g { player1 = (player1 g) { score = p1s }
+         , player2 = (player2 g) { score = p2s }
          , gameOver = True }
 
   
