@@ -158,7 +158,7 @@ doHints :: WebGame -> IO ()
 doHints wg = do
   let g  = theGame wg
       w  = rack (G.getPlayer g) 
-      hs = findPrefixes (dict g) w
+      hs = findPrefixes g w
   msgCurrent wg (MsgHint (Just hs))
 
 -- | Let the player take a move by passing.

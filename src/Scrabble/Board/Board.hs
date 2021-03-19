@@ -18,7 +18,8 @@ module Scrabble.Board.Board
 import Debug.Trace
 import qualified Data.Map as Map
 import Data.Maybe
-  ( fromJust )
+  ( fromJust
+  , catMaybes )
 import Data.Array
 import Data.Char
   ( toUpper )
@@ -86,8 +87,18 @@ scoreWord fpb = scoreWord' 0 1 where
                    L2 -> scoreWord' ((snd t * 2) + s) b ws
                    L3 -> scoreWord' ((snd t * 3) + s) b ws
 
-
 -- | Find the additional words that are created by placing a word on the board.
+additionalWords :: Game   -- ^ The game.
+                -> WordPut -- ^ The new word.
+                -> Evaluator [WordPut]
+additionalWords g w = updateBoard w g >>= \g' -> do
+  let b      = board g'
+      oppDir = if getDirection w == HZ then VT else HZ
+      ps     = map fst w
+      mWds   = if oppDir == HZ then map (wordOnRow b) ps else map (wordOnCol b) ps
+  pure $ catMaybes mWds
+
+{--- | Find the additional words that are created by placing a word on the board.
 additionalWords :: Board   -- ^ The board.
                 -> WordPut -- ^ The new word.
                 -> [WordPut]
@@ -100,7 +111,7 @@ additionalWords b w = additionalWords' w
               v = [wordOnRow (updateSquare b wp) (r,c) |
                     empty b (r,c) && not (all (`touches` w) (vNeighbours b (r,c)))] in
             h ++ v ++ additionalWords' wps
-
+-}
 -- | Make a WordPut from a string.
 mkWP :: String -- ^ The string.
      -> Pos    -- ^ The starting position on the board.

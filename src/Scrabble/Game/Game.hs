@@ -94,12 +94,10 @@ move :: Validator -- ^ Validates the word against the board.
      -> WordPut   -- ^ The word to play
      -> [Int]     -- ^ The list positions which were blanks
      -> Evaluator (Game, ([Word],Int))
-move v g w is = do
-  let b   = board g
-      aw  = additionalWords b w 
-  setBlanks w is g >>= \g' -> v (w:aw) g' >> scoreWords g w aw >>=
-    \i -> setScore g' { firstMove = False, lastMovePass = False } i >>= updatePlayer w >>=
-    updatePlayables w >>= updateBoard w >>= toggleTurn <&> (,(map wordPutToWord (w:aw),i))
+move v g w is = additionalWords g w >>= \aw -> setBlanks w is g >>= \g' -> v (w:aw) g'
+    >> scoreWords g w aw >>= \i -> setScore g' { firstMove = False, lastMovePass = False } i
+    >>= updatePlayer w >>= updatePlayables w >>= updateBoard w
+    >>= toggleTurn <&> (,(map wordPutToWord (w:aw),i))
 
 -- | Take a move by swapping tiles.
 swap :: Word -- ^ The tiles to swap.

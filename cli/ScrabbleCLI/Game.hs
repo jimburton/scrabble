@@ -177,4 +177,4 @@ hints :: Game -> IO ()
 hints g = do
   let w = rack (getPlayer g) 
   T.putStrLn "HINTS:"
-  mapM_ print $ findPrefixes (dict g) w
+  mapM_ print $ findPrefixes g w

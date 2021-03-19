@@ -1,6 +1,6 @@
 # Chapter 1: Getting started
 
-[Back](../README.md)
+[Contents](../README.md)
 
 Code corresponding to this chapter is in the branch `chapter1`.
 
@@ -74,14 +74,14 @@ in hand. When the problem is a board game, this is easy to do because the first 
 we need to model in the software correspond to real world objects.
 
 <img src="/images/scrabble.jpeg" alt="Scrabble board" width="500px" />
-Image&copy; https://www.argos.co.uk
 
 In the image above we can see the most basic objects we will need to handle:
 
-+ a number of **tiles**,
-+ several **racks** containing tiles,
-+ a **bag**, also containing tiles, and last but not least
 + the **board**.
++ a number of **tiles**,
++ several **racks** containing tiles, and
++ a **bag**, also containing tiles.
+
 
 We also need to account for some things that we can't see such as a
 **game**, which consists of the objects above plus several **players**
@@ -89,7 +89,7 @@ and some additional state (e.g., whose **turn** it is). Each player
 will have a **score**, as well as rack. Finally, we also need to model
 the **rules** of the game and a **dictionary**.
 
-## Tiles, letters and words
+## Letters and tiles
 
 <img src="/images/tile.jpg" alt="Scrabble tile" width="100px" />
 
@@ -114,7 +114,7 @@ data Letter =
 type Tile = (Letter,Int)
 
 ```
-We will need several datasets relating to letters. We need to know
+We will need to know a number of things about letters:
 
 + the score of each letter,
 + how many of them should be in a full bag, and
@@ -156,22 +156,12 @@ on a value that isn't `Just x`, i.e. which is `Nothing`. In this case,
 it's fine because we know that there is an entry in the map for every letter 
 in.
 
-Words are lists of letters and both racks and bags are lists of tiles.
-
-```haskell
-type Word = [Letter]
-
-type Rack = [Tile]
-
-type Bag = [Tile]
-```
 ## The board
 
-A board consists of positions within rows and columns -- we will model
-the board as a two-dimensional array. This will certainly be a lot
-more efficient than a list of lists. The values stored in the array
-will be `Maybe Tile`s (i.e. either `Nothing` for an empty square or
-something like `Just (A,1)` for a square with an 'A' tile on it).
+A board is a 15x15 matrix of rows and columns and so a natural way to model the
+board is as a two-dimensional array. The values stored in the array will be
+`Maybe Tile`s (i.e. either `Nothing` for an empty square, or something
+like `Just (A,1)` for a square with an 'A' tile on it).
 
 ```haskell
 import Data.Array
@@ -186,15 +176,25 @@ so we make a type for those too.
 ```haskell
 type Pos = (Int,Int)
 ```
+## Words 
 
+Words are lists of letters and both racks and bags are lists of tiles.
+
+```haskell
+type Word = [Letter]
+
+type Rack = [Tile]
+
+type Bag = [Tile]
+```
 A word we want to place on the board is a list of pairs of positions on the
-boards and tiles.
+boards and tiles. We call this a `WordPut`.
 
 ```haskell
 type WordPut = [(Pos, Tile)]
 ```
 Last up for the board, it has **bonus squares**. These are either double or 
-triple *word* bonuses or double or triple *letter* bonuses. We make a datatype for 
+triple word bonuses or double or triple letter bonuses. We make a datatype for 
 bonuses and a map of their positions.
 
 ```haskell
@@ -215,22 +215,27 @@ bonusMap = Map.fromList bonusSquaresList
 ## The dictionary
 
 A copy of the standard English Scrabble dictionary as a text file with
-one word per line is stored at `dict/en.txt`. It is a big file, with
+one word per line is stored at `dict/en.txt`. It is a pretty big file, with
 more than 260,000 entries. Obviously we need to store this in a data
-structure which is as efficient as possible.
+structure which is as efficient as possible, especially when it comes to 
+being searched.
 
-If we only ever wanted to look up words to see if they exist then a 
-hashtable would be the best choice, with search taking `O(1)`. However,
-we want to build a computer player at some point, so we will need 
-efficient ways of finding words based on any collection of letters,
-words that fit with existing tiles on the board, and so on. 
+If we only ever wanted to look up words to see if they exist then a
+hashtable would be the best choice, with search taking `O(1)`
+time. However, we want to build a computer player at some point, so we
+will need efficient ways of finding words based on any collection of
+letters, words that include existing tiles on the board, and so on.
 
 There are several data structures that store words (or any sequence of
 values) in ways that allow prefixes to be shared. The
 [trie](https://en.wikipedia.org/wiki/Trie) allows us to find a word
-and all of its prefixes very quickly (`O(m)`, where `m` is the length of
-the word). Here is trie storing the words *the*, *their*, *there*,
-*answer*, *any* and *bye*:
+and all of its prefixes very quickly (in `O(m)` time, where `m` is the
+length of the word). Other good options for storing a dictionary of
+words include the Suffix Tree and Directed Acyclic Word Graph. Both of
+these use less space than a trie but the Haskell package for tries has
+more features so we'll stick with that.  Here is an illustration of a
+trie storing the words *the*, *their*, *there*, *answer*, *any* and
+*bye*, giving you an idea of how prefixes are shared: 
 
 ```
      root
@@ -248,16 +253,14 @@ r e   e
       r
 ```
 
-We don't actually need to store anything at the leaves, we just need to know
-whether which paths in the trie exist.
+We don't actually need to store anything at the leaves as we only need to know
+which paths in the trie exist.
 
 ```haskell
+import Data.Trie.Text
+
 type Dict = Trie ()
 ```
-
-Other options are the Suffix Tree and Directed Acyclic Word Graph. Both
-of these use less space than a trie but the Haskell package for tries has
-more features.
 
 Now we can create the dictionary and check whether a word exists as
 follows:
@@ -276,12 +279,13 @@ dictContainsWord = flip Trie.member
 ## Players and the game
 
 Now we can move on to think about players and the game itself. A
-player has a name a rack and a score. Wherever possible, we are going
-to use the `Text` datatype instead of `String` when we need to store
-text content. This is because `String` is inefficient. Like
-`Data.Map`, it is usual practice to import `Data.Text` with a
-qualified name, apart from the name of the type itself which we import
-directly for convenience.
+player has a name, a rack and a score. The name is stored as
+`Data.Text` rather than `String`. Wherever possible, we are going to
+use the `Text` datatype instead of `String` when we need to store
+text, because `String`, being a simple linked list, is
+inefficient. Like `Data.Map`, it is usual practice to import
+`Data.Text` with a qualified name, apart from the name of the type
+itself which is imported directly for convenience.
 
 ```haskell
 import Data.Text (Text)
@@ -290,12 +294,11 @@ data Player = Player { name  :: Text
                      , rack  :: Rack
                      , score :: Int
                      } deriving (Show, Eq)
-
 ```
 
 To make working with `Text` easier, we turn on the `OverloadedString`
-extension in out code. This means that any literal strings in our code
-is treated as `Text`.  The exyension is turned on in the `cabal`
+extension in our code. This means that any literal strings in our code
+are treated as `Text`.  The extension is turned on in the `cabal`
 config file and by including a "language pragma" (an instruction to
 the compiler) at the top of any files that need it:
 
@@ -303,10 +306,10 @@ the compiler) at the top of any files that need it:
 {-# LANGUAGE OverloadedStrings #-}
 ```
 
-Now we can create the `Game` type. This needs to store everything we
-need to know in order to play the game (including whose turn it is, so
-we create a datatype for that too). Here is the first version, which
-we'll add to as we uncover new requirements.
+Now we have enough types to create the `Game` datatype. This needs to
+store everything we need to know in order to play the game (including
+whose turn it is, so we create a datatype for that too). Here is the
+first version, which we'll add to as we uncover new requirements.
 
 ```haskell
 data Turn = P1 | P2 deriving (Show, Eq)
@@ -324,13 +327,14 @@ data Game = Game { board     :: Board    -- ^ The board
 
 Note that the game includes a `StdGen`, or generator for pseudo-random
 numbers. We need this because we want to supply players with tiles
-taken at "random" from the bag.
+taken at "random" from the bag, something that we'll come to in the
+next chapter.
 
 ## Putting a word on the board
 
 To create the initial empty board we can use the `array` function to
 turn a list of `Nothing` values into a 15x15 array. Then we can put a
-wordput onto the board.
+`WordPut` onto the board.
 
 ```haskell
 newBoard :: Board
@@ -349,11 +353,13 @@ updateSquare b (pos,t) = b // [(pos, Just t)]
 ```
 
 But we can't print it out nicely yet. Let's look at that next. We want a function that
-turns a board into a formatted text. To do that we will need to deal with a row at
-a time from the array, which is what the `rows` function is for. It gets the contents
+turns a board into nicely formatted text. To do that we will need to deal with a row at
+a time from the array, which is what the `rows` function below is for. It gets the contents
 of the array as a list then uses `chunksOf` to split it into 15-element sublists. The
 `intercalate` function from `Data.Text` intersperses a lists of texts with its
-argument. The `(<>)` operator concatenates text.
+argument. The `(<>)` operator concatenates text. Note that the `showBoard` function takes
+a noolean parameter which determines whether to show the bonus squares on the board. If this
+parameter is `True` then each position is looked up in the map of bonus squares.
 
 ```haskell
 import qualified Data.Text as T
@@ -363,12 +369,15 @@ import Data.List.Split (chunksOf)
 rows :: Board -> [[Maybe Tile]]
 rows b = chunksOf 15 (elems b) 
 
+toChar :: Letter -> Char
+toChar l = fromJust $ Map.lookup l letterToCharMap
+
 -- | Textify a board.
 showBoard :: Bool  -- ^ Whether to show bonus squares.
           -> Board -- ^ The board.
           -> Text
 showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
-  showRows      = T.intercalate "\n" (zipWith showRow [0..14] (rows b)) <> "\n"
+  showRows        = T.intercalate "\n" (zipWith showRow [0..14] (rows b)) <> "\n"
   showRow     i r = showI i <> "|" <>
                     T.concat (zipWith (showSquare i) [0..14] r)
   showSquare :: Int -> Int -> Maybe (Letter,Int) -> Text
@@ -431,3 +440,4 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
 "
 ```
 
+[Contents](../README.md) | [Chapter Two](Chapter2.md)

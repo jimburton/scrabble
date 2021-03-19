@@ -26,6 +26,7 @@ library
                , array
                , containers
                , text
+               , split
                , text-trie
                , aeson
   
@@ -81,9 +82,9 @@ executable scrabble
   build-depends:       base >=4.12 && <4.13
                      , random
                      , array
-                     , split
                      , text
                      , text-trie
+                     , split
                      , containers
                      , haskeline
                      , aeson
@@ -119,6 +120,7 @@ executable scrabble-server
                     , random
                     , text
                     , text-trie
+                    , split
                     , containers
                     , aeson
                     , websockets
