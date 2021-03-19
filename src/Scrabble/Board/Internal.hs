@@ -46,8 +46,7 @@ import Scrabble.Lang.Word
 
 -- | Find neighbouring squares to a position on the board.
 neighbours :: Pos -> [Pos]
-neighbours (r,c) = filter (\(x,y) -> x >= 0 && x < 15 && y >= 0 && y < 15)
-  [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
+neighbours (r,c) = filter onBoard [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
 
 -- | Find neighbouring squares to a position on the board that are occupied.
 occupiedNeighbours :: Board -- ^ The board
