@@ -147,8 +147,8 @@ nested and indented code as this is very hard to read, hard to
 maintain and hard to extend.  Fortunately, what we can do here is to
 use a monad to encapsulate the checks for `Left` and `Right`. We make
 our `Either` type into a monad, where the monad instance says what to
-do when we encounter a `Left` value, and then when wen we use the
-monad we just carry on as if everything is a `Right` value -- no more
+do when we encounter a `Left` value, and then when we use the
+monad we can carry on as if everything is a `Right` value -- no more
 case statements.
 
 We create a new type for arbitrary "evaluations" in the game, called
@@ -161,46 +161,46 @@ This type wraps up an `Either Text a` type where, as you
 may expect, the `Text` is an error message and the `a` value is
 whatever is being evaluated. For instance, `a` may be an updated
 version of the game, or just `()` in cases where moves are being
-checked for validity. Now we need to make a monad instamce for the type.
+checked for validity. Now we need to make a monad instance for the type.
 That requires us to define the `Applicative` and `Functor` instances for
-`Evaluator`, since every monad is an applicative and everry applicative 
+`Evaluator`, since every monad is an applicative and every applicative 
 is a functor. The spirit of these definitions is that if we are dealing
-with an `Ev (Left _)` value we want to stop what we are doing and report 
-the error, while if we are dealing with a `Ev (Right _)` value we can
-keep going.
+with an `Ev (Left _)` value we want to **stop what we are doing and report 
+the error**, while if we are dealing with a `Ev (Right _)` value we can
+**keep going**.
 
 ```haskell
 instance Functor Evaluator where
   -- fmap :: (a -> b) -> f a -> f b 
-  fmap _ (Ev (Left e))  = Ev (Left e)      -- do nothing
+  fmap _ (Ev (Left e))  = Ev (Left e)      -- report the error
   fmap f (Ev (Right g)) = Ev (Right (f g)) -- keep going
 
 instance Applicative Evaluator where
   -- pure :: a -> f a
   pure k = Ev (Right k)
   -- (<*>) :: f (a -> b) -> f a -> f b
-  Ev (Left  e)  <*>  _  =  Ev (Left e) -- do nothing
+  Ev (Left  e)  <*>  _  =  Ev (Left e) -- report the error
   Ev (Right f)  <*>  r  =  fmap f r    -- keep going
 
 instance Monad Evaluator where
     (Ev ev) >>= k =
         case ev of
-          Left msg -> Ev (Left msg) -- do nothing
+          Left msg -> Ev (Left msg) -- report the error
           Right v  -> k v           -- keep going
     return   = pure
     fail msg = Ev (Left (T.pack msg))
 ```
 Now we need to rewrite all of the functions that returned `Either Text a`
-to return `Evaluator a`. The ones we have seen so far tested a boolean condition
-and returned `Right ()` if it succeeded or `Left Text` if it failed. We can
-make an abstraction for this patternL
+to return `Evaluator a`. The ones we have seen so far tested a boolean condition,
+`b`, and returned `Right ()` if `b` succeeded or `Left Text` if `b` failed. We can
+make an abstraction for this pattern.
 
 ```haskell
 evalBool :: Bool -> String -> Evaluator ()
 evalBool b e = if b then pure () else fail e
 ```
-Now those validation functions all have a similar structure to this new version 
-of `lettersAvailable` -- call to `evalBool` where the first argument is a boolean 
+Now our validation functions will all have a similar structure to the new version 
+of `lettersAvailable` below -- a call to `evalBool` where the first argument is a boolean 
 condition and the second is an error message.
 
 ```haskell
