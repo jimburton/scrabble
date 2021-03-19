@@ -320,11 +320,13 @@ additionalWords b w =
       mWds   = if oppDir == HZ then map (wordOnRow b') w else map (wordOnCol b') w in
    catMaybes mWds
 ```
-To check that a word and all of its additional words are in the dictionary we map 
-`dictContainsWord` over the list.
+To check that a word and all of its additional words are in the dictionary we use `all` to
+check whether `dictContainsWord` is true for every eord in the list.
 
 ```haskell
 wordsIntDict :: Dict -> [Word] -> Bool
 wordsInDict d = all (wordInDict d)
 ```
+
+[Contents](../README.md) | [Chapter Three](Chapter3.md)
 
