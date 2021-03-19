@@ -132,14 +132,14 @@ validateMove :: Board   -- ^ The board
              -> Bool    -- ^ Is first move
              -> Either String Bool
 validateMove b p w fm = case connects w b fm of
-      Right _ -> case straight w of
-                   Right _ -> case firstMoveTouchesCentre w fm of
-				                Right _ -> case lettersAvailable w p b of
-                                             Right -> Right ()
-                                             Left e -> Left e
-                                Left e -> Left e
+  Right _ -> case straight w of
+               Right _ -> case firstMoveTouchesCentre w fm of
+                            Right _ -> case lettersAvailable w p b of
+                                         Right -> Right ()
+                                         Left e -> Left e
+                            Left e -> Left e
                Left e -> Left e
-     Left e -> Left e
+  Left e -> Left e
  ```
  
 The technical term for this kind of code is "filthy". Such deeply
