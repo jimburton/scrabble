@@ -2,16 +2,16 @@
 
 The code corresponding to this version of the project is in the branch `chapter3`.
 
-We have enough resources to start playing the game. There is no UI as 
-yet, and what we mean by "playing" is generating an initial game state
-then allowing players to take turns that generate new game states. We will
-experiment with all of this in the REPL.
+We now have enough resources to start playing the game. There is no UI
+as yet, and what we mean by "playing" is using the REPL to generate an
+initial game state then calling funcitons to "take turns" that generate
+new game states. 
 
-Code that takes turns repeatedly until the game is over is not part of this 
-section. That functionality is the responsibility of clients, because what
-happens when an error is encountered will be different for each client. All
-the library knows how to do is to produce a new game play a move within an 
-existing game.
+Code that takes turns repeatedly until the game is over is not part of
+this section. That functionality is the responsibility of clients,
+because the desired response when something goes wrong will be
+different for each client. All the library knows how to do is to
+produce a new game and play a single move within an existing game.
 
 ## Setting up the game
 
@@ -101,14 +101,21 @@ a move by playing a word on the board.
 
 ## Passing a move
 
-A player can take a move by passing but if there are two passes in the
-row then the game is ended. This is the purpose of the `lastMovePass`
-boolean. We set it to `True` when a player passes and to `False` when
-they take a move in any other way. When there are two passes in a row
-we pass the game to `endGame`, which sets `gameOver` and calculates
-the final scores. Remaining tiles in each player's rack are subtracted
-from their score, and if one player has used all of their tiles, the
-tiles in the other player's rack are added to their score.
+A player can take a move by passing their turn. If there are two
+passes in the row then the game is ended, so now we need to think
+about how to end games. All the library will do to end a game is 
+to make some necessary changes to the score then set the boolean
+`gameOver` to `True`. We will leave it up to clients to check this 
+boolean and make an announcement to the players. 
+
+The `lastMovePass` boolean is there to detect the situation where
+there have been two passes in a row. We set it to `True` when a player passes
+and to `False` when they take a move in any other way. When there are
+two passes in a row we pass the game to `endGame`, which sets
+`gameOver` and calculates the final scores. Remaining tiles in each
+player's rack are subtracted from their score, and if one player has
+used all of their tiles, the tiles in the other player's rack are
+added to their score.
 
 The other way that the game can end is if we run out of tiles in the bag. This
 is checked in `checkEndOfGame`, which also calls `endGame` if necessary.
@@ -170,12 +177,12 @@ swap ls g = do
 
 ## Playing a move
 
-Now we need to write a function that plays a word onto the board. It
-will need a `Validator`, a game, and a word to play. It will run in
-the `Evaluator` monad so failure at any point is handled nicely, and
-if all goes well it will return an updated game, a list of all new
-words and the score. Lets write this top level function then fill in
-the parts that it needs to do its work.
+Now we need to write a function that plays a word onto the board in
+the normal way. It will need a `Validator`, a game, and a word to
+play. It will run in the `Evaluator` monad so failure at any point is
+handled nicely, and if all goes well it will return an updated game, a
+list of all new words and the score. Lets write this top level
+function then fill in the parts that it needs to do its work.
 
 ```haskell
 move :: Validator -> Game -> WordPut -> Evaluator (Game, ([Word],Int))
@@ -221,3 +228,4 @@ being calculated, such as the score. Some things to note:
   >>= checkEndOfGame >>= \g' -> pure (g',(map wordPutToWord (w:aw),sc))
   ```
  
+[Contents](../README.md) | [Chapter Four](Chapter4.md)

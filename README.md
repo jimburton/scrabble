@@ -22,7 +22,7 @@ topic, so new tests are added in each chapter.
 + [Chapter Four](chapters/Chapter4.md): Playing against the computer.
 + [Chapter Five](chapters/Chapter5.md): The CLI client.
 + [Chapter Six](chapters/Chapter6.md): The web client.
-+ [Chapter Seven](chapters/Chapter7.md): Logging.
++ [Chapter Seven](chapters/Chapter7.md): Conclusion.
 
 
 

@@ -1,11 +1,11 @@
 # Chapter Four: Playing against the computer
 
-An AI is added, so games can be played against the computer. In order
-to achieve this, a list of *playable* positions is maintained. A
-playable position is one where the AI could play a word, so we need to
-know the letter at that position, the amount of space around it and
-the direction of that space. Several new types are added to support
-this.
+In this chapter a basic AI is added, so games can be played against
+the computer. In order to achieve this, a list of *playable* positions
+is maintained. A playable position is one where the AI could play a
+word, so we need to know the letter at that position, the amount of
+space around it and the direction of that space. Several new types are
+added to support this.
 	
 A `FreedomDir` is a direction on the board -- `Upd`, `DownD`, `LeftD` or `RightD`.
 	
@@ -13,7 +13,9 @@ A `Freedom` is a `FreedomDir` and a distance.
 	
 Then we create a map with the type `Map Pos (Letter, [Freedom])`,
 which is added to the game state and updated after each move is
-played. When the AI comes to make a move it needs to repeatedly take a
+played. 
+
+When the AI comes to make a move it needs to repeatedly take a
 playable position and try to create a word that can be played against
 it. If the direction of the freedom is `UpD` or `LeftD` the AI needs
 to find a word that *ends* with the letter in question. If the
@@ -61,34 +63,36 @@ strategies would be needed to do this in reasonable time. These
 strategies could include trying to make words using high value tiles
 and which are placed on bonus tiles.
 	
-  + Because the module `Scrabble.Game.AI` needs to share a lot of code with `Scrabble.Game.Game`,
-    common code is moved into its own module, `Scrabble.Game.Internal`. A similar change is made
-	to the `Board` code, adding `Scrabble.Board.Internal`.
+Because the module `Scrabble.Game.AI` needs to share a lot of code
+with `Scrabble.Game.Game`, common code is moved into its own module,
+`Scrabble.Game.Internal`. A similar change is made to the `Board`
+code, adding `Scrabble.Board.Internal`.
 	
-	Files in the library:
+Files in the library:
 	
-	```
-	src
-    ├── Scrabble
-    │   ├── Board
-    │   │   ├── Bag.hs
-    │   │   ├── Board.hs
-    │   │   ├── Bonus.hs
-    │   │   ├── Internal.hs
-    │   │   └── Validation.hs
-    │   ├── Evaluator.hs
-    │   ├── Game
-    │   │   ├── AI.hs
-    │   │   ├── Game.hs
-    │   │   ├── Internal.hs
-    │   │   └── Validation.hs
-    │   ├── Lang
-    │   │   ├── Dict.hs
-    │   │   ├── Letter.hs
-    │   │   ├── Search.hs
-    │   │   └── Word.hs
-    │   ├── Show.hs
-    │   └── Types.hs
-    └── Scrabble.hs
+```
+src
+├── Scrabble
+│   ├── Board
+│   │   ├── Bag.hs
+│   │   ├── Board.hs
+│   │   ├── Bonus.hs
+│   │   ├── Internal.hs
+│   │   └── Validation.hs
+│   ├── Evaluator.hs
+│   ├── Game
+│   │   ├── AI.hs
+│   │   ├── Game.hs
+│   │   ├── Internal.hs
+│   │   └── Validation.hs
+│   ├── Lang
+│   │   ├── Dict.hs
+│   │   ├── Letter.hs
+│   │   ├── Search.hs
+│   │   └── Word.hs
+│   ├── Show.hs
+│   └── Types.hs
+└── Scrabble.hs
+```
 
-	```
+[Contents](../README.md) | [Chapter Five](Chapter5.md)
