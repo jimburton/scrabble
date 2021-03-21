@@ -14,6 +14,8 @@ scoring word is WIP.
 module Scrabble.Game.AI ( newGame1P
                         , moveAI )
   where
+
+import Debug.Trace
 import Prelude hiding ( Word )
 import qualified Data.Trie.Text as Trie
 import qualified Data.Map as Map
@@ -127,7 +129,7 @@ findWord :: Game     -- ^ The game.
          -> Maybe (WordPut, [WordPut])
 findWord g r p = msum $ Map.mapWithKey findWord' p
   where  findWord' k (l,ps) =
-          msum $ map (\(fd,i) ->
+          trace("findWord' at pos "<>show ps<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
                          case fd of
                            UpD    -> findPrefixOfSize g k l r (fd,i) 
                            DownD  -> findSuffixOfSize g k l r (fd,i) 
@@ -184,8 +186,12 @@ findWordOfSize g wf k l r (fd,i) =
                LeftD  -> (fst k,snd k-len)
                RightD -> k
              wp = makeWordPut (wordToString w) pos dir [] in
-      case additionalWords g wp of
+           case additionalWords g wp of
+             Ev (Left _)   -> Nothing
+             Ev (Right aw) -> Just (wp,aw)
+      {-case additionalWords g wp of
         Ev (Left _)   -> Nothing
         Ev (Right aw) -> if not $ wordsInDict d (map wordPutToText aw)
                          then Nothing
                          else Just (wp,aw)
+-}
