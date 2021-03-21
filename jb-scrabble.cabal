@@ -142,3 +142,33 @@ executable scrabble-client
   default-extensions:
   ghc-options: -Wall -fno-warn-orphans
   default-language:   Haskell2010
+
+test-suite test-scrabble
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  other-modules:       Scrabble.Game.Game
+                     , Scrabble.Board.Board
+                     , Scrabble.Board.Bag
+                     , Scrabble.Board.Bonus
+                     , Scrabble.Board.Internal
+                     , Scrabble.Evaluator
+                     , Scrabble.Game.Internal
+                     , Scrabble.Lang.Letter
+                     , Scrabble.Lang.Word
+                     , Scrabble.Types
+  hs-source-dirs:      tests
+                     , src
+  ghc-options:         -Wall
+  default-extensions: OverloadedStrings
+  build-depends:       base
+                     , random
+                     , aeson
+                     , text
+                     , array
+                     , text-trie
+                     , containers
+                     , QuickCheck
+                     , test-framework
+                     , test-framework-quickcheck2
+                     
+  default-language:    Haskell2010

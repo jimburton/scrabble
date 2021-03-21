@@ -47,6 +47,8 @@ modules in our library and currently there are three of them:
 in the files `src/Scrabble.hs`, `src/Scrabble/Types.hs` and
 `src/Scrabble.Game.hs`.
 
+**TODO: source tree**
+
 The `Scrabble` module just imports and re-exports the entire library. The
 `Scrabble.Game` module contains the functions we'll be describing in this
 chapter, while the `Scrabble.Types` module contains the datatypes and type
@@ -56,6 +58,8 @@ It is a fairly common Haskell idiom to put the datatypes into a
 module of their own -- it makes them easy to track down and can help you
 avoid the problem of circular imports, where two modules need to import each
 other to get access to some types, something which isn't allowed by the compiler.
+As the projects gets bigger, it's handy to know just where to go to look at
+the definition of a type.
 
 To experiment with the code, use the command `cabal repl`. You still need to load
 the modules containing types and functions:
@@ -65,17 +69,28 @@ $ cabal repl
 > :m + Scrabble.Types
 > :m + Scrabble.Game
 ```
+The code includes `haddock` style comments, so a good way to browse the code may 
+be to build the docs and view them in your browser. When you run `cabal haddock`
+it tells you where it has stored the output:
 
+```
+$ cabal haddock
+...
+Documentation created:
+<path-to-docs>/jb-scrabble/index.html
+```
 
 ## Building blocks of the game
 
-When you start writing any software you need to think about modelling the problem
-in hand. When the problem is a board game, this is easy to do because the first things
-we need to model in the software correspond to real world objects.
+When you start writing any software you need to think about modelling
+the problem in hand. When the problem is a board game, this is quite
+easy, at least to begin with, because the first things we need to model in the
+software correspond to real world objects.
 
 <img src="/images/scrabble.jpeg" alt="Scrabble board" width="500px" />
 
-In the image above we can see the most basic objects we will need to handle:
+In the image above we can see many of the most basic objects we will
+need to handle:
 
 + the **board**.
 + a number of **tiles**,
@@ -83,11 +98,11 @@ In the image above we can see the most basic objects we will need to handle:
 + a **bag**, also containing tiles.
 
 
-We also need to account for some things that we can't see such as a
-**game**, which consists of the objects above plus several **players**
-and some additional state (e.g., whose **turn** it is). Each player
-will have a **score**, as well as rack. Finally, we also need to model
-the **rules** of the game and a **dictionary**.
+We also need to account for some things that we can't see such as the
+**game** itself, which consists of the objects above plus several
+**players** and some additional state (e.g., whose **turn** it
+is). Each player will have a **score**, as well as rack. Finally, we
+also need to model the **rules** of the game and a **dictionary**.
 
 ## Letters and tiles
 
@@ -120,16 +135,25 @@ We will need to know a number of things about letters:
 + how many of them should be in a full bag, and
 + the `Char` value for printing.
 
-We will store this data in *maps*, using the `Data.Map` API. Maps are
-efficient (`O(log n)`) lookup tables.  `Data.Map` is normally imported
-with a qualified name (e.g. `Map`) since it contains many functions
-whose names clash with those of functions in the `Prelude`.
+We will store this data in *maps*, using the `Data.Map` API. We could
+use a list of pairs with the type `[(Letter,Int)]` but maps are much
+more efficient (`O(log n)`) lookup tables.  `Data.Map` is normally
+imported with a qualified name (e.g. `Map`) since it contains many
+functions whose names clash with those of functions in the `Prelude`.
+`Data.Map` isn't in the `Prelude`. If we try to import it without
+doing anything else `cabal` will prompt us to add the package that
+includes it, `containers`, to the `build-depends` section of the
+`cabal` file. We do that, and you should bear in mind that we need to
+do this whenever importing non-`Prelude` types in future. Often
+`cabal` will be able to tell us the name of the package to add but if not,
+use google to find the type you need on hackage and check which package it
+is in.
 
 
 ```haskell
 import qualified Data.Map as Map
 
--- lookup table for the score of a letter 
+-- lookup table for the score of a letter. Not exported.
 letterToScoreList :: [(Letter,Int)]
 letterToScoreList = [
   (A, 1), (B, 3), (C, 3), (D, 2), (E, 1), (F, 4), (G, 2),
@@ -137,7 +161,7 @@ letterToScoreList = [
   (O, 1), (P, 3), (Q, 10), (R, 1), (S, 1), (T, 1), (U, 1),
   (V, 4), (W, 4), (X, 8), (Y, 4), (Z, 10), (Blank, 0) ]
 
--- map to find the score of a letter 
+-- map to find the score of a letter. Not exported.
 letterToScoreMap :: Map Letter Int
 letterToScoreMap = Map.fromList letterToScoreList
 
@@ -148,20 +172,28 @@ scoreLetter = fromJust . flip Map.lookup letterToScoreMap
 ``` 
 
 Of these functions, the only one we want to export is
-`scoreLetter`. Good information hiding and encapsulation is key to
-creating software that is nice to work on. Note the use of `fromJust`
-in `scoreLetter`. This is an unsafe function, meaning that it can fail
-at runtime causing the program to crash. This happens when it is called
-on a value that isn't `Just x`, i.e. which is `Nothing`. In this case, 
-it's fine because we know that there is an entry in the map for every letter 
-in.
+`scoreLetter` (and so it's the only function that has 
+`haddock`-style comments). Good information hiding and encapsulation is key to
+creating software that is nice to work on. 
+
+Note the use of `fromJust` in `scoreLetter`. The `fromJust` function
+is *unsafe*, meaning that it can fail at runtime causing the program
+to crash. This happens when it is called on a value that isn't `Just x`, 
+i.e. which is `Nothing`. In this case, it's fine because we know
+that there is an entry in the map for every letter. But whenever
+you use an unsafe function such as `fromJust` or `head`, ask yourself
+whether this is definitely the right thing to do.
 
 ## The board
 
-A board is a 15x15 matrix of rows and columns and so a natural way to model the
-board is as a two-dimensional array. The values stored in the array will be
-`Maybe Tile`s (i.e. either `Nothing` for an empty square, or something
-like `Just (A,1)` for a square with an 'A' tile on it).
+A Scrabble board is a 15x15 matrix of rows and columns, and so a natural way to
+model it is as a two-dimensional array. The values stored in
+the array will be `Maybe Tile`s (i.e. either `Nothing` for an empty
+square, or something like `Just (A,1)` for a square with an 'A' tile
+on it). In many languages we would create an array of arrays, where
+each element of the outer array is an array representing a row. However,
+Haskell supports true multi-dimensional arrays. The `Array` type constructor
+takes two arguments, the type of indices and the type of elements. 
 
 ```haskell
 import Data.Array
@@ -178,29 +210,35 @@ type Pos = (Int,Int)
 ```
 ## Words 
 
-Words are lists of letters and both racks and bags are lists of tiles.
+*Words* are lists of letters and both *racks* and *bags* are lists of tiles.
+Because the `Prelude` includes a type called `Word` we have a name clash here.
+We could call it `ScrabbleWord` or something like that, but it seems more 
+convenient to keep the short name and hide the type in the `Prelude`.
 
 ```haskell
+import Prelude hiding Word
+
 type Word = [Letter]
 
 type Rack = [Tile]
 
 type Bag = [Tile]
 ```
-A word we want to place on the board is a list of pairs of positions on the
-boards and tiles. We call this a `WordPut`.
+A word we want to place on the board is a list of pairs of `Pos` and `Tile` values. 
+We'll call this a `WordPut`.
 
 ```haskell
 type WordPut = [(Pos, Tile)]
 ```
-Last up for the board, it has **bonus squares**. These are either double or 
-triple word bonuses or double or triple letter bonuses. We make a datatype for 
+
+Last up for the board are the **bonus squares**. These are either double or 
+triple word bonuses, or double or triple letter bonuses. We make a datatype for 
 bonuses and a map of their positions.
 
 ```haskell
 data Bonus = W2 | W3 | L2 | L3
   deriving Show
-  
+
 bonusSquaresList =
   [((0, 0),    W3), ((0, 3),   L2)
   , ((0, 7),   W3), ((0, 11),  L2)
@@ -222,20 +260,26 @@ being searched.
 
 If we only ever wanted to look up words to see if they exist then a
 hashtable would be the best choice, with search taking `O(1)`
-time. However, we want to build a computer player at some point, so we
-will need efficient ways of finding words based on any collection of
-letters, words that include existing tiles on the board, and so on.
+time. However, we want to search in more flexible ways than this.
+We are going to build a computer player at some point, so we
+might want to find all words that can be made based on a collection of
+letters, words that include existing tiles on the board, all words
+that are prefixes of some other word and so on.
 
 There are several data structures that store words (or any sequence of
-values) in ways that allow prefixes to be shared. The
-[trie](https://en.wikipedia.org/wiki/Trie) allows us to find a word
-and all of its prefixes very quickly (in `O(m)` time, where `m` is the
-length of the word). Other good options for storing a dictionary of
-words include the Suffix Tree and Directed Acyclic Word Graph. Both of
-these use less space than a trie but the Haskell package for tries has
-more features so we'll stick with that.  Here is an illustration of a
-trie storing the words *the*, *their*, *there*, *answer*, *any* and
-*bye*, giving you an idea of how prefixes are shared: 
+values) in ways that allow prefixes to be shared. This not only saves
+a lot of space but allows the flexibility in searching that we
+need. The [trie](https://en.wikipedia.org/wiki/Trie) allows us to find
+a word and all of its prefixes very quickly (in `O(m)` time, where `m`
+is the length of the word -- i.e. independently of `n`, the size of
+the dictionary!). 
+
+Other good options for storing a dictionary of words include the
+Suffix Tree and Directed Acyclic Word Graph. Both of these use less
+space than a trie but the Haskell package for tries has more features
+so we'll stick with that.  Here is an illustration of a trie storing
+the words *the*, *their*, *there*, *answer*, *any* and *bye*, giving
+you an idea of how prefixes are shared:
 
 ```
      root
@@ -278,17 +322,19 @@ dictContainsWord = flip Trie.member
 
 ## Players and the game
 
-Now we can move on to think about players and the game itself. A
-player has a name, a rack and a score. The name is stored as
-`Data.Text` rather than `String`. Wherever possible, we are going to
-use the `Text` datatype instead of `String` when we need to store
-text, because `String`, being a simple linked list, is
-inefficient. Like `Data.Map`, it is usual practice to import
-`Data.Text` with a qualified name, apart from the name of the type
-itself which is imported directly for convenience.
+Now we can move on to think about **players** and the **game** itself. A
+player has a **name**, a **rack** and a **score**. 
+
+The name is stored as `Data.Text` rather than `String`. Wherever
+possible, when we need to store some text we will use the `Text`
+datatype instead of `String`. This is because `String`, being a simple
+linked list, is inefficient. Like `Data.Map`, it is usual practice to
+import `Data.Text` with a qualified name, apart from the name of the
+type itself which is imported directly for convenience.
 
 ```haskell
 import Data.Text (Text)
+import qualified Data.Text as T
 
 data Player = Player { name  :: Text
                      , rack  :: Rack
@@ -439,5 +485,15 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
 ------------------------------------------------
 "
 ```
+
+## Testing
+
+Before we move on, let's make some tests. We need to think about what
+we want to be always true about the types and functions we have
+created.
+
+The `test-suite` stanza in the config file deptermines what tests should
+be run and how. It points to the file `tests/Main.hs` as the entry point.
+
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)

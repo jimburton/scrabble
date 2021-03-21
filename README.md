@@ -11,10 +11,14 @@ If you don't know the rules of the game you should begin by reading
 them
 [here](https://www.theukrules.co.uk/rules/children/games/scrabble.html). 
 
-The emphasis is intended to be on explaining the basics of Haskell
-development and on refining an initial solution to a clean, functional
-software design that can easily be extended. Testing is a continuous
-topic, so new tests are added in each chapter.
+The emphasis is intended to be on explaining the process of developing
+a Haskell project with several parts, aimed at students who have
+already learned the basics of Haskell syntax and functional problem
+solving. As well as adding new functionality, each chapter refines the
+initial solution ending up with something that is (hopefully) a clean,
+functional design that can easily be extended. 
+
+Testing is a continuous topic, so new tests are added in each chapter.
 
 + [Chapter One](chapters/Chapter1.md): Getting started.
 + [Chapter Two](chapters/Chapter2.md): Validating moves.
@@ -23,7 +27,6 @@ topic, so new tests are added in each chapter.
 + [Chapter Five](chapters/Chapter5.md): The CLI client.
 + [Chapter Six](chapters/Chapter6.md): The web client.
 + [Chapter Seven](chapters/Chapter7.md): Conclusion.
-
 
 
 ## Disclaimer
