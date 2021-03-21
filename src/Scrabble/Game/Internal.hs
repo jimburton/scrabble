@@ -76,8 +76,8 @@ setScore g s = if turn g == P1
 
 -- | Update the list of playable positions on the board based on the placement
 --   of this word like so:
---   + a horizontal word may add some playable positions to the board in the N and S directions,
---   + a vertical word may add some playable positions to the board in the E and W directions,
+--   + a horizontal word may add some playable positions to the board in the UpD and DownD directions,
+--   + a vertical word may add some playable positions to the board in the LeftD and RightD- directions,
 --   + a horizontal word may reduce the playability of positions in the same columns,
 --   + a vertical word may reduce the playability of positions in the same rows.
 updatePlayables :: WordPut -> Game -> Evaluator Game
@@ -86,14 +86,14 @@ updatePlayables w g = do
       b   = board g
       nt  = newTiles b w
       ntp = map fst nt
-      ot  = map fst (w \\ nt )
-      -- assuming any tile that is part of the new word or adjacent to it will no longer be playable
-      ps' = Map.filterWithKey (\k _ -> k `notElem` ot && not (any (adjacent k) ntp))  ps
+      -- assuming any existing playable that is adjacent to the new word
+      -- will no longer be playable.
+      ps' = Map.filterWithKey (\k _ -> not (any (adjacent k) ntp))  ps
       d   = getDirection w
       fs  = freedomsFromWord nt b
       f (u,p) = if d == HZ
-                then [(UpD,u), (DownD, p)]
-                else [(LeftD, u), (RightD, p)]
+                then filter ((>0) . snd) [(UpD,u), (DownD, p)]
+                else filter ((>0) . snd) [(LeftD, u), (RightD, p)]
       nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
   (trace $ "Playables: \n" ++ show nps) pure (g { playable = nps })
 
