@@ -102,23 +102,9 @@ additionalWords g w = updateBoard w g >>= \g' -> do
   let b      = board g'
       oppDir = if getDirection w == HZ then VT else HZ
       ps     = map fst w
-      mWds   = (trace $ "oppDir is "<>(show oppDir)) $ if oppDir == HZ then map (wordOnRow b) ps else map (wordOnCol b) ps
+      mWds   = if oppDir == HZ then map (wordOnRow b) ps else map (wordOnCol b) ps
   pure $ filter ((>1) . length) mWds
 
-{--- | Find the additional words that are created by placing a word on the board.
-additionalWords :: Board   -- ^ The board.
-                -> WordPut -- ^ The new word.
-                -> [WordPut]
-additionalWords b w = additionalWords' w
-  where additionalWords' []       = []
-        additionalWords' (wp:wps) =
-          let (r,c) = fst wp
-              h = [wordOnCol (updateSquare b wp) (r,c) |
-                    empty b (r,c) && not (all (`touches` w) (hNeighbours b (r,c)))]
-              v = [wordOnRow (updateSquare b wp) (r,c) |
-                    empty b (r,c) && not (all (`touches` w) (vNeighbours b (r,c)))] in
-            h ++ v ++ additionalWords' wps
--}
 -- | Make a WordPut from a string.
 makeWordPut :: String -- ^ The string.
      -> Pos    -- ^ The starting position on the board.

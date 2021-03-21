@@ -81,7 +81,7 @@ freedom :: Board  -- ^ The board.
         -> Dir    -- ^ The direction of the word the letter is part of.
         -> (Pos, Letter, (Int, Int))
 freedom b p l d =
-  trace("dir: "<>(show d)) $ if d == HZ
+  if d == HZ
   then rowFreedom b p l 
   else colFreedom b p l 
 
