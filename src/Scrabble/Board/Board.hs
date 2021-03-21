@@ -102,8 +102,8 @@ additionalWords g w = updateBoard w g >>= \g' -> do
   let b      = board g'
       oppDir = if getDirection w == HZ then VT else HZ
       ps     = map fst w
-      mWds   = if oppDir == HZ then map (wordOnRow b) ps else map (wordOnCol b) ps
-  pure $ catMaybes mWds
+      mWds   = (trace $ "oppDir is "<>(show oppDir)) $ if oppDir == HZ then map (wordOnRow b) ps else map (wordOnCol b) ps
+  pure $ filter ((>1) . length) mWds
 
 {--- | Find the additional words that are created by placing a word on the board.
 additionalWords :: Board   -- ^ The board.

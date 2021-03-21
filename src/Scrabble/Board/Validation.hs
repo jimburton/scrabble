@@ -96,7 +96,7 @@ connects ws b fm =
 straight :: WordPut -> Evaluator ()
 straight wp | length wp > 2 =
                 let ps      = map fst wp
-                    (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
+                    (s1,s2) = if getDirection wp == VT then (fst,snd) else (snd,fst)
                     f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
                   (all f . zip ps $ tail ps) `evalBool` "Not in a straight line"
             | otherwise    = fail "Too few letters"

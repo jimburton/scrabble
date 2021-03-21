@@ -183,13 +183,13 @@ decCol (r,c) = (r,c-1)
 -- | Retrieve the word that crosses a position on the board horizontally.
 wordOnRow :: Board -- ^ The board.
           -> Pos   -- ^ The position on the board.
-          -> Maybe WordPut
+          -> WordPut
 wordOnRow b pos = wordFromSquare b incCol (startOfWord b decCol pos)
 
 -- | Retrieve the word that crosses a position on the board vertically.
 wordOnCol :: Board -- ^ The board.
           -> Pos   -- ^ The position on the board.
-          -> Maybe WordPut
+          -> WordPut
 wordOnCol b pos = wordFromSquare b incRow (startOfWord b decRow pos)
 
 -- | How many new tiles are being played in a move?
@@ -204,8 +204,12 @@ newTiles b = filter (\(p,_) -> isNothing (getSquare b p))
 wordFromSquare :: Board        -- ^ The board.
                -> PosTransform -- ^ Moves to the start of the word (up rows or left along columns).
                -> Pos          -- ^ The pos.
-               -> Maybe WordPut
-wordFromSquare b f pos = getSquare b pos >>= \t -> ((pos,t) :) <$> wordFromSquare b f (f pos)
+               -> WordPut
+wordFromSquare b f pos = reverse $ wordFromSquare' pos []
+  where wordFromSquare' p wp = case getSquare b p of
+          Nothing -> wp
+          Just t  -> wordFromSquare' (f p) ((p,t):wp)
+--getSquare b pos >>= \t -> ((pos,t) :) <$> wordFromSquare b f (f pos)
 
 -- | Find the starting position of a word that crosses a position on the board.
 startOfWord :: Board        -- ^ The board.
