@@ -91,10 +91,10 @@ rowFreedom :: Board        -- ^ The board.
            -> Letter       -- ^ The letter on the pos.
            -> (Pos, Letter, (Int, Int))
 rowFreedom b (r,c) l =
-  let mins = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decRow p)))
+  let mins = takeWhile (\p -> isFree b p && (fst p == 0 || isFree b (decRow p)))
              (iterate decRow (r,c))
       minR = if null mins then r else fst (last mins)  
-      maxs = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incRow p)))
+      maxs = takeWhile (\p -> isFree b p && (fst p == 14 || isFree b (incRow p)))
              (iterate incRow (r,c))
       maxR = if null maxs then r else fst (last maxs)  in
     ((r,c),l, (r-minR,maxR-r))
@@ -105,10 +105,10 @@ colFreedom :: Board        -- ^ The board.
            -> Letter       -- ^ The letter on the pos.
            -> (Pos, Letter, (Int, Int))
 colFreedom b (r,c) l =
-  let mins = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decCol p)))
+  let mins = takeWhile (\p -> isFree b p && (fst p == 0 || isFree b (decCol p)))
              (iterate decCol (r,c))
       minC = if null mins then c else snd (last mins)  
-      maxs = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incCol p)))
+      maxs = takeWhile (\p -> isFree b p && (fst p == 14 || isFree b (incCol p)))
              (iterate incCol (r,c))
       maxC = if null maxs then c else snd (last maxs) in 
     ((r,c),l, (c-minC,maxC-c))

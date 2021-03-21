@@ -102,7 +102,7 @@ additionalWords g w = updateBoard w g >>= \g' -> do
   let b      = board g'
       oppDir = if getDirection w == HZ then VT else HZ
       ps     = map fst w
-      mWds   = if oppDir == HZ then map (wordOnRow b) ps else map (wordOnCol b) ps
+      mWds   = if oppDir == HZ then (trace $ "Find words on row: "<>(show ps)) map (wordOnRow b) ps else (trace $ "Find words on col: "<>(show ps)) map (wordOnCol b) ps
   pure $ filter ((>1) . length) mWds
 
 -- | Make a WordPut from a string.
@@ -119,8 +119,8 @@ makeWordPut w pos dir is =
     foldl zeroScore wp is 
 
 -- Replace an element at a certain index in a list.
-replace :: [a] -> Int -> a -> [a]
-replace xs i e = replaceBy xs i (const e)
+--replace :: [a] -> Int -> a -> [a]
+--replace xs i e = replaceBy xs i (const e)
 
 -- Replace an element at a certain index in a list using a function.
 replaceBy :: [a] -> Int -> (a -> a) -> [a]
