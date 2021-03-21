@@ -18,8 +18,14 @@
 //
 // MsgMoveAck (MoveAck (Left "Error!"))
 //   <-> {"contents":{"Left":"Error!"},"tag":"MsgMoveAck"} CLIENT <- SERV
-// MsgMoveAck (MoveAck (Right ([((0,0),(C,0)), ((0,1),(A,0)), ((0,2),(T,1))],42)))
-//   <-> {"contents":{"Right":[[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],[[["C","A","T"],["M","A","T"]],[0,1],42]]}
+// MsgMoveAck (MoveAck (Right ( [((0,0),(C,0)), ((0,1),(A,0)), ((0,2),(T,1))] -- WordPut
+//                             , ( [[M,A,T]]       -- additional words
+//                               , [0,1]    -- indices of blanks
+//                               , 42 ) ) ) )    -- score
+//   <-> {"contents":{"Right":[ [[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]], -- WordPut
+//                            , [ [["M","A","T"]] -- Additional words
+//                                , [0,1] -- indices of blanks
+//                                , 42] ]} -- score
 //         ,"tag":"MsgMoveAck"}
 //
 // MsgHint (Just [[C,A,T],[M,A,T]])
@@ -104,8 +110,8 @@ function Client(socket) {
 		var aw = d.contents.Right[1][0];
 		var bs = d.contents.Right[1][1];
 		var sc = d.contents.Right[1][2];
-		if (d.contents.Right[1][0].length > 1) {
-		    additionalWords = " ("+d.contents.Right[1][0].map(a => a.join(''))+")";
+		if (aw.length > 1) {
+		    additionalWords = " ("+aw.map(a => a.join(''))+")";
 		}
 		serverMessage(wordPutToWord(wp)+": " + sc + additionalWords);
 		if (isCurrentPlayer()) {
@@ -206,12 +212,12 @@ function join(name, isAi) {
     socket.send(JSON.stringify(p));
 }
 
-function sendMove(wordput, blanks) {
-    if (wordput.length>0) {
+function sendMove(wp, blanks) {
+    if (wp.length>0) {
 	// each blank is of the form [index,letter] and
 	// each element in the wordput is of the form [[row,col],[letter,score]]
-	blanks.forEach(b => w[b[0]][1][0] = b[1]);
-	var m = {"contents":{"word":w,"blanks":blanks.map(b => b[0])},"tag":"MsgMove"}
+	blanks.forEach(b => wp[b[0]][1][0] = b[1]);
+	var m = {"contents":{"word":wp,"blanks":blanks.map(b => b[0])},"tag":"MsgMove"};
 	console.log(JSON.stringify(m));
 	socket.send(JSON.stringify(m));
     }
@@ -443,7 +449,7 @@ $(function() {
 		});
 		$(newBox).on('dragover',function(ev){
 		    ev.preventDefault();
-		})
+		});
                 newRow.append(newBox);
             }
             $('.gameBoard').append(newRow);
@@ -509,9 +515,10 @@ $(function() {
 	    w.push([[r,c],[l,letterValue(l)]]);
 	});
 	var blanks = [];
-	w.forEach(l i => {
+	w.forEach((l, i) => {
 	    if (l[1][0]==='_') {
-		var b = prompt("Enter the letter to replace the blank at position "+(i+1)+" in "+w.join(''));
+		var b = prompt("Enter the letter to replace the blank at position "
+			       +(i+1)+" in "+w.join(''));
 		blanks.push([i,b]);
 	    }});
 	sendMove(w, blanks);
