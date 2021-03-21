@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Board.Internal
+Description : Functions shared by various Board-related modules.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Functions shared by various Board-related modules.
+-}
 module Scrabble.Board.Internal
   ( getSquare
   , formatWP
@@ -44,7 +53,7 @@ import Scrabble.Lang.Word
   
 -- ======== Internal for Board ========== --
 
--- ======== Neighbours ================== --
+-- * Neighbours
 
 -- | Find neighbouring squares to a position on the board.
 neighbours :: Pos -> [Pos]
@@ -78,7 +87,7 @@ gridNeighbours f g b pos = let l = [f pos | isJust (getSquare b (f pos))]
 adjacent :: Pos -> Pos -> Bool
 adjacent (r1,c1) (r2,c2) = abs (r1-r2) <= 1 && abs (c1-c2) <= 1
 
--- ========== Playable spaces on the board ================== --
+-- * Playable spaces on the board
 
 -- ^ The playable spaces around an occupied position on the board.
 freedom :: Board  -- ^ The board.
@@ -128,7 +137,7 @@ formatWP w = wordToText (map (fst . snd) w) <> ": " <> T.pack (show (fst (head w
 wordPutToWord :: WordPut -> Word
 wordPutToWord = map (fst . snd)
 
--- ==================== Manipulating and querying the board =================--
+-- * Manipulating and querying the board
 
 -- | Retrieve a position on the board.
 getSquare :: Board -> Pos -> Maybe Tile

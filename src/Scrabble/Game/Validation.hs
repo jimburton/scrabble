@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Game.Validation
+Description : Validation of Scrabble games.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Validation of Scrabble games.
+-}
 module Scrabble.Game.Validation
   ( valGameRulesAndDict
   , valGameRules )
@@ -12,7 +21,7 @@ import Scrabble.Game.Internal
   ( getPlayer )
 import Scrabble.Lang.Word
   ( wordToText )
-import Scrabble.Lang.Dict
+import Scrabble.Lang.Search
   ( wordsInDictM )
 import Scrabble.Board.Validation
   ( validateRack

@@ -12,7 +12,7 @@ import System.Random (getStdGen)
 import Scrabble.Lang.Search (findPrefixes)
 import Scrabble.Lang.Word (stringToWord)
 import Scrabble.Lang.Dict (englishDictionary)
-import Scrabble.Board.Board (mkWP)
+import Scrabble.Board.Board (makeWordPut)
 import Scrabble.Game.Game
   ( newGame
   , getPlayer
@@ -107,7 +107,7 @@ takeTurnManual g = runInputT defaultSettings loop
                  row = read rowStr :: Int
                  col = read colStr :: Int
                  dir = if map toUpper dirStr == "H" then HZ else VT
-                 wp  = mkWP wd (row,col) dir is
+                 wp  = makeWordPut wd (row,col) dir is
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")

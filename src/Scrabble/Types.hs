@@ -1,4 +1,13 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-|
+Module      : Scrabble.Types
+Description : Types for the scrabble library.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Types used by most modules in the scrabble library.
+-}
 module Scrabble.Types
   ( Letter(..)
   , Word
@@ -35,6 +44,7 @@ import GHC.Generics
 
 -- ============ Types for the application ================ --
 
+-- | Letters.
 data Letter =
   A | B | C | D | E | F | G | H | I | J | K | L | M |
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
@@ -59,24 +69,31 @@ type PosTransform = Pos -> Pos
 type WordPut = [(Pos, Tile)]
 
 -- | A direction on the board (row or column).
-data Dir = HZ | VT deriving (Show, Read, Eq)
+data Dir = HZ -- ^ The horizontal direction.
+         | VT -- ^ The vertical direction.
+         deriving (Show, Read, Eq)
 
 -- | A rack is a list of letters.
 type Rack = [Letter]
 
 -- | The datatype of bonuses on the board.
-data Bonus = W2 | W3 | L2 | L3
+data Bonus = W2 -- ^ Double word bonus.
+           | W3 -- ^ Triple word bonus.
+           | L2 -- ^ Double letter bonus.
+           | L3 -- ^ Triple letter bonus.
   deriving Show
 
 -- | A player has a name, a rack and a score, and is either an interactive or an AI player.
-data Player = Player { name  :: Text
-                     , rack  :: Rack
-                     , score :: Int
-                     , isAI  :: Bool
+data Player = Player { name  :: Text -- ^ The name of the player.
+                     , rack  :: Rack -- ^ The rack.
+                     , score :: Int  -- ^ The score.
+                     , isAI  :: Bool -- ^ True if this player is the AI player.
                      } deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 -- | Which player's turn it is within the game. 
-data Turn = P1 | P2 deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
+data Turn = P1 -- ^ Player 1.
+          | P2 -- ^ Player 2.
+          deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
 
 -- | The bag is a list of letters.
 type Bag = [Letter]
@@ -99,7 +116,10 @@ data Game = Game { board     :: Board    -- ^ The board
                  }
 
 -- | A direction on the board (up, down, left or right)
-data FreedomDir = UpD | DownD | LeftD | RightD
+data FreedomDir = UpD     -- ^ The Up direction.
+                | DownD   -- ^ The Down direction.
+                | LeftD   -- ^ The Left direction.
+                | RightD  -- ^ The Right direction.
   deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
 
 -- | A Freedom is a direction and a distance.
@@ -108,6 +128,8 @@ type Freedom = (FreedomDir, Int)
 -- | The map of all playable positions on the board, used by the AI player.
 type Playable = Map.Map Pos (Letter, [Freedom])
 
+-- | The evaluator of scrabble computations. Wraps up an @Either@ value
+--   for error reporting.
 newtype Evaluator a = Ev (Either Text a)
 
 -- | Validator is the type of functions that validate words to be played.

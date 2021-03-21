@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Board.Bonus
+Description : Functions for bonuses the scrabble library.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Contains the @bonusMap@ mapping positions to bonuses.
+-}
 module Scrabble.Board.Bonus
   ( bonusMap )
   where
@@ -10,8 +19,8 @@ import Scrabble.Types
 
 -- ========== Bonuses ============ --
 
--- | Data for the bonus map.
-bonusSquaresList :: [((Int, Int), Bonus)] -- ^ ((Row, Column), Bonus)
+-- Data for the bonus map.
+bonusSquaresList :: [(Pos, Bonus)] -- ((Row, Column), Bonus)
 bonusSquaresList =
   [((0, 0),    W3), ((0, 3),   L2)
   , ((0, 7),   W3), ((0, 11),  L2)

@@ -1,4 +1,13 @@
 {-# LANGUAGE TupleSections #-}
+{-|
+Module      : Scrabble.Game.Game
+Description : Functions for playing a game of scrabble (for a human player).
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Functions for playing a game of scrabble (for a human player).
+-}
 module Scrabble.Game.Game
   ( Game(..)
   , Turn(..)

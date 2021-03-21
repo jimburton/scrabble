@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Lang.Letter
+Description : Functions relating to letters for the Scrabble game.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Functions relating to Letters for the Scrabble game.
+-}
 module Scrabble.Lang.Letter
   ( toChar
   , letterFromChar
@@ -16,14 +25,15 @@ import Scrabble.Types
   ( Letter(..) )
 -- ===== Letters ===== --
 
--- | Convert a Char to a Letter, if the Char is a valid Letter (A-Z).
+-- | Convert a @Char@ to a @Letter@, if the @Char@ is a valid @Letter@ (A-Blank).
 letterFromChar :: Char -> Maybe Letter
 letterFromChar c = Map.lookup c charToLetterMap
 
--- | Convert a Letter back into a Char. Always valid.
+-- | Convert a @Letter@ into a @Char@. Always valid.
 toChar :: Letter -> Char
 toChar l = fromJust $ Map.lookup l letterToCharMap
 
+-- | Convert a @Letter@ to @Text@.
 toText :: Letter -> Text
 toText = T.pack . show
 

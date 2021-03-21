@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Game.Internal
+Description : Internal functions shared by several game-related modules.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Internal functions shared by several game-related modules.
+-}
 module Scrabble.Game.Internal
   ( setBlanks
   , setScore

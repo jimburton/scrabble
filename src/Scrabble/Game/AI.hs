@@ -1,4 +1,16 @@
 {-# LANGUAGE TupleSections #-}
+{-|
+Module      : Scrabble.Game.AI
+Description : An AI scrabble player.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+An AI Scrabble player. Don't be fooled by the term 'AI' -- it is currently as dumb as a rock :-)
+It can pick a word from the dictionary that either begins with or ends with a given letter.
+Choosing words that can be played onto the board in other ways and searching for the highest
+scoring word is WIP.
+-}
 module Scrabble.Game.AI ( newGame1P
                         , moveAI )
   where
@@ -26,7 +38,7 @@ import Scrabble.Types
   , Turn(..)
   , Letter(Blank))
 import Scrabble.Board.Board
-  ( mkWP
+  ( makeWordPut
   , updateBoard
   , newBoard
   , additionalWords
@@ -50,9 +62,8 @@ import Scrabble.Game.Internal
 import Scrabble.Board.Internal
   ( wordPutToWord )
 import Scrabble.Lang.Search
-  ( findPrefixes )
-import Scrabble.Lang.Dict
-  ( wordsInDict )
+  ( findPrefixes
+  , wordsInDict )
 
 -- =========== AI functions ============ --
 
@@ -146,6 +157,7 @@ findSuffixOfSize g p l = let g' = g { dict = Trie.submap (toText l) (dict g)} in
 longest :: [[a]] -> [a]
 longest = maximumBy (\x y -> length x `compare` length y)
 
+-- | A function for finding words in the dictionary.
 type WordFinder = Word -> [Word] 
 
 -- | Find a word of a certain size.
@@ -171,7 +183,7 @@ findWordOfSize g wf k l r (fd,i) =
                DownD  -> k
                LeftD  -> (fst k,snd k-len)
                RightD -> k
-             wp = mkWP (wordToString w) pos dir [] in
+             wp = makeWordPut (wordToString w) pos dir [] in
       case additionalWords g wp of
         Ev (Left _)   -> Nothing
         Ev (Right aw) -> if not $ wordsInDict d (map wordPutToText aw)

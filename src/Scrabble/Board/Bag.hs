@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Board.Bag
+Description : A bag of Scrabble tiles.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+A bag of tiles used in a game of scrabble.
+-}
 module Scrabble.Board.Bag
   ( newBag
   , fillRack

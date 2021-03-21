@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Board.Validation
+Description : Validation of boards.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Validation of boards.
+-}
 module Scrabble.Board.Validation
   ( validateMove
   , validateRack
@@ -31,10 +40,10 @@ import Scrabble.Board.Internal
 --   it is the first move, in which case check that it touches the centre square),
 --   it is in a straight and continuous line, and is made
 --   up of letters that either in the rack or on the board.
-validateMove :: Board    -- ^ The board
-             -> Player   -- ^ The player making the move
-             -> WordPut  -- ^ The word to play
-             -> Bool     -- ^ Is first move
+validateMove :: Board    -- ^ The board.
+             -> Player   -- ^ The player making the move.
+             -> WordPut  -- ^ The word to play.
+             -> Bool     -- ^ Is first move?
              -> Evaluator ()
 validateMove b p w fm =
   connects w b fm
@@ -50,9 +59,9 @@ lettersAvailable w p b = all available w
   
 -- | Check that a word to be played is made of tiles that are either in the player's
 --   rack or are already on the board.
-validateRack :: Board
-             -> Rack
-             -> WordPut
+validateRack :: Board     -- ^ The board.
+             -> Rack      -- ^ The rack.
+             -> WordPut   -- ^ The word to validate against the rack.
              -> Evaluator ()
 validateRack b r w = someNewTiles b w >>
   all (\(pos,(t,_)) -> t `elem` r
@@ -95,4 +104,4 @@ straight wp | length wp > 2 =
 -- | Check that a word to be played incudes some tiles that aren't on the board.
 someNewTiles :: Board -> WordPut -> Evaluator ()
 someNewTiles b w = any (empty b . fst) w `evalBool`
-  ("You didn't play any new tiles: " <> formatWP w <> T.pack (show w))
+  ("You didn't play any new tiles: " <> formatWP w <> T.pack (show w)) 

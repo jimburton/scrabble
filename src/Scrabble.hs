@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble
+Description : The scrabble library.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+The scrabble library.
+-}
 module Scrabble (
   module Scrabble.Types
  , module Scrabble.Game.Game

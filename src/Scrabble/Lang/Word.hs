@@ -1,6 +1,14 @@
+{-|
+Module      : Scrabble.Lang.Word
+Description : Words for the Scrabble game.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Words for the Scrabble game.
+-}
 module Scrabble.Lang.Word
-  ( Word
-  , wordToString
+  ( wordToString
   , stringToWord
   , textToWord
   , wordToText

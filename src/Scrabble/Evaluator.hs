@@ -1,11 +1,22 @@
-module Scrabble.Evaluator ( Evaluator(..)
-                          , evalBool )
+{-|
+Module      : Scrabble.Evaluator
+Description : Typeclass instances for the @Evaluator@ type.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Typeclass instances (@Functor@, @Applicative@ and @Monad@)for the @Evaluator@ type.
+@Evaluator@ evaluates scrabble computations and wraps an @Either@ type for error
+reporting.
+-}
+module Scrabble.Evaluator
+  ( Evaluator(..)
+  , evalBool )
   where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Scrabble.Types ( Evaluator(..) )
--- import Control.Monad.IO.Class ( liftIO )
 
 instance Functor Evaluator where
   -- fmap :: (a -> b) -> f a -> f b 
@@ -28,11 +39,7 @@ instance Monad Evaluator where
     fail msg = Ev (Left (T.pack msg))
 
 -- | Test a bool in the monad
-evalBool :: Bool -> Text -> Evaluator ()
+evalBool :: Bool         -- ^ The condition to be tested.
+         -> Text         -- ^ The error message.
+         -> Evaluator () -- ^ Returns () unless it fails.
 evalBool b e = if b then pure () else fail (T.unpack e)
-
---try :: IO (String -> g) -> IO (g -> g) -> Evaluator g -> IO g
---try k r e = case e of
---              (Ev (Left e))  -> e <$> k 
---              (Ev (Right g)) -> r g
-

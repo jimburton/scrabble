@@ -1,3 +1,12 @@
+{-|
+Module      : Scrabble.Board.Pretty
+Description : Pretty printing of Scrabble boards.
+Maintainer  : j.burton@brighton.ac.uk
+Stability   : experimental
+Portability : POSIX
+
+Functions for pretty-printing a Scrabble board.
+-}
 {-# LANGUAGE OverloadedStrings #-}
 module Scrabble.Board.Pretty
   ( showBoard
@@ -10,7 +19,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Data.Text ( Text )
 import Data.List.Split (chunksOf) 
-import Scrabble.Board.Board
+import Scrabble.Board.Bonus
   ( bonusMap )
 import Scrabble.Types
   ( Board
