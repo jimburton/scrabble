@@ -1,6 +1,6 @@
 # Chapter Four: Playing against the computer
 
-In this chapter a basic AI is added, so games can be played against
+In this chapter a basic AI is added so games can be played against
 the computer. In order to achieve this, a list of *playable* positions
 is maintained. A playable position is one where the AI could play a
 word, so we need to know the letter at that position, the amount of
@@ -26,12 +26,12 @@ maximum length of the word. The functions that search for words are in
 `Trie` datatype.
 	
 The freedoms map needs to be updated after each word is played -- each
-new word adds new playable positions but also may reduce the playable
-space around existing playable positions or remove them entirely. The
-figure below shows the freedoms on the board after the first move. The
-freedom of one of the positions with a tile on it is shown: `[(LeftD,
-7), (RightD, 7)]`. In this case, all of the playable positions have
-the same freedom.
+new word *adds* new playable positions but also may *reduce* the
+playable space around existing playable positions or remove playable
+spaces entirely. The figure below shows the freedoms on the board
+after the first move. The freedom of one of the positions with a tile
+on it is shown: `[(LeftD, 7), (RightD, 7)]`. In this case, all of the
+playable positions have the same freedom.
 	
 ![](/images/freedoms0.png)
 	
@@ -94,5 +94,8 @@ src
 │   └── Types.hs
 └── Scrabble.hs
 ```
+## Tests
 
+TODO
+ 
 [Contents](../README.md) | [Chapter Five](Chapter5.md)

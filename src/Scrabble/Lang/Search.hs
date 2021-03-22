@@ -22,7 +22,6 @@ import Data.List
   , permutations )
 import Prelude hiding       ( Word )
 import Data.Text            ( Text )
-import qualified Data.Text as T
 import Control.Monad        (filterM)
 import qualified Data.Trie.Text as Trie
 import Scrabble.Types
@@ -100,7 +99,7 @@ wordsInDict d = all (`Trie.member` d)
 
 -- | Returns true if the dict contains the given word
 dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> T.pack (show t)) 
+dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t) 
 
 -- | Returns true if the dict contains the given prefix
 dictContainsPrefix :: Dict -> Text -> Bool 

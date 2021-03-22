@@ -11,12 +11,16 @@ If you don't know the rules of the game you should begin by reading
 them
 [here](https://www.theukrules.co.uk/rules/children/games/scrabble.html). 
 
-The emphasis is intended to be on explaining the process of developing
-a Haskell project with several parts, aimed at students who have
-already learned the basics of Haskell syntax and functional problem
-solving. As well as adding new functionality, each chapter refines the
-initial solution ending up with something that is (hopefully) a clean,
-functional design that can easily be extended. 
+The emphasis is on explaining the process of developing a Haskell
+project with several parts, aimed at students who have already learned
+Haskell syntax and functional problem solving. Commonly used data
+structures and libraries like `Data.Text`, maps, arrays and `aeson`
+are explained, as well as monadic error checking and building a
+WebSocket client to the game.
+
+Each chapter refines the initial solution ending up with something
+that is (hopefully) a clean, functional design that can easily be
+extended.
 
 Testing is a continuous topic, so new tests are added in each chapter.
 

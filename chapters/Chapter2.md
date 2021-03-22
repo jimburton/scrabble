@@ -1,19 +1,27 @@
 # Chapter Two: Validating moves
 
-The code corresponding to this version of the project is in the branch `chapter2`.
+The code corresponding to this version of the project is in the branch 
+`chapter2`.
 
-In this chapter we develop an error checking style that will serve as 
-a good design for the entire application. It will allow us to thread
-the state of the game through a long and growing series of computations
-without having to worry at each stage about whether anything went wrong.
+In this chapter we introduce monadic error checking, leading to a
+design for the entire application. It will allow us to thread the
+state of the game through a long and growing series of computations
+without having to worry at each stage about whether anything went
+wrong.
+
+We are going to introduce a lot of functions that relate specifically to
+boards, so we create a new module for that, and refactor the dictionary code 
+into new modules too. 
+
+**TODO source tree**
 
 ## Checking the structure and position of words
 
-We can place words onto the board, so now we want to check whether
+Now that we can place words onto the board, we want to check whether
 doing so is valid. The rules about word placement are as follows:
 
 + Words are at least two letters long.
-+ Words must fit on the board.
++ Words must be actually on the board.
 + A word must be continuous and either horizontal or vertical.
 + The first word must cross the centre square, while subsequent words
   must connect with an existing word.
@@ -24,7 +32,8 @@ Two positions on the board, `(r1,c1)` and `(r2,c2)`, are in a
 coninuous straight line if either `r1==r2-1` and `c1==c2` or `r1==r2`
 and `c1==c2-1`. This indicates the need to know which direction a word
 is played in, so we can also make a datatype and function for
-that. One approach to writing `straight` would be as follows:
+that. One approach to writing `straight` would simply to return `True`
+if the word is straight:
 
 ```haskell
 data Dir = HZ | VT deriving (Show, Read, Eq)
@@ -46,16 +55,15 @@ straight wp | length wp > 2 =
 But there are lots of ways in which a move might be invalid we'd
 like to be able to let the user know exactly what went wrong. If we
 carry on with validation checks that return true or false we will need lots
-of if statements that work out what to report back to the user.
+of `if` statements that work out what to report back to the user.
 
-A common solution to writing a function that returns a value of type
-`a` or an error message is to use the type `Either Text a`. Values of
-this type are either `Left e`, where `e` is an error message, or
-`Right x` where `x :: a`. In the case of `straight`, if it returns any
-type of `Right` value then we know things went well. So there's no
-need to return a `Bool`, we can just return `Left e` for an error or
-`Right ()` if things went well. `()` ("unit") is the type with exactly
-one value in it (which is also `()`):
+A common solution to writing a function that can fail is to use the
+type `Either Text a`. Values of this type are either `Left e`, where
+`e` is an error message, or `Right x` where `x` is any type. In the
+case of `straight`, if it returns any kind of `Right` value then we
+know things went well. So there's no need to return a `Bool`, we can
+just return `Left e` for an error or `Right ()` if things went
+well. 
 
 ```haskell
 straight :: WordPut -> Either String ()
@@ -105,7 +113,7 @@ wordOnBoard w = if all (onBoard . fst) w
                  then Right ()
                  else Left "Word not on board"
 ```
-Checking that the first word touches the centre square is also pretty
+Checking that the first word touches the centre square is also 
 straightforward with the `touches` function.
 
 ```haskell
@@ -155,7 +163,7 @@ validateMove b p w fm = case connects w b fm of
   Left e -> Left e
  ```
  
-The technical term for this kind of code is "filthy". Such a deeply
+The technical term for this kind of code is "nasty". Such a deeply
 nested and indented structure is hard to read, hard to maintain and
 hard to extend.  Fortunately, what we can do here is to use a monad to
 encapsulate the checks for `Left` and `Right`. We make our `Either`
@@ -171,15 +179,20 @@ newtype Evaluator a = Ev (Either Text a)
 ```
 This type wraps up an `Either Text a` type where, as you
 may expect, the `Text` is an error message and the `a` value is
-whatever is being evaluated. For instance, `a` may be an updated
-version of the game, or just `()` in cases where moves are being
-checked for validity. Now we need to make a monad instance for the type.
-That requires us to define the `Applicative` and `Functor` instances for
-`Evaluator`, since every monad is an applicative and every applicative 
-is a functor. The spirit of these definitions is that if we are dealing
-with an `Ev (Left _)` value we want to **stop what we are doing and report 
-the error**, while if we are dealing with a `Ev (Right _)` value we can
-**keep going**.
+whatever is being evaluated. For instance, `a` could be `()` in cases 
+where moves are being checked for validity, or `Game` when a function 
+either fails or returns an updated version of the game, or `Int` when
+a function either fails or calculates the score of a word. A value of
+the type `Evaluator Int` would be something like `Ev (Left "Something went wrong.")`
+or `Ev (Right 42)`. 
+
+Now we need to make a monad instance for `Evaluator`. That requires us
+to first define the `Functor` and `Applicative` instances,
+since every monad is an applicative and every applicative is a
+functor. The spirit of these definitions is that if we are dealing
+with an `Ev (Left _)` value we want to **stop what we are doing and
+report the error**, while if we are dealing with a `Ev (Right _)`
+value we can **keep going**.
 
 ```haskell
 instance Functor Evaluator where
@@ -211,6 +224,7 @@ make an abstraction for this pattern.
 evalBool :: Bool -> Text -> Evaluator ()
 evalBool b e = if b then pure () else fail (T.unpack e)
 ```
+(Note that the `fail` function takes a `String` so we have to `unpack` the `Text`.) 
 Now our validation functions will all have a similar structure to the new version 
 of `lettersAvailable` below -- a call to `evalBool` where the first argument is a boolean 
 condition and the second is an error message.
@@ -222,9 +236,11 @@ lettersAvailable w p b = all available w `evalBool`"Letters not in rack or not o
 
 ``` 
 
-Monadic style allows us to remove all those case statments and
-write `validateMove` in a far nicer style. If any of the validation
-functions encounters an error, the appropriate message is delivered.
+Monadic style allows us to remove all those case statments and write
+`validateMove` in a far nicer style. In effect, the case statements
+are all replaced by the one in the definition of the monad
+instance. If any of the validation functions encounters an error, the
+appropriate message is delivered.
 
 ```
 validateMove :: Board   -- ^ The board
@@ -240,9 +256,10 @@ validateMove b p w fm =
 ```
 	
 The validation functions are now *combinators*. We can combine small
-combinators into larger ones that check several things. Functions at
-the top level can run an evaluator then unpack the result in a single case
-statement to see if all went well or, if not, exactly what went wrong.
+ones like `connects` into larger ones like `validateMove` that check
+several things. Functions at the top level can run an evaluator then
+unpack the result in a single case statement to see if all went well
+or, if not, exactly what went wrong.
 								 
 ## Checking words in the dictionary
 
@@ -253,7 +270,7 @@ monad.
 
 ```haskell
 dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> T.pack(show t)) 
+dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t) 
 ```
 
 We need to apply this function to the new
@@ -385,5 +402,9 @@ valGameRulesAndDict ws g = do
 
 In the next chapter we will use these validators when we start playing the game.
 
+## Tests
+
+TODO
+ 
 [Contents](../README.md) | [Chapter Three](Chapter3.md)
 

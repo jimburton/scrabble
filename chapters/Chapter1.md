@@ -11,8 +11,8 @@ simple functions for placing words on boards and so on.
 ## The project
 
 We're using `cabal` to manage the project. `cabal` deals in
-*libraries* and *executables*. We will be making several executables
-later but the core code for playing the game is contained in a
+*libraries* and *executables*. We will evantually be making several
+executables but the core code for playing the game is contained in a
 library. Since it is a library, there isn't an entry point or any way
 for users to run the code. It is intended for ourselves and others to
 import it into code that *is* intended for users.
@@ -49,17 +49,17 @@ in the files `src/Scrabble.hs`, `src/Scrabble/Types.hs` and
 
 **TODO: source tree**
 
-The `Scrabble` module just imports and re-exports the entire library. The
-`Scrabble.Game` module contains the functions we'll be describing in this
-chapter, while the `Scrabble.Types` module contains the datatypes and type
-aliases. 
+The `Scrabble` module just imports and re-exports the entire
+library. The `Scrabble.Game` module contains the functions we'll be
+describing in this chapter, while the `Scrabble.Types` module contains
+datatypes and type aliases.
 
-It is a fairly common Haskell idiom to put the datatypes into a 
-module of their own -- it makes them easy to track down and can help you
-avoid the problem of circular imports, where two modules need to import each
-other to get access to some types, something which isn't allowed by the compiler.
-As the projects gets bigger, it's handy to know just where to go to look at
-the definition of a type.
+It is a fairly common Haskell idiom to put the datatypes into a module
+of their own. It makes them easy to track down and can help you avoid
+the problem of circular imports, where two modules need to import each
+other to get access to some types, something which isn't allowed by
+the compiler.  As the projects gets bigger, it's handy to know just
+where to look for the definition of a type.
 
 To experiment with the code, use the command `cabal repl`. You still need to load
 the modules containing types and functions:
@@ -69,7 +69,7 @@ $ cabal repl
 > :m + Scrabble.Types
 > :m + Scrabble.Game
 ```
-The code includes `haddock` style comments, so a good way to browse the code may 
+The code includes `haddock` style comments, so one way to browse the code may 
 be to build the docs and view them in your browser. When you run `cabal haddock`
 it tells you where it has stored the output:
 
@@ -80,11 +80,14 @@ Documentation created:
 <path-to-docs>/jb-scrabble/index.html
 ```
 
+However, only those functions and types that are exported by a module have `haddock`
+comments, so read the source code to see the whole thing.
+
 ## Building blocks of the game
 
 When you start writing any software you need to think about modelling
 the problem in hand. When the problem is a board game, this is quite
-easy, at least to begin with, because the first things we need to model in the
+easy to begin with, because the first things we need to model in the
 software correspond to real world objects.
 
 <img src="/images/scrabble.jpeg" alt="Scrabble board" width="500px" />
@@ -116,7 +119,7 @@ type Tile = (Char,Int)
 ```
 
 but then the type system wouldn't be able to rule out nonsense values
-like `('%',1)`, we might find ourselves needing to distinguish between
+like `('%',0)`, we might find ourselves needing to distinguish between
 'a' and 'A', and so on. So we create an enumeration of all possible
 letters and make the datatype derive some useful typeclasses:
 
@@ -137,17 +140,23 @@ We will need to know a number of things about letters:
 
 We will store this data in *maps*, using the `Data.Map` API. We could
 use a list of pairs with the type `[(Letter,Int)]` but maps are much
-more efficient (`O(log n)`) lookup tables.  `Data.Map` is normally
-imported with a qualified name (e.g. `Map`) since it contains many
-functions whose names clash with those of functions in the `Prelude`.
-`Data.Map` isn't in the `Prelude`. If we try to import it without
-doing anything else `cabal` will prompt us to add the package that
-includes it, `containers`, to the `build-depends` section of the
-`cabal` file. We do that, and you should bear in mind that we need to
-do this whenever importing non-`Prelude` types in future. Often
-`cabal` will be able to tell us the name of the package to add but if not,
-use google to find the type you need on hackage and check which package it
-is in.
+more efficient (`O(log n)`) lookup tables.  
+
+Because it contains many functions whose names clash with those of
+functions in the `Prelude`, like `filter` and `map`, `Data.Map` is
+normally imported with a qualified name (e.g. `Map`) like this:
+
+```haskell
+import qualified Data.Map as Map
+```
+Since `Data.Map` isn't in the `Prelude`, we need to tell `cabal` where
+to find it. If we try to import it without doing anything else, `cabal` will prompt us to
+add the package that includes it, `containers`, to the `build-depends`
+section of the `cabal` file. We will do that, and you should bear in mind
+that we need to do this whenever importing non-`Prelude` types in
+future. Often `cabal` will be able to tell us the name of the package
+to add but if not, use google to find the type you need on hackage and
+check which package it is in.
 
 
 ```haskell
@@ -165,24 +174,24 @@ letterToScoreList = [
 letterToScoreMap :: Map Letter Int
 letterToScoreMap = Map.fromList letterToScoreList
 
--- | Find the score of a letter.
+-- | Find the score of a letter. Exported.
 scoreLetter :: Letter -> Int
 scoreLetter = fromJust . flip Map.lookup letterToScoreMap
 
 ``` 
 
-Of these functions, the only one we want to export is
-`scoreLetter` (and so it's the only function that has 
-`haddock`-style comments). Good information hiding and encapsulation is key to
-creating software that is nice to work on. 
+Of these functions, the only one we want to export is `scoreLetter`
+(and so it's the only function that has `haddock`-style
+comments). Good information hiding and encapsulation is key to
+creating software that is nice to work on.
 
 Note the use of `fromJust` in `scoreLetter`. The `fromJust` function
 is *unsafe*, meaning that it can fail at runtime causing the program
 to crash. This happens when it is called on a value that isn't `Just x`, 
-i.e. which is `Nothing`. In this case, it's fine because we know
-that there is an entry in the map for every letter. But whenever
-you use an unsafe function such as `fromJust` or `head`, ask yourself
-whether this is definitely the right thing to do.
+i.e. which is `Nothing`. In this case, we know we won't get any
+errors because we know that there is an entry in the map for every
+letter. But whenever you use an unsafe function such as `fromJust` or
+`head`, ask yourself whether this is definitely the right thing to do.
 
 ## The board
 
@@ -190,10 +199,13 @@ A Scrabble board is a 15x15 matrix of rows and columns, and so a natural way to
 model it is as a two-dimensional array. The values stored in
 the array will be `Maybe Tile`s (i.e. either `Nothing` for an empty
 square, or something like `Just (A,1)` for a square with an 'A' tile
-on it). In many languages we would create an array of arrays, where
-each element of the outer array is an array representing a row. However,
-Haskell supports true multi-dimensional arrays. The `Array` type constructor
-takes two arguments, the type of indices and the type of elements. 
+on it). 
+
+In many languages we would create an array of arrays to achieve this,
+where each element of the 15-element outer array is a 15-element array
+representing a row. However, Haskell supports true multi-dimensional
+arrays. The `Array` type constructor takes two arguments, the type of
+indices and the type of elements.
 
 ```haskell
 import Data.Array
@@ -213,7 +225,8 @@ type Pos = (Int,Int)
 *Words* are lists of letters and both *racks* and *bags* are lists of tiles.
 Because the `Prelude` includes a type called `Word` we have a name clash here.
 We could call it `ScrabbleWord` or something like that, but it seems more 
-convenient to keep the short name and hide the type in the `Prelude`.
+convenient to keep the short name and hide the type in the `Prelude`, which
+we don't need anyway.
 
 ```haskell
 import Prelude hiding Word
@@ -297,8 +310,10 @@ r e   e
       r
 ```
 
-We don't actually need to store anything at the leaves as we only need to know
-which paths in the trie exist.
+We don't actually care what is stored at the leaves of the trie, as we
+only need to know which paths in the trie exist. So in each leaf we
+just store `()` ("unit"), which is the type with exactly one value in
+it (also called `()`, "unit").
 
 ```haskell
 import Data.Trie.Text
@@ -342,7 +357,7 @@ data Player = Player { name  :: Text
                      } deriving (Show, Eq)
 ```
 
-To make working with `Text` easier, we turn on the `OverloadedString`
+To make working with `Text` easier, we turn on the `OverloadedStrings`
 extension in our code. This means that any literal strings in our code
 are treated as `Text`.  The extension is turned on in the `cabal`
 config file and by including a "language pragma" (an instruction to
@@ -354,8 +369,10 @@ the compiler) at the top of any files that need it:
 
 Now we have enough types to create the `Game` datatype. This needs to
 store everything we need to know in order to play the game (including
-whose turn it is, so we create a datatype for that too). Here is the
-first version, which we'll add to as we uncover new requirements.
+whose turn it is, so we create a datatype for that too). We also need
+to know whether this is the first move because a special rule applies
+to that (it must touch the centre square). Here is the first version,
+which we'll add to as we uncover new requirements.
 
 ```haskell
 data Turn = P1 | P2 deriving (Show, Eq)
@@ -379,8 +396,11 @@ next chapter.
 ## Putting a word on the board
 
 To create the initial empty board we can use the `array` function to
-turn a list of `Nothing` values into a 15x15 array. Then we can put a
-`WordPut` onto the board.
+turn a list of pairs of indices and `Nothing` values into a 15x15
+array. Then we can put a `WordPut` onto the board. The `updateBoard`
+function uses a fold to update the array with each element of the
+`WordPut` in turn. The `(//)` operator is used in `updateSquare` to
+update the array.
 
 ```haskell
 newBoard :: Board
@@ -404,8 +424,9 @@ a time from the array, which is what the `rows` function below is for. It gets t
 of the array as a list then uses `chunksOf` to split it into 15-element sublists. The
 `intercalate` function from `Data.Text` intersperses a lists of texts with its
 argument. The `(<>)` operator concatenates text. Note that the `showBoard` function takes
-a noolean parameter which determines whether to show the bonus squares on the board. If this
-parameter is `True` then each position is looked up in the map of bonus squares.
+a boolean parameter which determines whether to show the bonus squares on the board. If this
+parameter is `True` then each position is looked up in the map of bonus squares to see if
+there is a bonus value to display.
 
 ```haskell
 import qualified Data.Text as T
@@ -421,7 +442,7 @@ toChar l = fromJust $ Map.lookup l letterToCharMap
 -- | Textify a board.
 showBoard :: Bool  -- ^ Whether to show bonus squares.
           -> Board -- ^ The board.
-          -> Text
+          -> Text  -- ^ The board as text. 
 showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
   showRows        = T.intercalate "\n" (zipWith showRow [0..14] (rows b)) <> "\n"
   showRow     i r = showI i <> "|" <>
@@ -490,10 +511,15 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
 
 Before we move on, let's make some tests. We need to think about what
 we want to be always true about the types and functions we have
-created.
+created. We use the `QuickCheck` library for property-based testing. This
+means that we specify some property that we want our functions to have and
+the library generates arbitrary input that checks whether the property
+holds.
 
 The `test-suite` stanza in the config file deptermines what tests should
 be run and how. It points to the file `tests/Main.hs` as the entry point.
+
+TODO write some tests and explain them.
 
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)

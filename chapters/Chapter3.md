@@ -1,6 +1,7 @@
 # Chapter Three: Playing the game
 
-The code corresponding to this version of the project is in the branch `chapter3`.
+The code corresponding to this version of the project is in the branch 
+`chapter3`.
 
 We now have enough resources to start playing the game. There is no UI
 as yet, and what we mean by "playing" is using the REPL to generate an
@@ -22,12 +23,12 @@ the two players and the depleted bag are added to the game state.
 Pseudo-random number generators (PRNGs) in Haskell are
 deterministic. They are created using a *seed*, and PRNGs created with
 the same seed return the same values. Every time we use the PRNG it
-returns some the latest value and an updated version of itself. So our
-function that fills a rack needs to take a rack to be filled, a bag to
-fill the rack from and a PRNG as parameters, and return a triple of
-the filled rack, the depleted bag and the updated PRNG. The type for
-PRNGs is `StdGen`. The function `randomR (n,m)` returns a random
-number between `n` and `m`.
+returns the latest value and an updated version of itself, primed to
+return the next value. So our function that fills a rack needs to
+take a rack to be filled, a bag to fill the rack from and a PRNG as
+parameters, and return a triple of the filled rack, the depleted bag
+and the updated PRNG. The type for PRNGs is `StdGen`. The function
+`randomR (n,m)` returns a random number between `n` and `m`.
 
 ```haskell
 getTile :: Bag -> StdGen -> (Letter, Bag, StdGen)
@@ -85,13 +86,12 @@ newGame p1Name p2Name theGen d =
 				, gameOver  = False 
 				, lastMovePass = False} in
     g
-
 ``` 
 
 Note that we updated the `Game` type to include two new booleans, `gameOver`
 and `lastMovePass`. These relate to the two ways in which a game can end. 
 Normally the game ends when the bag is empty and one of the
-players has used all of their tiles. ALternatively, the game ends if each
+players has used all of their tiles. ALternatively, the game is over if each
 player passes their move. 
 
 We will deal first with the simplest way of playing a move, which is
@@ -103,10 +103,10 @@ a move by playing a word on the board.
 
 A player can take a move by passing their turn. If there are two
 passes in the row then the game is ended, so now we need to think
-about how to end games. All the library will do to end a game is 
-to make some necessary changes to the score then set the boolean
-`gameOver` to `True`. We will leave it up to clients to check this 
-boolean and make an announcement to the players. 
+about how to end games. All the library will do to end a game is to
+make some changes to the score then set the boolean `gameOver` to
+`True`. We will leave it up to clients to check this boolean and make
+an announcement to the players.
 
 The `lastMovePass` boolean is there to detect the situation where
 there have been two passes in a row. We set it to `True` when a player passes
@@ -121,10 +121,13 @@ The other way that the game can end is if we run out of tiles in the bag. This
 is checked in `checkEndOfGame`, which also calls `endGame` if necessary.
 
 ```haskell
+rackValue :: Rack -> Int
+rackValue = sum . map scoreLetter
+
 endGame :: Game -> Evaluator Game
 endGame g = do
   let r1v = rackValue (rack (player1 g))
-      r2v = rackValue (rack (player1 g))
+      r2v = rackValue (rack (player2 g))
       p1s = (score (player1 g) - r1v) + r2v
       p2s = (score (player2 g) - r2v) + r1v
   pure g { player1 = (player1 g) { score = p1s }
@@ -142,7 +145,6 @@ checkEndOfGame g =
 toggleTurn :: Game -> Evaluator Game
 toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
 
-
 pass :: Game -> Evaluator Game
 pass g = if lastMovePass g
          then endGame g
@@ -152,7 +154,7 @@ pass g = if lastMovePass g
 ## Swapping tiles
 
 A player can take a move by swapping some tiles from their rack for new ones from the 
-bag. We take the letters to swap from the rack, refill the rack, then add the letters to swap
+bag. We take the tiles to swap from the rack, refill the rack, then add the swapped tiles 
 to the bag. The `endNonPassMove` function manages the state of the boolean fields `firstMove`
 and `lastMovePass`.
 
@@ -198,11 +200,11 @@ each stage the game state is being updated or some other value is
 being calculated, such as the score. Some things to note:
 
 + Because the `Validator` is a parameter we can call `move` with
-  `valGameRules` only (if we don't want to include a dictionary check)
+  `valGameRules` only if we don't want to include a dictionary check,
   or `valGameRulesAndDict` to check everything.
 + To see how the score is calculated, study the functions `scoreWord`
   and `scoreWords` in `Scrabble.Board`. (*Disclaimer*: these functions
-  are unpleasantly messy, but this seems to be unavoidable!) 
+  are unpleasantly messy, but this seems to be unavoidable.) 
   
   Every tile in a new word adds its face value multiplied by the
   letter-bonus of the square it is placed on, if any. Then the score
@@ -228,4 +230,6 @@ being calculated, such as the score. Some things to note:
   >>= checkEndOfGame >>= \g' -> pure (g',(map wordPutToWord (w:aw),sc))
   ```
  
+## Tests
+ TODO
 [Contents](../README.md) | [Chapter Four](Chapter4.md)

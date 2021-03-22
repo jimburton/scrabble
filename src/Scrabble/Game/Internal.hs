@@ -143,7 +143,7 @@ endNonPassMove g = toggleTurn $ g { firstMove = False, lastMovePass = False }
 endGame :: Game -> Evaluator Game
 endGame g = do
   let r1v = rackValue (rack (player1 g))
-      r2v = rackValue (rack (player1 g))
+      r2v = rackValue (rack (player2 g))
       p1s = (score (player1 g) - r1v) + r2v
       p2s = (score (player2 g) - r2v) + r1v
   pure g { player1 = (player1 g) { score = p1s }
