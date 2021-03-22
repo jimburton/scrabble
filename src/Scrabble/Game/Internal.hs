@@ -22,7 +22,6 @@ module Scrabble.Game.Internal
 
 import Debug.Trace
 import qualified Data.Map as Map
-import Data.List ( (\\) )
 import Scrabble.Types
   ( WordPut
   , Game(..)
@@ -34,13 +33,12 @@ import Scrabble.Types
   , Dir(..)
   , Letter(Blank))
 import Scrabble.Board.Board
-  ( empty
+  ( rackValue
+  , adjacent
+  , empty
   , freedomsFromWord
   , getDirection
-  , newTiles
-  , rackValue )
-import Scrabble.Board.Internal 
-  ( adjacent )
+  , newTiles )
 import Scrabble.Board.Bag 
   ( fillRack
   , takeFromRack )
@@ -53,7 +51,7 @@ import Scrabble.Evaluator ()
 setBlanks :: WordPut -- ^ Word that had blanks in it.
           -> [Int]   -- ^ Positions of the letters in the word which were blanks.
           -> Game    -- ^ The game.
-          -> Evaluator Game
+          -> Evaluator Game -- ^ The updated game.
 setBlanks w bs g = pure (getPlayer g)
                    >>= \p -> pure (p { rack = setBlanks' (rack p) bs})
                    >>= setPlayer g 
@@ -67,7 +65,7 @@ setBlanks w bs g = pure (getPlayer g)
 -- | Update the score of the current player in the game.
 setScore :: Game -- ^ The game to be updated
          -> Int  -- ^ The new score of the current player
-         -> Evaluator Game
+         -> Evaluator Game -- ^ The updated game.
 setScore g s = if turn g == P1
                then let s' = score (player1 g) in
                       pure g { player1 = (player1 g) {score = s' + s} }
@@ -140,7 +138,7 @@ endNonPassMove :: Game -> Evaluator Game
 endNonPassMove g = toggleTurn $ g { firstMove = False, lastMovePass = False }
 
 -- | Ends the game and subtracts the tiles in each players rack from their score. If
---   One player has used all of their tiles the value of the opponent's tiles is added
+--   one player has used all of their tiles the value of the opponent's tiles is added
 --   to their score.
 endGame :: Game -> Evaluator Game
 endGame g = do

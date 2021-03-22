@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      : Scrabble.Board.Pretty
 Description : Pretty printing of Scrabble boards.
@@ -7,7 +8,6 @@ Portability : POSIX
 
 Functions for pretty-printing a Scrabble board.
 -}
-{-# LANGUAGE OverloadedStrings #-}
 module Scrabble.Board.Pretty
   ( showBoard
   , showGame

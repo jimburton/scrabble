@@ -11,8 +11,9 @@ It can pick a word from the dictionary that either begins with or ends with a gi
 Choosing words that can be played onto the board in other ways and searching for the highest
 scoring word is WIP.
 -}
-module Scrabble.Game.AI ( newGame1P
-                        , moveAI )
+module Scrabble.Game.AI
+  ( newGame1P
+  , moveAI )
   where
 
 import Debug.Trace
@@ -34,7 +35,6 @@ import Scrabble.Types
   , Rack
   , WordPut
   , Pos
-  , Playable
   , Dir(..)
   , Word
   , Turn(..)
@@ -44,15 +44,15 @@ import Scrabble.Board.Board
   , updateBoard
   , newBoard
   , additionalWords
-  , scoreWords )
+  , scoreWords
+  , wordPutToWord ) 
 import Scrabble.Board.Bag
   ( newBag
   , fillRack )
 import Scrabble.Lang.Letter
   ( toText )
 import Scrabble.Lang.Word
-  ( wordToString
-  , wordPutToText )
+  ( wordToString )
 import Scrabble.Game.Game
   ( pass )
 import Scrabble.Game.Internal
@@ -61,8 +61,6 @@ import Scrabble.Game.Internal
   , updatePlayables
   , updatePlayer
   , setScore )
-import Scrabble.Board.Internal
-  ( wordPutToWord )
 import Scrabble.Lang.Search
   ( findPrefixes
   , wordsInDict )
@@ -114,7 +112,7 @@ moveAI :: Game      -- ^ The game.
        -> Evaluator (Game, (WordPut,[Word],[Int],Int))
 moveAI g = do
   let r  = rack (getPlayer g)
-      mw = findWord g (filter (/=Blank) r) (playable g) 
+      mw = findWord g (filter (/=Blank) r)  
   case mw of
     Nothing -> pass g >>= \g' -> pure (g',([],[],[],0))
     Just (w,aw)  -> scoreWords g w aw >>=
@@ -122,12 +120,11 @@ moveAI g = do
                     >>= updatePlayables w >>= updateBoard w
                     >>= toggleTurn <&> (,(w,map wordPutToWord (w:aw),[],i))
 
--- | Pick a word for the AI to play, along with the additional words it generates. 
-findWord :: Game     -- ^ The game.
-         -> Rack     -- ^ The rack.
-         -> Playable -- ^ The playable positions.
-         -> Maybe (WordPut, [WordPut])
-findWord g r p = msum $ Map.mapWithKey findWord' p
+-- Pick a word for the AI to play, along with the additional words it generates. 
+findWord :: Game     -- The game.
+         -> Rack     -- The rack.
+         -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
+findWord g r = msum $ Map.mapWithKey findWord' (playable g)
   where  findWord' k (l,ps) =
           trace("findWord' at pos "<>show ps<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
                          case fd of
@@ -136,41 +133,41 @@ findWord g r p = msum $ Map.mapWithKey findWord' p
                            LeftD  -> findPrefixOfSize g k l r (fd,i) 
                            RightD -> findSuffixOfSize g k l r (fd,i)) ps
 
--- | Find a word of at least a certain size that ends with a certain letter.
-findPrefixOfSize :: Game             -- ^ The dictionary.
-                 -> Pos              -- ^ The end point of the word.
-                 -> Letter           -- ^ The letter on the board that this word will connect to.
-                 -> Rack             -- ^ The letters from the player's hand to make up the word
-                 -> (FreedomDir,Int) -- ^ The direction and max length of the word.
-                 -> Maybe (WordPut, [WordPut])
+-- Find a word of at least a certain size that ends with a certain letter.
+findPrefixOfSize :: Game             -- The dictionary.
+                 -> Pos              -- The end point of the word.
+                 -> Letter           -- The letter on the board that this word will connect to.
+                 -> Rack             -- The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- The direction and max length of the word.
+                 -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
 findPrefixOfSize g p l = findWordOfSize g (filter ((==l) . last) . findPrefixes g) p l
 
--- | Find a word of at least a certain size that begins with a certain letter.
-findSuffixOfSize :: Game             -- ^ The game.
-                 -> Pos              -- ^ The starting point of the word.
-                 -> Letter           -- ^ The letter on the board that this word will connect to.
-                 -> Rack             -- ^ The letters from the player's hand to make up the word
-                 -> (FreedomDir,Int) -- ^ The direction and max length of the word.
-                 -> Maybe (WordPut,[WordPut])
+-- Find a word of at least a certain size that begins with a certain letter.
+findSuffixOfSize :: Game             -- The game.
+                 -> Pos              -- The starting point of the word.
+                 -> Letter           -- The letter on the board that this word will connect to.
+                 -> Rack             -- The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- The direction and max length of the word.
+                 -> Maybe (WordPut,[WordPut]) -- The word and the additional words.
 findSuffixOfSize g p l = let g' = g { dict = Trie.submap (toText l) (dict g)} in
   findWordOfSize g (findPrefixes g') p l
 
--- | Get the longest sublist in a list of lists. Not safe (list must have something in it).
+-- Get the longest sublist in a list of lists. Not safe (list must have something in it).
 longest :: [[a]] -> [a]
 longest = maximumBy (\x y -> length x `compare` length y)
 
--- | A function for finding words in the dictionary.
+-- A function for finding words in the dictionary.
 type WordFinder = Word -> [Word] 
 
--- | Find a word of a certain size.
---   TODO max 6 letter words at the moment. Too slow for seven letter words...
-findWordOfSize :: Game             -- ^ The game.
-               -> WordFinder       -- ^ Function that will query the dictionary.
-               -> Pos              -- ^ The start or end point of the word.
-               -> Letter           -- ^ The letter on the board that this word will connect to.
-               -> Rack             -- ^ The letters from the player's hand to make up the word.
-               -> (FreedomDir,Int) -- ^ The direction and max length of the word.
-               -> Maybe (WordPut,[WordPut]) -- ^ The word and its additional words.
+-- Find a word of a certain size.
+-- TODO max 6 letter words at the moment. Too slow for seven letter words...
+findWordOfSize :: Game             -- The game.
+               -> WordFinder       -- Function that will query the dictionary.
+               -> Pos              -- The start or end point of the word.
+               -> Letter           -- The letter on the board that this word will connect to.
+               -> Rack             -- The letters from the player's hand to make up the word.
+               -> (FreedomDir,Int) -- The direction and max length of the word.
+               -> Maybe (WordPut,[WordPut]) -- The word and its additional words.
 findWordOfSize g wf k l r (fd,i) =
   let r' = l : take 5 (filter (/=Blank) r)
       ws = filter ((<=i) . length) $ wf r' in

@@ -52,9 +52,8 @@ import Scrabble.Board.Board
   ( scoreWords
   , newBoard
   , additionalWords
-  , updateBoard )
-import Scrabble.Board.Internal
-  ( wordPutToWord )
+  , updateBoard
+  , wordPutToWord )
 import Scrabble.Board.Bag
   ( newBag
   , fillRack

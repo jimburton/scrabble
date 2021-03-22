@@ -2,6 +2,7 @@
 module Main
   where
 
+import Data.Text (toUpper)
 import qualified Data.Text.IO as T
 import ScrabbleCLI.Game (startGame, startGameAI)
 
@@ -10,7 +11,7 @@ import ScrabbleCLI.Game (startGame, startGameAI)
 main :: IO ()
 main = do
   T.putStrLn "Enter 1P or 2P"
-  str <- T.getLine
+  str <- fmap toUpper T.getLine
   case str of
     "1P" -> doAIGame
     "2P" -> doManualGame

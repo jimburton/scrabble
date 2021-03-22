@@ -29,7 +29,7 @@ import Scrabble.Evaluator
 
 -- ============ Functions relating to a bag of tiles ============= --
 
--- | The number of each tile that is in a new bag.
+-- The number of each tile that is in a new bag.
 numTilesList :: [(Letter,Int)]
 numTilesList = [
   (A, 9), (B, 2), (C, 2), (D, 4), (E, 12), (F, 2), (G, 3),
@@ -47,7 +47,7 @@ newBag = concatMap (\(l,n) -> replicate n l) numTilesList
 fillRack :: Rack   -- ^ The rack to fill 
          -> Bag    -- ^ The bag to pick from.
          -> StdGen -- ^ The random generator.
-         -> Evaluator (Rack, Bag, StdGen)
+         -> Evaluator (Rack, Bag, StdGen) -- ^ The filled rack, the updated bag and the updated StdGen.
 fillRack r b g = pure $ fillRack' (7 - length r) r b g
   where fillRack' 0 r' b' g' = (r', b', g')
         fillRack' _ r' [] g' = (r', [], g')
@@ -56,19 +56,19 @@ fillRack r b g = pure $ fillRack' (7 - length r) r b g
             fillRack' (n-1) (t:r') b'' g''
 
 -- | Take some letters from a rack.
-takeFromRack :: Rack    -- ^ The rack to take from
+takeFromRack :: Rack -- ^ The rack to take from
              -> Word -- ^ The letters to take from the rack
-             -> Evaluator Rack
+             -> Evaluator Rack -- ^ The updated rack.
 takeFromRack r = pure . deleteAll r
 
 -- Delete the first occurence of each element in the second list from the first list.
 deleteAll :: Eq a => [a] -> [a] -> [a]
 deleteAll = foldl (flip delete)
 
--- | Get a single tile from a bag.
-getTile :: Bag    -- ^ The bag to take the tile from.
-        -> StdGen -- ^ The random generator.
-        -> (Letter, Bag, StdGen)
+-- Get a single tile from a bag.
+getTile :: Bag    -- The bag to take the tile from.
+        -> StdGen -- The random generator.
+        -> (Letter, Bag, StdGen) -- A letter from the bag, the updated bag and the updated StdGen.
 getTile b g = let (i, g') = randomR (0, length b -1) g
                   t = b !! i
                   b' = take i b ++ drop (i+1) b in

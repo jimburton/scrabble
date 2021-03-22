@@ -51,7 +51,7 @@ validateMove b p w fm =
   >> firstMoveTouchesCentre w fm
   >> lettersAvailable w p b
 
--- | The letter in this move are available in the player's rack or on the board
+-- The letter in this move are available in the player's rack or on the board
 lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
 lettersAvailable w p b = all available w
                          `evalBool` ("Letters not in rack or not on board: " <> formatWP w)
@@ -73,7 +73,7 @@ validateRack b r w = someNewTiles b w >>
 touches :: Pos -> WordPut -> Bool
 touches p = any ((==p) .  fst)
 
--- | If this is the first move, does it touch the centre square?
+-- If this is the first move, does it touch the centre square?
 firstMoveTouchesCentre :: WordPut -- ^ The word.
                        -> Bool    -- ^ Is the first move.
                        -> Evaluator ()
@@ -101,7 +101,7 @@ straight wp | length wp > 2 =
                   (all f . zip ps $ tail ps) `evalBool` "Not in a straight line"
             | otherwise    = fail "Too few letters"
 
--- | Check that a word to be played incudes some tiles that aren't on the board.
+-- Check that a word to be played incudes some tiles that aren't on the board.
 someNewTiles :: Board -> WordPut -> Evaluator ()
 someNewTiles b w = any (empty b . fst) w `evalBool`
   ("You didn't play any new tiles: " <> formatWP w <> T.pack (show w)) 
