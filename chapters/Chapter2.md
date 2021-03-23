@@ -421,7 +421,8 @@ valGameRulesAndDict ws g = do
 
 ```
 
-In the next chapter we will use these validators when we start playing the game.
+In the next chapter we will use these validators when we start playing moves
+within the game.
 
 ## Tests
 

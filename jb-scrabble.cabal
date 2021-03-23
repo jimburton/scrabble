@@ -61,6 +61,7 @@ executable scrabble
   other-modules:       ScrabbleCLI.Game
                      , ScrabbleCLI.Out
                      , ScrabbleCLI.Blanks
+                     , Scrabble
                      , Scrabble.Types
                      , Scrabble.Evaluator
                      , Scrabble.Game.Game

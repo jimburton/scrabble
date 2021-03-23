@@ -19,6 +19,7 @@ module Scrabble.Board.Board
   , getDirection
   , newTiles
   , freedomsFromWord
+  , freeness
   , wordPutToWord )
   where
 
@@ -57,6 +58,7 @@ import Scrabble.Board.Internal
   , newTiles
   , adjacent
   , freedomsFromWord
+  , freeness
   , wordPutToWord )
 import Scrabble.Board.Bonus
   ( bonusMap )

@@ -29,15 +29,13 @@ import Scrabble.Types
   , Rack
   , Player(..)
   , Turn(..)
-  , FreedomDir(..)
-  , Dir(..)
   , Letter(Blank))
 import Scrabble.Board.Board
   ( rackValue
   , adjacent
   , empty
   , freedomsFromWord
-  , getDirection
+  , freeness 
   , newTiles )
 import Scrabble.Board.Bag 
   ( fillRack
@@ -87,12 +85,9 @@ updatePlayables w g = do
       -- assuming any existing playable that is adjacent to the new word
       -- will no longer be playable.
       ps' = Map.filterWithKey (\k _ -> not (any (adjacent k) ntp))  ps
-      d   = getDirection w
       fs  = freedomsFromWord nt b
-      f (u,p) = if d == HZ
-                then filter ((>0) . snd) [(UpD,u), (DownD, p)]
-                else filter ((>0) . snd) [(LeftD, u), (RightD, p)]
-      nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
+      f (u,p) = filter ((>0) . freeness) [u, p]
+      nps = foldl (\acc (p,l,(f1,f2)) -> Map.insert p (l,f (f1,f2)) acc) ps' fs
   (trace $ "Playables: \n" ++ show nps) pure (g { playable = nps })
 
 -- | Update the rack of the current player and the bag.

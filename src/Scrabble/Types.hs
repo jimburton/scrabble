@@ -23,6 +23,7 @@ module Scrabble.Types
   , Bag
   , Dict
   , Playable
+  , Freedom
   , FreedomDir(..)
   , PosTransform
   , Evaluator(..)

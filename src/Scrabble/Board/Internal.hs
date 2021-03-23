@@ -21,6 +21,7 @@ module Scrabble.Board.Internal
   , updateSquare
   , newTilesInMove
   , newTiles
+  , freeness
   , freedomsFromWord
   , getDirection
   , adjacent
@@ -45,7 +46,9 @@ import Scrabble.Types
   , WordPut
   , PosTransform
   , Word
-  , Tile ) 
+  , Tile
+  , FreedomDir(..)
+  , Freedom) 
 import Scrabble.Lang.Word
   ( wordToText )
   
@@ -68,18 +71,22 @@ adjacent :: Pos -> Pos -> Bool
 adjacent (r1,c1) (r2,c2) = abs (r1-r2) <= 1 && abs (c1-c2) <= 1
 
 -- Find neighbouring squares and diagonal squares to a position on the board.
-adjacents :: Pos -> [Pos]
-adjacents (r,c) = neighbours (r,c) ++
-  filter onBoard [(r-1,c-1), (r-1,c+1), (r+1,c-1), (r+1,c+1)]
+--adjacents :: Pos -> [Pos]
+--adjacents (r,c) = neighbours (r,c) ++
+--  filter onBoard [(r-1,c-1), (r-1,c+1), (r+1,c-1), (r+1,c+1)]
 
 -- * Playable spaces on the board
+
+-- | The value of a Freedom
+freeness :: Freedom -> Int
+freeness = snd
 
 -- The playable spaces around an occupied position on the board.
 freedom :: Board  -- ^ The board.
         -> Pos    -- ^ The pos.
         -> Letter -- ^ The letter on the pos.
         -> Dir    -- ^ The direction of the word the letter is part of.
-        -> (Pos, Letter, (Int, Int))
+        -> (Pos, Letter, (Freedom, Freedom))
 freedom b p l d =
   if d == HZ
   then rowFreedom b p l 
@@ -89,7 +96,7 @@ freedom b p l d =
 rowFreedom :: Board        -- ^ The board.
            -> Pos          -- ^ The pos.
            -> Letter       -- ^ The letter on the pos.
-           -> (Pos, Letter, (Int, Int))
+           -> (Pos, Letter, (Freedom, Freedom))
 rowFreedom b (r,c) l =
   let mins = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decRow p)))
              (iterate decRow (r,c))
@@ -97,13 +104,13 @@ rowFreedom b (r,c) l =
       maxs = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incRow p)))
              (iterate incRow (r,c))
       maxR = if null maxs then r else fst (last maxs)  in
-    ((r,c),l, (r-minR,maxR-r))
+    ((r,c),l, ((UpD, r-minR), (DownD, maxR-r)))
 
 -- The playable space to the left and right of this position.
 colFreedom :: Board        -- ^ The board.
            -> Pos          -- ^ The pos.
            -> Letter       -- ^ The letter on the pos.
-           -> (Pos, Letter, (Int, Int))
+           -> (Pos, Letter, (Freedom, Freedom))
 colFreedom b (r,c) l =
   let mins = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decCol p)))
              (iterate decCol (r,c))
@@ -111,21 +118,22 @@ colFreedom b (r,c) l =
       maxs = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incCol p)))
              (iterate incCol (r,c))
       maxC = if null maxs then c else snd (last maxs) in 
-    ((r,c),l, (c-minC,maxC-c))
+    ((r,c),l, ((LeftD, c-minC), (RightD, maxC-c)))
 
 -- | All of the playable spaces around a word on the board.
-freedomsFromWord :: WordPut -> Board -> [(Pos, Letter, (Int, Int))]
+freedomsFromWord :: WordPut -> Board -> [(Pos, Letter, (Freedom, Freedom))]
 freedomsFromWord w b =
   let d  = getDirection w in 
-    filter (\(_,_,(n,s)) -> n>0 || s>0) $ map (\(p,(l,_)) -> freedom b p l d) w
+    filter (\(_,_,(n,s)) -> freeness n > 0 || freeness s > 0)
+    $ map (\(p,(l,_)) -> freedom b p l d) w
 
 -- Is this position on the board and unoccupied?
 canPlay :: Board -> Pos -> Bool
 canPlay b p = onBoard p && isNothing (getSquare b p)
 
 -- Is this position on the board, unoccupied and are all of its adjacent positions free?
-isFree :: Board -> Pos -> Bool
-isFree b p = canPlay b p && not (any (isJust . getSquare b) (adjacents p))
+--isFree :: Board -> Pos -> Bool
+--isFree b p = canPlay b p && not (any (isJust . getSquare b) (adjacents p))
 
 -- | Format a WordPut as Text.
 formatWP :: WordPut -> Text
