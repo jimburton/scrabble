@@ -25,7 +25,8 @@ import Scrabble.Types
   ( Game(..)
   , Player(..)
   , Evaluator(..)
-  , Dir(..))
+  , Dir(..)
+  , Move(..))
 import ScrabbleCLI.Out
   ( printBoard
   , printPlayer
@@ -107,11 +108,11 @@ takeTurnManual g = runInputT defaultSettings loop
                  row = read rowStr :: Int
                  col = read colStr :: Int
                  dir = if map toUpper dirStr == "H" then HZ else VT
-                 wp  = makeWordPut wd (row,col) dir is
+                 wp  = makeWordPut (T.pack wd) (row,col) dir is
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-               Ev (Right (g',(_,sc))) -> liftIO $ takeTurn g' (Just (T.pack $ show sc))
+               Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mvScore mv)))
 
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game

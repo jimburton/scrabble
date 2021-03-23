@@ -22,7 +22,9 @@ import Data.Text as T
 import Scrabble.Types
   ( Player(..)
   , Word
-  , WordPut )
+  , WordPut
+  , Move(..))
+import qualified Scrabble.Types as S (Move)
 import ScrabbleWeb.Types
   ( WebGame(..)
   , Game(..)
@@ -79,12 +81,12 @@ msgTurn :: WebGame -> IO ()
 msgTurn wg = msg wg (MsgTurn $ turn (theGame wg))
 
 -- | Acknowledge to a legal move, sending the move to both players.
-msgMoveAck :: WebGame            -- ^ The webgame.
-           -> WordPut            -- ^ The wordput that was played.
-           -> ([Word],[Int],Int) -- ^ The additional words, the indices of blanks and the score.
+msgMoveAck :: WebGame  -- ^ The webgame.
+           -> S.Move   -- ^ The move that was played.
            -> IO ()
-msgMoveAck wg w i = do
-  msg wg (MsgMoveAck (MoveAck (Right (w,i))))
+msgMoveAck wg mv = msg wg (MsgMoveAck
+                           (MoveAck
+                             (Right (mvWord mv, (mvAdditionalWords mv, mvBlanks mv, mvScore mv)))))
 
 -- | Send the scores to both players.
 msgScores :: WebGame -> IO ()

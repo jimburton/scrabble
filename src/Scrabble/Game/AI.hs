@@ -20,11 +20,15 @@ import Debug.Trace
 import Prelude hiding ( Word )
 import qualified Data.Trie.Text as Trie
 import qualified Data.Map as Map
-import Data.List ( maximumBy )
-import Data.Functor ( (<&>) )
-import Data.Text ( Text )
-import System.Random ( StdGen )
-import Control.Monad ( msum )
+import Data.Maybe
+  ( isJust
+  , fromJust )
+import Data.List (maximumBy)
+import Data.Functor ((<&>))
+import Data.Text (Text)
+import qualified Data.Text as T
+import System.Random (StdGen)
+import Control.Monad (msum)
 import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Types
@@ -32,13 +36,15 @@ import Scrabble.Types
   , Game(..)
   , Player(..)
   , FreedomDir(..)
+  , Freedom
   , Rack
   , WordPut
   , Pos
   , Dir(..)
   , Word
   , Turn(..)
-  , Letter(Blank))
+  , Letter(Blank)
+  , Move(..) )
 import Scrabble.Board.Board
   ( makeWordPut
   , updateBoard
@@ -109,29 +115,33 @@ newGame1P pName theGen d =
 --   TODO if the AI can't find a word, swap tiles instead of passing.
 --   TODO handle blanks
 moveAI :: Game      -- ^ The game.
-       -> Evaluator (Game, (WordPut,[Word],[Int],Int))
+       -> Evaluator (Game, Move)
 moveAI g = do
   let r  = rack (getPlayer g)
       mw = findWord g (filter (/=Blank) r)  
   case mw of
-    Nothing -> pass g >>= \g' -> pure (g',([],[],[],0))
+    Nothing -> pass g >>= \g' -> pure (g', Move [] [] [] 0)
     Just (w,aw)  -> scoreWords g w aw >>=
                     \i -> setScore g { firstMove = False } i >>= updatePlayer w
                     >>= updatePlayables w >>= updateBoard w
-                    >>= toggleTurn <&> (,(w,map wordPutToWord (w:aw),[],i))
+                    >>= toggleTurn <&> (, Move w (map wordPutToWord (w:aw)) [] i)
 
 -- Pick a word for the AI to play, along with the additional words it generates. 
 findWord :: Game     -- The game.
          -> Rack     -- The rack.
          -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findWord g r = msum $ Map.mapWithKey findWord' (playable g)
-  where  findWord' k (l,ps) =
-          trace("findWord' at pos "<>show ps<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
+findWord g r = let ws = Map.map fromJust $ Map.filter isJust $ Map.mapWithKey findWord' (playable g) in
+  if null ws
+  then Nothing
+  else Just (maximumBy (\o1 o2 -> length (fst o1) `compare` length (fst o2)) (Map.elems ws))
+  where findWord' :: Pos -> (Letter,[Freedom]) -> Maybe (WordPut, [WordPut])
+        findWord' k (l,fs) =
+          trace("findWord' at pos "<>show fs<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
                          case fd of
                            UpD    -> findPrefixOfSize g k l r (fd,i) 
                            DownD  -> findSuffixOfSize g k l r (fd,i) 
                            LeftD  -> findPrefixOfSize g k l r (fd,i) 
-                           RightD -> findSuffixOfSize g k l r (fd,i)) ps
+                           RightD -> findSuffixOfSize g k l r (fd,i)) fs
 
 -- Find a word of at least a certain size that ends with a certain letter.
 findPrefixOfSize :: Game             -- The dictionary.

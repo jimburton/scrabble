@@ -21,7 +21,7 @@ import Data.Maybe      ( fromJust )
 import qualified Data.Text as T
 import Scrabble.Lang.Letter
   ( letterFromChar
-  , toChar )
+  , letterToChar )
 import Scrabble.Types
   ( Word
   , WordPut )
@@ -30,7 +30,7 @@ import Scrabble.Types
 
 -- | Stringify a @Word@.
 wordToString :: Word -> String
-wordToString = fmap toChar
+wordToString = fmap letterToChar
 
 -- | Convert a @String@ to @Word@.
 stringToWord :: String -> Maybe Word

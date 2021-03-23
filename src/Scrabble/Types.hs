@@ -28,7 +28,8 @@ module Scrabble.Types
   , PosTransform
   , Evaluator(..)
   , Validator
-  , Tile )
+  , Tile
+  , Move(..))
 
 where
 
@@ -136,6 +137,16 @@ newtype Evaluator a = Ev (Either Text a)
 -- | Validator is the type of functions that validate words to be played.
 --   It returns unit or fails with an error message.
 type Validator = [WordPut] -> Game -> Evaluator ()
+
+-- | The Record returned by move functions.
+data Move = Move
+            { mvWord            :: WordPut -- ^ The word that was played.
+            , mvAdditionalWords :: [Word]  -- ^ The additional words.
+            , mvBlanks          :: [Int]   -- ^ The positions in the word that were blank.
+            , mvScore           :: Int     -- ^ The score.
+            }
+          deriving (Show)
+
 
 
 

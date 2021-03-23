@@ -19,16 +19,15 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Data.Text ( Text )
 import Data.List.Split (chunksOf) 
-import Scrabble.Board.Bonus
-  ( bonusMap )
+import Scrabble.Board.Bonus (bonusMap)
 import Scrabble.Types
   ( Board
   , Player(..)
   , Letter
   , Tile )
 import Scrabble.Lang.Letter
-  ( toChar
-  , scoreLetter ) 
+  ( scoreLetter
+  , letterToChar ) 
 
 -- =============== Functions for turning boards into text =========== --
 
@@ -52,7 +51,7 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
                                 Nothing -> "  |"
                                 Just b' -> T.pack (show b') <> "|"
                          else "  |"
-                       Just (t,_) -> T.pack [' ', toChar t, '|']
+                       Just (t,_) -> T.pack [' ', letterToChar t, '|']
   topNumbers    = "  |" <> T.concat (map (\i -> showI i <> "|") [0..14]) <> "\n"
   showI         :: Int -> Text
   showI i       = if i < 10 then " " <> T.pack (show i) else T.pack (show i)
@@ -75,7 +74,7 @@ showPlayer p = top <> playerLine <> rackLine <> bottom where
   line     c = T.pack (replicate 46 c) <> "\n"
   top        = "\n" <> line '*'
   playerLine = name p <> " (" <> T.pack (show (score p)) <> ")\n"
-  rackLine   = let strs   = map (T.pack . (:"") . toChar) (rack p)
+  rackLine   = let strs   = map (T.pack . (:"") . letterToChar) (rack p)
                    scores = map (T.pack . show . scoreLetter) (rack p) in
                  T.intercalate ", " strs <> "\n"
                  <> T.intercalate ", " scores <> "\n"

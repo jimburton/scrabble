@@ -222,27 +222,21 @@ findWords :: Game      -- ^ The dictionary to search
 findWords g ws = map textToWord $ filter (`Trie.member` dict g) ws
 ```
 
-From the words returned by `findPrefixes`, we want only those that end
-with the desired letter and are within the desired length. When we
-come to look for suffixes of words we will also want to find only ones
-of a certain length, and two functions that did that would be
-identical apart from one or two details.  So we can factor this into a
-function that finds words from the dictionary of a certain length, and
-two functions that filter the dictionary search in different ways.
+In one context we will need to filter the words found by
+`findPrefixes` to include only those that end with the desired letter
+and are within the desired length, and in another context filter
+them to be those that begin with a certain letter and are of a certain
+length.
+
+Two functions that do that would be identical apart from one or two
+details.  So we can factor this into a function that finds words from
+the dictionary of a certain length, and then two functions that filter
+the results of that search in different ways.
 
 ```haskell
 -- A function for finding words in the dictionary.
 type WordFinder = Word -> [Word] 
-```
 
-The `findPrefixOfSize` function makes a `WordFinder` that calls
-`findPrefixes` then filters the output for those words that end with
-the right letter. It passes this to `findWordOfSize`. It's possible
-that there aren't any words that fit the bill, so these functions
-returns a `Maybe` of the word it found and the additional words the
-placement of this word will generate.
-
-```haskell
 -- Find a word of a certain size.
 findWordOfSize :: Game             -- The game.
                -> WordFinder       -- Function that will query the dictionary.
@@ -271,7 +265,7 @@ findWordOfSize g wf k l r (fd,i) =
              Ev (Left _)   -> Nothing
              Ev (Right aw) -> Just (wp,aw)
 ```
-The `WordFinder`, `wf`, in the definition of `findWordOfSize` is doing the heavy lifting
+The `WordFinder`, `wf`, in `findWordOfSize` is doing the heavy lifting
 of finding the words, whle the rest of the function is about picking the longest one,
 making it into a `WordPut` and finding the additional words. 
 
@@ -290,9 +284,10 @@ findPrefixOfSize g p l r (fd,i) =
   findWordOfSize g (filter ((==l) . last) . findPrefixes g) p l r (fd,i)
 ```
 
-The `findSuffixOfSize` uses the feature of our trie that allos us to narrow
-it down to only those words that begin with a certain sequence of letter. So 
-we pass a game with a restricted dictionary to `findWordOfSize.
+The `findSuffixOfSize` uses the feature of our trie that allows us to
+narrow it down to a new trie containing only those words that begin
+with a certain sequence of letter. So we pass a game with a restricted
+dictionary to `findWordOfSize`.
 
 ```haskell
 -- Find a word of at least a certain size that begins with a certain letter.
@@ -306,20 +301,72 @@ findSuffixOfSize g p l = let g' = g { dict = Trie.submap (letterToText l) (dict 
   findWordOfSize g (findPrefixes g') p l
 ```
 
-Finally, we can put all this together to find a workd.
+Finally, we can put all this together to find a word. Inside the `findWord` function
+we map an inner function, `findWord'`, over the map of playable positions. This creates
+a list of `Maybes`, each of which is `Nothing` or the longest word playable at a position.
+We filter the `Nothing` values and find the longest word in the list, if there is one. 
 
 ```haskell
+-- Pick a word for the AI to play, along with the additional words it generates. 
 findWord :: Game     -- The game.
          -> Rack     -- The rack.
          -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findWord g r = msum $ Map.mapWithKey findWord' (playable g)
-  where  findWord' k (l,ps) =
-          msum $ map (\(fd,i) ->
+findWord g r = let ws = filter isJust $ Map.mapWithKey findWord' (playable g) in
+  if null ws
+  then Nothing
+  else maximumBy (\w1 w2 -> T.length w1 `compare` T.length w2) ws
+  where findWord' :: Pos -> (Letter,[Freedom]) -> Maybe (WordPut, [WordPut])
+        findWord' k (l,fs) =
+          trace("findWord' at pos "<>show ps<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
                          case fd of
                            UpD    -> findPrefixOfSize g k l r (fd,i) 
                            DownD  -> findSuffixOfSize g k l r (fd,i) 
                            LeftD  -> findPrefixOfSize g k l r (fd,i) 
-                           RightD -> findSuffixOfSize g k l r (fd,i)) ps
+                           RightD -> findSuffixOfSize g k l r (fd,i)) fs
+```
+
+Now that we can find a word, we can play a move. In thinking about
+writing the `moveAI` function we uncover a discrepancy with the way
+`move` works for human players. That function returns a pair with type
+`(Game, ([Word],Int))` in the `Evaluator` monad, where the list of
+words is the word played and all additional words and the int is the
+score. This won't quite do for the AI version. We need to return the
+word to play as a `WordPut`, so we know where to put it. Although we
+haven't handled blanks yet, when we do we will need to know which positions
+in the word were originally blank, so we will have to return a list of indices
+too. Taking the updated game and the score into account, this is an awful lot 
+to pack into a tuple so for readability we'll make a Record type, `Move`, and
+refactor the `move` function to return the same type.
+
+```haskell
+data Move = Move { mvWord :: WordPut
+                 , mvAdditionalWords :: [Word]
+                 , mvBlanks          :: [Int]
+                 , mvScore           :: Int
+                 }
+                 deriving (Show)
+				 
+-- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
+--   Validation of the word is carried out when finding the word.
+--   Sets the new board, updates the current player's score, refills their rack with letters, then
+--   toggles the current turn.
+--   Returns:
+--     + the updated game,
+--     + the word played,
+--     + additional words generated by the move,
+--     + the indices of any blanks played in the move, and
+--     + the score.
+moveAI :: Game      -- ^ The game.
+       -> Evaluator (Game, Move)
+moveAI g = do
+  let r  = rack (getPlayer g)
+      mw = findWord g (filter (/=Blank) r)
+  case mw of
+    Nothing -> pass g >>= \g' -> pure (g',([],[],[],0))
+    Just (w,aw)  -> scoreWords g w aw >>=
+                    \i -> setScore g { firstMove = False } i >>= updatePlayer w
+                    >>= updatePlayables w >>= updateBoard w
+                    >>= toggleTurn <&> (,Move w (map wordPutToWord (w:aw)) [] i)
 ```
 	
 *Work in progress*: The AI would be much better if it were more
