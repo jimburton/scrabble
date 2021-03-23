@@ -33,13 +33,11 @@ it. If the direction of the freedom is `UpD` or `LeftD` the AI needs
 to find a word that *ends* with the letter in question. If the
 direction is `RightD` or `DownD` it needs to find a word that *begins*
 with the letter in question. In each case the freedom tells the AI the
-maximum length of the word. The functions that search for words are in
-`Scrabble.Lang.Search` and `Scrabble.Lang.Dict` and use the API of the
-`Trie` datatype.
+maximum length of the word.
 	
 The freedoms map needs to be updated after each word is played -- each
-new word *adds* new playable positions but also may *reduce* the
-playable space around existing playable positions or remove playable
+new word adds new playable positions but also may reduce the
+playable space around existing playable positions, or remove playable
 spaces entirely. The figure below shows the freedoms on the board
 after the first move. The freedom of one of the positions with a tile
 on it is shown: `[(LeftD, 7), (RightD, 7)]`. In this case, all of the
@@ -51,9 +49,8 @@ Note that it would be possible to make a legal move by extending the
 word with a prefix or suffix.  For instance, playing tiles to make the
 word `FOULED`, or `BEFOUL` or even putting tiles before and after the
 word to make `BEFOULED`. The AI currently makes no attempt to do
-this. Nor does it try to get a high score! This could be done by
-modifying `Scrabble.Game.AI`, especially the `findWord` function and
-the functions it depends on.
+this. Nor does it try to get a high score! We will talk about these
+optimisations at the end of the chapter
 	
 ![](/images/freedoms1.png)
 	
@@ -102,8 +99,8 @@ colFreedom b (r,c) l =
 
 When a move is played, we only want to calculate the freedoms in one direction, the
 opposite of the one in which the word was played. If a word was played horizontally
-we want to calculate the row freedom (up and down), vice versa the column freedom
-(left and right).
+we want to calculate the row freedom (up and down), and if *vice versa* the column freedom
+(to the left and right).
 
 ```haskell
 -- The playable space around an occupied position on the board.
@@ -118,7 +115,7 @@ freedom b p l d =
   else colFreedom b p l 
 ```
 
-Now we need to map the `freedom` function over every position in a new `WordPut`.
+Now we can map the `freedom` function over every position in a new `WordPut`.
 
 ```haskell
 -- | The value of a Freedom
@@ -136,7 +133,7 @@ freedomsFromWord w b =
 ## Updating the map of playable positions
 
 We write a function `updatePlayables`, which needs to be added to the
-chain of evaluations in the `move` function.
+chain of evaluations after `updateBoard` in the `move` function.
 
 ```haskell
 newTiles :: Board -> WordPut -> [(Pos, Tile)]
@@ -162,16 +159,154 @@ updatePlayables w g = do
 
 ## Finding a word
 
-Now we now where the AI might be able to play a word, we need to pick
-one based on the contents of the AI player's rack. To make things
+Now we know where the AI might be able to play a word, we need to pick
+a word based on the contents of the AI player's rack. To make things
 easier for ourselves, we won't consider blanks for now.
 
-If a freedom at position `p` is *up* or *to the left* we need to find
-a word that *begins* with the tile on `p`. Otherwise we need to find a
-word that *ends* with that tile. In each case, the freedom tells us the 
-maximum size of the word. 
+We'll start by finding all the words that can be made with a rack and
+that end with a given letter that isn't in the rack. We write
+functions to find all possible combinations of a rack. We start by
+finding the *powerset* of the letters, the set (or list, in this case)
+of all subsets (sublists). The function that does that, `powerSet`, is
+very concise! It makes use of the fact that the list type is a monad. 
+Read more about it at http://evan-tech.livejournal.com/220036.html, or
+just accept the fact that it works :-)
 
+```haskell
+-- Generate a power set.  The algorithm used here is from
+--   <http://evan-tech.livejournal.com/220036.html>.
+powerSet :: [a] -> [[a]]
+powerSet = filterM (const domain)
+```
+Then we use the `permutations` function from `Data.List`, which
+generates all combinations of the contents of a list, and remove
+any duplicates from the list.
 
+```haskell
+-- Generate a power set's permutations.
+powerSetPermutations :: [a] -> [[a]]
+powerSetPermutations = concatMap permutations . powerSet
+
+-- Generate a power set's unique permutations.
+uniquePowerSetPermutations :: Eq a => [a] -> [[a]]
+uniquePowerSetPermutations = nub . powerSetPermutations
+```
+Finally, words need to be at least two letters long so in the
+`perms` function we use `filter`.
+
+```haskell
+-- Permutations of a list
+perms :: Eq a => [a] -> [[a]]
+perms = filter ((>1) . length) . uniquePowerSetPermutations 
+```
+Now we can find out which of these permutations are words in the dictionary.
+The function is called `findPrefixes` because it will include a word and all
+of the prefixes of that word that are in the dictionary too, like PATSY, PATS
+and PAT.
+
+```haskell
+-- | Convert a @Word@ to @Text@
+wordToText :: Word -> Text
+wordToText w = T.pack (wordToString w)
+
+-- | Find all the prefixes in the dictionary that can be made with the given letters.
+findPrefixes :: Game    -- ^ The game.
+             -> Word    -- ^ The letters to build the words from.
+             -> [Word]
+findPrefixes g ls = findWords g (map wordToText (perms ls))
+
+-- | Find all the words in the dictionary that can be made with the given letters.
+findWords :: Game      -- ^ The dictionary to search
+          -> [Text]    -- ^ The letters to build the words from.
+          -> [Word]
+findWords g ws = map textToWord $ filter (`Trie.member` dict g) ws
+```
+
+From the words returned by `findPrefixes`, we want only those that end
+with the desired letter and are within the desired length. When we
+come to look for suffixes of words we will also want to find only ones
+of a certain length, and two functions that did that would be
+identical apart from one or two details.  So we can factor this into a
+function that finds words from the dictionary of a certain length, and
+two functions that filter the dictionary search in different ways.
+
+```haskell
+-- A function for finding words in the dictionary.
+type WordFinder = Word -> [Word] 
+```
+
+The `findPrefixOfSize` function makes a `WordFinder` that calls
+`findPrefixes` then filters the output for those words that end with
+the right letter. It passes this to `findWordOfSize`. It's possible
+that there aren't any words that fit the bill, so these functions
+returns a `Maybe` of the word it found and the additional words the
+placement of this word will generate.
+
+```haskell
+-- Find a word of a certain size.
+findWordOfSize :: Game             -- The game.
+               -> WordFinder       -- Function that will query the dictionary.
+               -> Pos              -- The start or end point of the word.
+               -> Letter           -- The letter on the board that this word will connect to.
+               -> Rack             -- The letters from the player's hand to make up the word.
+               -> (FreedomDir,Int) -- The direction and max length of the word.
+               -> Maybe (WordPut,[WordPut]) -- The word and its additional words.
+findWordOfSize g wf k l r (fd,i) =
+  let r' = l : take 5 (filter (/=Blank) r)
+      ws = filter ((<=i) . length) $ wf r' in
+    if null ws
+    then Nothing
+    else let d   = dict g
+             w   = longest ws
+             len = length w - 1
+             dir = if fd == UpD || fd == DownD then VT else HZ
+			 -- where does this word begin?
+             pos = case fd of
+               UpD    -> (fst k-len,snd k)
+               DownD  -> k
+               LeftD  -> (fst k,snd k-len)
+               RightD -> k
+             wp = makeWordPut (wordToString w) pos dir [] in
+           case additionalWords g wp of
+             Ev (Left _)   -> Nothing
+             Ev (Right aw) -> Just (wp,aw)
+```
+The `WordFinder`, `wf`, in the definition of `findWordOfSize` is doing the heavy lifting
+of finding the words, whle the rest of the function is about picking the longest one,
+making it into a `WordPut` and finding the additional words. 
+
+The `findPrefixOfSize` function passes in a `WordFinder` that finds all prefixes then filters
+then for ones that end with the desired letter. 
+
+```haskell
+-- Find a word of at least a certain size that ends with a certain letter.
+findPrefixOfSize :: Game             -- The dictionary.
+                 -> Pos              -- The end point of the word.
+                 -> Letter           -- The letter on the board that this word will connect to.
+                 -> Rack             -- The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- The direction and max length of the word.
+                 -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
+findPrefixOfSize g p l r (fd,i) =
+  findWordOfSize g (filter ((==l) . last) . findPrefixes g) p l r (fd,i)
+```
+
+The `findSuffixOfSize` uses the feature of our trie that allos us to narrow
+it down to only those words that begin with a certain sequence of letter. So 
+we pass a game with a restricted dictionary to `findWordOfSize.
+
+```haskell
+-- Find a word of at least a certain size that begins with a certain letter.
+findSuffixOfSize :: Game             -- The game.
+                 -> Pos              -- The starting point of the word.
+                 -> Letter           -- The letter on the board that this word will connect to.
+                 -> Rack             -- The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- The direction and max length of the word.
+                 -> Maybe (WordPut,[WordPut]) -- The word and the additional words.
+findSuffixOfSize g p l = let g' = g { dict = Trie.submap (letterToText l) (dict g)} in
+  findWordOfSize g (findPrefixes g') p l
+```
+
+Finally, we can put all this together to find a workd.
 
 ```haskell
 findWord :: Game     -- The game.
@@ -296,6 +431,12 @@ Player
 ```
 The Ai played the word ZEP (there are some very strange words
 in the Scrabble dictionary). 
+
+## Optimisation
+
+This could be done by
+modifying `Scrabble.Game.AI`, especially the `findWord` function and
+the functions it depends on.
 
 ## Tests
 

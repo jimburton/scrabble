@@ -25,13 +25,12 @@ module Scrabble.Board.Board
 
 import Debug.Trace
 import qualified Data.Map as Map
-import Data.Maybe
-  ( fromJust )
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Maybe (fromJust)
 import Data.Array
-import Data.Char
-  ( toUpper )
-import Data.List
-  ( splitAt )
+import Data.Char (toUpper)
+import Data.List (splitAt)
 import Scrabble.Lang.Letter
   ( charToLetterMap
   , scoreLetter )
@@ -111,17 +110,17 @@ additionalWords g w = updateBoard w g >>= \g' -> do
       mWds   = if oppDir == HZ then map (wordOnRow newb) nt else  map (wordOnCol newb) nt
   pure $ filter ((>1) . length) mWds
 
--- | Make a WordPut from a string.
-makeWordPut :: String -- ^ The string.
+-- | Make a @WordPut@ from a @Text@.
+makeWordPut :: Text -- ^ The @Text@.
             -> Pos    -- ^ The starting position on the board.
             -> Dir    -- ^ The direction in which the word is to be placed.
             -> [Int]  -- ^ Indices of the letters which were blanks
-            -> WordPut -- ^ The WordPut.
+            -> WordPut -- ^ The @WordPut@.
 makeWordPut w pos dir is =
   let f  = if dir == HZ then incCol else incRow 
       wp = zip (iterate f pos)
            (map (\c -> let l = fromJust (Map.lookup (toUpper c) charToLetterMap) in 
-                                             (l, scoreLetter l)) w) in
+                                             (l, scoreLetter l)) $ T.unpack w) in
     foldl zeroScore wp is 
 
 -- Replace an element at a certain index in a list.

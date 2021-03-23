@@ -50,9 +50,9 @@ import Scrabble.Board.Bag
   ( newBag
   , fillRack )
 import Scrabble.Lang.Letter
-  ( toText )
+  ( letterToText )
 import Scrabble.Lang.Word
-  ( wordToString )
+  ( wordToText )
 import Scrabble.Game.Game
   ( pass )
 import Scrabble.Game.Internal
@@ -140,7 +140,8 @@ findPrefixOfSize :: Game             -- The dictionary.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findPrefixOfSize g p l = findWordOfSize g (filter ((==l) . last) . findPrefixes g) p l
+findPrefixOfSize g p l r (fd,i) =
+  findWordOfSize g (filter ((==l) . last) . findPrefixes g) p l r (fd,i)
 
 -- Find a word of at least a certain size that begins with a certain letter.
 findSuffixOfSize :: Game             -- The game.
@@ -149,7 +150,7 @@ findSuffixOfSize :: Game             -- The game.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut,[WordPut]) -- The word and the additional words.
-findSuffixOfSize g p l = let g' = g { dict = Trie.submap (toText l) (dict g)} in
+findSuffixOfSize g p l = let g' = g { dict = Trie.submap (letterToText l) (dict g)} in
   findWordOfSize g (findPrefixes g') p l
 
 -- Get the longest sublist in a list of lists. Not safe (list must have something in it).
@@ -177,12 +178,13 @@ findWordOfSize g wf k l r (fd,i) =
              w   = longest ws
              len = length w - 1
              dir = if fd == UpD || fd == DownD then VT else HZ
+             -- where does this word begin?
              pos = case fd of
                UpD    -> (fst k-len,snd k)
                DownD  -> k
                LeftD  -> (fst k,snd k-len)
                RightD -> k
-             wp = makeWordPut (wordToString w) pos dir [] in
+             wp = makeWordPut (wordToText w) pos dir [] in
            case additionalWords g wp of
              Ev (Left _)   -> Nothing
              Ev (Right aw) -> Just (wp,aw)

@@ -28,19 +28,22 @@ import Scrabble.Types
 
 -- ===== Words ===== --
 
--- | Stringify a word.
+-- | Stringify a @Word@.
 wordToString :: Word -> String
 wordToString = fmap toChar
 
--- | Turn a string into a word.
+-- | Convert a @String@ to @Word@.
 stringToWord :: String -> Maybe Word
 stringToWord s = sequence $ letterFromChar <$> s
 
+-- | Convert a @Text@ to @Word@
 textToWord :: Text -> Word
 textToWord  t = fromJust $ stringToWord (T.unpack t)
 
+-- | Convert a @Word@ to @Text@
 wordToText :: Word -> Text
 wordToText w = T.pack (wordToString w)
 
+-- | Convert a @WordPut@ to @Text@
 wordPutToText :: WordPut -> Text
 wordPutToText = wordToText . map (\(_,(l,_)) -> l)

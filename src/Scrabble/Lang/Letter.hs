@@ -8,11 +8,11 @@ Portability : POSIX
 Functions relating to Letters for the Scrabble game.
 -}
 module Scrabble.Lang.Letter
-  ( toChar
+  ( letterToChar
   , letterFromChar
   , charToLetterMap
   , scoreLetter
-  , toText )
+  , letterToText )
   where
 
 import qualified Data.Map as Map
@@ -30,12 +30,12 @@ letterFromChar :: Char -> Maybe Letter
 letterFromChar c = Map.lookup c charToLetterMap
 
 -- | Convert a @Letter@ into a @Char@. Always valid.
-toChar :: Letter -> Char
-toChar l = fromJust $ Map.lookup l letterToCharMap
+letterToChar :: Letter -> Char
+letterToChar l = fromJust $ Map.lookup l letterToCharMap
 
 -- | Convert a @Letter@ to @Text@.
-toText :: Letter -> Text
-toText = T.pack . show
+letterToText :: Letter -> Text
+letterToText = T.pack . show
 
 -- private value.
 letterToCharList :: [(Letter,Char)]
