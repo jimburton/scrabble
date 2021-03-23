@@ -363,13 +363,15 @@ it. The `mapM` function does what we need, having the type
 mapM :: (Traversable t, Monad m) => (a -> m b) -> t a -> m (t b)
 ```
 If we use `mapM` to apply the function over the list of texts we get something with the type
-`Evaluator [()]`, pulling the monad type out of the list. We then want to compress, 
-or concatenate, the list of `()` values into a single value so we can return the 
-type `Evaluator ()`, since all we want to know is that all the words are in the 
-dictionary and if any of them weren't we'd be getting back a `Left` with an error 
-message in it. The `mconcat` function works with all instances of the `Monoid` 
-typeclass and has the type `mconcat :: Monoid a => [a] -> a`. `()` is a monoid 
-so this function is the one we need.
+`Evaluator [()]` instead of `[Evaluator ()]`, pulling the monad type out of the list. 
+
+We then want to compress, or concatenate, the list of `()` values into
+a single value so we can return the type `Evaluator ()`, since all we
+want to know is that all the words are in the dictionary and if any of
+them weren't we'd be getting back a `Left` with an error message in
+it. The `mconcat` function works with all instances of the `Monoid`
+typeclass and has the type `mconcat :: Monoid a => [a] -> a`. `()` is
+a monoid so this function is the one we need.
 
 ```haskell
 wordsInDictM :: Dict -> [Text] -> Evaluator ()
