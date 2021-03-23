@@ -1,6 +1,109 @@
 # Chapter Five: The CLI client
-	
-  
+
+The first client is a terminal-based CLI (command line interface). It's probably
+the case that nobody would want to play a two-player game of Scrabble this way, because
+you can see each other tiles. But it does work well enough for a one-player game and
+above all else it's quite a straightforward way to understand the general problem
+of writing clients that use the library and provide a user interface.
+
+The basic idea is that we'll write code that takes input from users in a loop and that
+keeps playing moves in the game until it registers the fact that the game has ended.
+
+This code will live in a separate area to the library. We wtore it under the directory
+`cli/` and add an `executable` stanza to the config file. The `cli` directory contains
+these files:
+
+```
+cli/
+├── Main.hs
+└── ScrabbleCLI
+    ├── Blanks.hs
+    ├── Game.hs
+    └── Out.hs
+```
+The `Main` module provides a way for users to start a one or two-player game then 
+passes control to functions in `ScrabbleCLI.Game`. Here is the `Main` module in
+full:
+
+```haskell
+import Data.Text (toUpper)
+import qualified Data.Text.IO as T
+import ScrabbleCLI.Game (startGame, startGameAI)
+
+-- ========= Entry point for a CLI game of Scrabble =========== --
+
+main :: IO ()
+main = do
+  T.putStrLn "Enter 1P or 2P"
+  str <- fmap toUpper T.getLine
+  case str of
+    "1P" -> doAIGame
+    "2P" -> doManualGame
+    _    -> main
+
+doManualGame :: IO ()
+doManualGame = do
+  T.putStrLn "Enter name of Player 1"
+  p1Str <- T.getLine
+  T.putStrLn "Enter name of Player 2"
+  p2Str <- T.getLine
+  startGame p1Str p2Str
+
+doAIGame :: IO ()
+doAIGame = do
+  T.putStrLn "Enter name of player"
+  pStr <- T.getLine
+  startGameAI pStr
+```
+The main effort goes into `ScrabbleCLI.Game`. The other modules, `ScrabbleCLI.Blanks` and
+`ScrabbleCLI.Out`, handle blank tiles and output to the user respectively.
+
+## Interacting with users to play the game
+
+`ScrabbleCLI.Game` contains the code that interacts with users: taking input that it interprets
+as moves, passing that to the library and providing users with the response. The first thing we
+need is to be able to start a game. This is dealt with in two functions, each of which creates
+a new `Game` object then calls the `playGame` function.
+
+```haskell
+startGame :: Text -> Text -> IO ()
+startGame p1Name p2Name = do
+  theGen <- getStdGen
+  d      <- englishDictionary
+  _ <- playGame (newGame p1Name p2Name theGen d)
+  return ()
+
+startGameAI :: Text -> IO ()
+startGameAI p1Name = do
+  theGen <- getStdGen
+  d      <- englishDictionary
+  _ <- playGame (newGame1P p1Name theGen d)
+  return ()
+```
+The `playGame` function just prints the details of the two players then passes the game
+to the `takeTurn` function, which is the top level of the loop that actually plays the game.
+It prints the current state of the board then checks whether the game is over. If so, it
+prints the result. If not, it checks whose turn it it. If the current player is a human
+player, it calls the function that reads a move from the terminal. Otherwise, it calls the
+function that plays an AI move.
+
+```haskell
+takeTurn :: Game -- ^ The game
+         -> Maybe Text -- ^ Previous score as text
+         -> IO Game
+takeTurn g msc = runInputT defaultSettings loop
+ where
+   loop :: InputT IO Game
+   loop  = do
+     liftIO $ printBoard True (board g) msc
+     if gameOver g
+       then liftIO $ doGameOver g
+       else if isAI (getPlayer g)
+            then liftIO $ takeTurnAI g
+            else liftIO $ takeTurnManual g
+
+```
+
   ```
   $ git checkout v-01
   $ cabal repl

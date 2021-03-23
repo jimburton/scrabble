@@ -5,7 +5,7 @@ An multiplayer implementation of Scrabble for teaching functional programming at
 University of Brighton. It consists of a core library, and two clients (web and CLI) for playing
 the game.
 
-The Scrabble library is (heavily) adapted from https://github.com/joshcough/Scrabble.
+The Scrabble library is inspired by https://github.com/joshcough/Scrabble.
 
 If you don't know the rules of the game you should begin by reading
 them
@@ -18,7 +18,7 @@ structures and libraries like `Data.Text`, maps, arrays and `aeson`
 are explained, as well as monadic error checking and building a
 WebSocket client to the game.
 
-Each chapter refines the initial solution ending up with something
+Each chapter refines the initial solution, ending up with something
 that is (hopefully) a clean, functional design that can easily be
 extended.
 

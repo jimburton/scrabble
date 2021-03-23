@@ -14,7 +14,6 @@ module Scrabble.Lang.Dict
   where
 
 import Data.Char        ( toUpper )
-import Prelude hiding   ( Word )
 import qualified Data.Text as T
 import qualified Data.Trie.Text as Trie
 

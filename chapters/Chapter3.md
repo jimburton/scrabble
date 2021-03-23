@@ -183,7 +183,7 @@ Now we need to write a function that plays a word onto the board in
 the normal way. It will need a `Validator`, a game, and a word to
 play. It will run in the `Evaluator` monad so failure at any point is
 handled nicely, and if all goes well it will return an updated game, a
-list of all new words and the score. Lets write this top level
+list of all new words and the score. We'll write this top level
 function then fill in the parts that it needs to do its work.
 
 ```haskell

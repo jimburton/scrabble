@@ -349,8 +349,27 @@ additionalWords b w =
       mWds   = if oppDir == HZ then map (wordOnRow b') w else map (wordOnCol b') w in
    catMaybes mWds
 ```
-To check that a word and all of its additional words are in the dictionary we apply
-`dictContainsWord` every word in the list then concatenate the result.
+To check that a word and all of its additional words are in the dictionary we first apply
+`dictContainsWord` every word in the list. That function has this type:
+
+```haskell
+dictContainsWord :: Dict -> Text -> Evaluator ()
+```
+So if we `map` `dictContainsWord d` over a list of `Text` values we will get a list of
+type `[Evaluator ()]`, a list of evaluations, whereas we want one evaluation with the list in 
+it. The `mapM` function does what we need, having the type 
+
+```haskell
+mapM :: (Traversable t, Monad m) => (a -> m b) -> t a -> m (t b)
+```
+SO if we `mapM` the function over the list of texts we get something with the type
+`Evaluator [()]`, pulling the monad type out of the list. We then want to compress, 
+or concatenate, the list of `()` values into a single value so we can return the 
+type `Evaluator ()`, since all we want to know is that all the words are in the 
+dictionary and if any of them weren't we'd be getting back a `Left` with an error 
+message in it. The `mconcat` function works with all instances of the `Monoid` 
+typeclass and has the type `mconcat :: Monoid a => [a] -> a`. `()` is a monoid 
+so this function is the one we need.
 
 ```haskell
 wordsInDictM :: Dict -> [Text] -> Evaluator ()
@@ -365,8 +384,8 @@ is different from checking the words are in the dictionary, something we may or 
 do every time. It could be handy to turn off dictionary checking during development, and if an
 AI player finds a word in the dictionary there's no point in checking it again.
 
-Lets make a type for validation and combine the various smaller checks we have into coherent
-blocks.
+We can turn the idea of validation into an abstraction (a type) and
+combine the various smaller checks we have into coherent blocks.
 
 ```haskell
 validateMove :: Board -> Player -> WordPut -> Bool -> Evaluator ()

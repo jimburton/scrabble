@@ -204,8 +204,9 @@ on it).
 In many languages we would create an array of arrays to achieve this,
 where each element of the 15-element outer array is a 15-element array
 representing a row. However, Haskell supports true multi-dimensional
-arrays. The `Array` type constructor takes two arguments, the type of
-indices and the type of elements.
+arrays, so we can create one where the type of indices is
+`(Int,Int)`. The `Array` type constructor takes two arguments, the
+type of indices and the type of elements.
 
 ```haskell
 import Data.Array
@@ -213,8 +214,8 @@ import Data.Array
 type Board = Array (Int,Int) (Maybe Tile)
 
 ```
-Then, if we have a board called `b`, we can access the value in row `r`
-column `c` by `b ! (r,c)`. These `(r,c)` pairs are going to be used a lot
+Then, if we have a board called `b`, we can access the value in row `r`,
+column `c`, by `b ! (r,c)`. These `(r,c)` pairs are going to be used a lot
 so we make a type for those too.
 
 ```haskell
@@ -285,7 +286,7 @@ a lot of space but allows the flexibility in searching that we
 need. The [trie](https://en.wikipedia.org/wiki/Trie) allows us to find
 a word and all of its prefixes very quickly (in `O(m)` time, where `m`
 is the length of the word -- i.e. independently of `n`, the size of
-the dictionary!). 
+the dictionary). 
 
 Other good options for storing a dictionary of words include the
 Suffix Tree and Directed Acyclic Word Graph. Both of these use less
@@ -325,10 +326,14 @@ Now we can create the dictionary and check whether a word exists as
 follows:
 
 ```haskell
+import Data.Char        ( toUpper )
+import qualified Data.Text as T
+import qualified Data.Trie.Text as Trie
+
 readDictionary :: FilePath -> IO Dict
 readDictionary dict = do
   ls <- lines <$> readFile dict
-  return (Trie.fromList [(pack (map toUpper l), ()) | l <- ls])
+  return (Trie.fromList [(T.pack (map toUpper l), ()) | l <- ls])
 
 dictContainsWord :: Dict -> Text -> Bool
 dictContainsWord = flip Trie.member 
