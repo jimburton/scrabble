@@ -308,9 +308,9 @@ function prefixOfWord(word) {
 	var p1 = word[0][0];
 	var p2 = word[1][0];
 	if (p1[0] < p2[0]) { // it's a vertical word
-	    prefix = lettersUp([p1[0]-1,p1[1]]);
+	    prefix = takeLetters([p1[0]-1,p1[1]], (([r,c]) => [r-1,c]));
 	} else {
-	    prefix = lettersToLeft([p1[0],p1[1]-1]);
+	    prefix = takeLetters([p1[0],p1[1]-1], (([r,c]) => [r,c-1]));
 	}
     }
     return prefix;
@@ -324,50 +324,19 @@ function suffixOfWord(word) {
 	var p2 = word[1][0];
 	var last = word[word.length - 1][0];
 	if (p1[0] < p2[0]) { // it's a vertical word
-	    suffix = lettersDown([last[0]+1,last[1]]);
+	    suffix = takeLetters([last[0]+1,last[1]], (([r,c]) => [r+1,c]));
 	} else {
-	    suffix = lettersToRight([last[0],last[1]+1]);
+	    suffix = takeLetters([last[0],last[1]+1], (([r,c]) => [r,c+1]));
 	}
     }
     return suffix;
 }
 
-
-function lettersUp(pos) {
-    var up = [pos[0]-1,pos[1]];
+function takeLetters(pos,transFunction) {
+    var next = transFunction(pos);
     var l = getTile(pos);
     if (onBoard(pos) && l != null) {
-	return [[pos,[l,letterValue(l)]]].concat(lettersUp(up));
-    } else {
-	return [];
-    }
-}
-
-function lettersToLeft(pos) {
-    var left = [pos[0],pos[1]-1];
-    var l = getTile(pos);
-    if (onBoard(pos) && l != null) {
-	return [[pos,[l,letterValue(l)]]].concat(lettersToLeft(left));
-    } else {
-	return [];
-    }
-}
-
-function lettersDown(pos) {
-    var down = [pos[0]+1,pos[1]];
-    var l = getTile(pos);
-    if (onBoard(pos) && l != null) {
-	return [[pos,[l,letterValue(l)]]].concat(lettersDown(down));
-    } else {
-	return [];
-    }
-}
-
-function lettersToRight(pos) {
-    var right = [pos[0],pos[1]+1];
-    var l = getTile(pos);
-    if (onBoard(pos) && l != null) {
-	return [[pos,[l,letterValue(l)]]].concat(lettersToRight(right));
+	return [[pos,[l,letterValue(l)]]].concat(takeLetters(next,transFunction));
     } else {
 	return [];
     }
