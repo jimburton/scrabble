@@ -84,7 +84,7 @@ function Client(socket) {
 	    $('#opponentDisplayScore').text(0);
 	    displayRack();
 	    break;
-	case "MsgMove": //TODO REMOVE
+	case "MsgMove": // TODO REMOVE
 	    serverMessage("Opponent played : "+d.contents.word+", "+d.contents.score);
 	    addMoveToBoard(d.contents.word);
 	    break;
@@ -150,15 +150,18 @@ function Client(socket) {
     }
 }
 
-// TODO Use as a little example of functional style in JS 
+// TODO Use as a little example of functional style in JS
+// Convert a WordPut to a Word (list of letters).
 function wordPutToWord(wp) {
     return wp.map(x => x[1][0]).join('')
 }
 
+// True if this client is the current player.
 function isCurrentPlayer() {
     return turn===player.turn;
 }
 
+// Place a WordPut on the board.
 function addMoveToBoard(move) {
     move.forEach((el,i,a) => {
 	var r = el[0][0];
@@ -168,11 +171,13 @@ function addMoveToBoard(move) {
     });
 }
 
+// Drag handler.
 function drag(ev) {
     ev.dataTransfer.setData("text", ev.target.innerText);
     ev.dataTransfer.setData("theID", ev.target.id);
 }
 
+// Turn the form inputs on or off.
 function toggleActive(p) {
     if(p) {
 	$('.button').removeAttr("disabled");
@@ -181,13 +186,14 @@ function toggleActive(p) {
     }
 }
 
+// Make tiles in rack selectable.
 function makeTilesSelectable() {
     $('.tileBox').removeClass('selected');
     $(this).addClass('selected');
     selected = true;
 }
 
-
+// Get the current turn as a longer string.
 function turnString(turn) {
     if (turn==="P1") {
 	return "Player 1";
@@ -196,19 +202,23 @@ function turnString(turn) {
     }
 }
 
+// Write a message to the serverMessages div inside a <p> tag.
 function serverMessage(msg) {
     $('#serverMessages').prepend("<p>"+msg+"</p>");
 }
 
+// Write a message to the serverMessages div without any <p> tag.
 function serverMessageRaw(msg) {
     $('#serverMessages').prepend(msg);
 }
 
+// Join a game.
 function join(name, isAi) {
     var p = {"contents":[name,isAi],"tag":"MsgJoin"};
     socket.send(JSON.stringify(p));
 }
 
+// Send a move to the server.
 function sendMove(wp, blanks) {
     if (wp.length>0) {
 	// each blank is of the form [index,letter] and
@@ -219,11 +229,13 @@ function sendMove(wp, blanks) {
     }
 }
 
+// Set the char in a string (used with blanks).
 function setCharAt(str,index,chr) {
     if(index > str.length-1) return str;
     return str.substring(0,index) + chr + str.substring(index+1);
 }
 
+// Set the rack of the player.
 function setRack(letters) {
     player.rack = [];
     for (var t in letters) {
@@ -233,6 +245,7 @@ function setRack(letters) {
     displayRack();
 }
 
+// Display the rack of the player.
 function displayRack() {
     $("[id^='playerTile']").attr('display','inline-block');
     //add tiles to the rack display
@@ -244,6 +257,7 @@ function displayRack() {
     }
 }
 
+// Remove the selected tile from the rack.
 function removeSelectedTileFromRack() {
     $('.selected div').attr('display','none');
     $('.selected').addClass('emptyRackSpace');
@@ -251,7 +265,7 @@ function removeSelectedTileFromRack() {
     selected = false;
 }
 
- //takes all tiles placed on the board from the current turn and returns them to that player's rack
+ //takes all tiles placed on the board from the current turn and returns them to that player's rack.
 function returnToRack() {
     $('.tempInPlay').text("");
     $('.tempInPlay').removeClass('tempInPlay');
@@ -260,6 +274,7 @@ function returnToRack() {
     $('.emptyRackSpace').removeClass('emptyRackSpace');
 }
 
+// Pass the move.
 function pass() {
     if (confirm("Do you really want to pass?")) {
 	returnToRack();
@@ -271,6 +286,7 @@ function pass() {
     }
 }
 
+// Take a move by swapping tiles.
 function swap() {
     var len = $('.selected').length;
     if (len > 0) {
@@ -283,16 +299,19 @@ function swap() {
     }
 }
 
+// Send the swap message to the server.
 function doSwap(letters) {
     var sw = {"contents":letters.split(''),"tag":"MsgSwap"};
     socket.send(JSON.stringify(sw));
 }
 
+// Send the hints message to the server.
 function hints() {
     var h = {"contents":null,"tag":"MsgHint"};
     socket.send(JSON.stringify(h));
 }
 
+// Display hints.
 function doHints(hs) {
     var pBlock = $('<p></p>');
     hs.forEach(h => pBlock.prepend(h.join('')+'<br/>'));
@@ -332,6 +351,8 @@ function suffixOfWord(word) {
     return suffix;
 }
 
+// Retrieve a list of tiles on the board starting at pos and moving in
+// the direction determined by transFunction.
 function takeLetters(pos,transFunction) {
     var next = transFunction(pos);
     var l = getTile(pos);
@@ -342,6 +363,7 @@ function takeLetters(pos,transFunction) {
     }
 }
 
+// Fill the gaps in a word that is played on either side of some existing tiles.
 function fillGaps(word) {
     var filled = word;
     if (word.length > 1) {
@@ -372,10 +394,12 @@ function fillGaps(word) {
     return filled;
 }
 
+// True if pos is on the board.
 function onBoard(pos) {
     return pos[0] >= 0 && pos[0] < 14 && pos[1] >= 0 && pos[1] < 14; 
 }
 
+// Get the tile letter at a position on the board.
 function getTile(pos) {
     var l = $("div[data-row='"+pos[0]+"'][data-column='"+pos[1]+"']").text();
     if (l != '') {
@@ -394,6 +418,7 @@ function letterValue(l) {
     return selectedTile.score;
 }
 
+// Create the bag of tiles.
 function createBag() {
     tileBag = [
         { letter: "E", score: 1, count: 12 },
@@ -426,7 +451,7 @@ function createBag() {
     ];
 }
 
-
+// COnnect to the websocket server.
 $(function(){
     socket = new WebSocket("ws://localhost:9160/")
     client = new Client(socket);
