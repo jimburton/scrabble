@@ -1,7 +1,47 @@
 # Chapter Four: Playing against the computer
 
 In this chapter a basic AI is added so games can be played against
-the computer. In order to achieve this, a list of *playable* positions
+the computer. 
+
+Most of the code in this chapter will go into a new module
+`Scrabble.Game.AI`.  This needs to share a lot of code with
+`Scrabble.Game.Game`, so common code is moved into its own module,
+`Scrabble.Game.Internal`. Similar to the benefits of having seperate 
+`Types` module, this helps with avoiding circular imports and is a 
+pretty common practice in Haskell development. To make it easier for
+clients to find functions, `Scrabble.Game.Game` will re-export the 
+important functions from `Scrabble.Game.Internal`.
+
+A similar change is made to the `Board` code, adding `Scrabble.Board.Internal`.
+	
+The current state of files in the library:
+	
+```
+src
+├── Scrabble
+│   ├── Board
+│   │   ├── Bag.hs
+│   │   ├── Board.hs
+│   │   ├── Bonus.hs
+│   │   ├── Internal.hs
+│   │   └── Validation.hs
+│   ├── Evaluator.hs
+│   ├── Game
+│   │   ├── AI.hs
+│   │   ├── Game.hs
+│   │   ├── Internal.hs
+│   │   └── Validation.hs
+│   ├── Lang
+│   │   ├── Dict.hs
+│   │   ├── Letter.hs
+│   │   ├── Search.hs
+│   │   └── Word.hs
+│   ├── Show.hs
+│   └── Types.hs
+└── Scrabble.hs
+```
+
+To accomodate the AI player, a list of *playable* positions
 is maintained. A playable position is one where the AI could play a
 word, so we need to know the letter at that position, the amount of
 space around it and the direction of that space. Several new types are
@@ -200,20 +240,28 @@ perms :: Eq a => [a] -> [[a]]
 perms = filter ((>1) . length) . uniquePowerSetPermutations 
 ```
 Now we can find out which of these permutations are words in the dictionary.
-The function is called `findPrefixes` because it will include a word and all
-of the prefixes of that word that are in the dictionary too, like PATSY, PATS
-and PAT.
+We will need to consider two cases -- words made from a permutation with a
+given letter appended to the end, and words made from a permutation with a letter
+consed on the front.
 
 ```haskell
 -- | Convert a @Word@ to @Text@
 wordToText :: Word -> Text
 wordToText w = T.pack (wordToString w)
 
--- | Find all the prefixes in the dictionary that can be made with the given letters.
-findPrefixes :: Game    -- ^ The game.
-             -> Word    -- ^ The letters to build the words from.
-             -> [Word]
-findPrefixes g ls = findWords g (map wordToText (perms ls))
+-- | Find all the prefixes in the dictionary that end with the given letter.
+findPrefixesForLetterL :: Game    -- ^ The game.
+              -> Letter -- ^ The suffix.
+              -> Word   -- ^ The letters to build the words from.
+              -> [Word]
+findPrefixesForLetterL g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
+
+-- | Find all the prefixes in the dictionary that begin with the given letter.
+findSuffixesForLetter :: Game    -- ^ The game.
+                      -> Letter -- ^ The suffix.
+                      -> Word   -- ^ The letters to build the words from.
+                      -> [Word]
+findSuffixesForLetter g l ls = findWords g (map (wordToText . (l:)) (perms ls))
 
 -- | Find all the words in the dictionary that can be made with the given letters.
 findWords :: Game      -- ^ The dictionary to search
@@ -221,15 +269,9 @@ findWords :: Game      -- ^ The dictionary to search
           -> [Word]
 findWords g ws = map textToWord $ filter (`Trie.member` dict g) ws
 ```
-
-In one context we will need to filter the words found by
-`findPrefixes` to include only those that end with the desired letter
-and are within the desired length, and in another context filter
-them to be those that begin with a certain letter and are of a certain
-length.
-
-Two functions that do that would be identical apart from one or two
-details.  So we can factor this into a function that finds words from
+Now we need to write functions that find words of a given size and which either
+begin with or end with a certain letter. Two functions that do that would be identical 
+apart from small details.  So we can factor this into a function that finds words from
 the dictionary of a certain length, and then two functions that filter
 the results of that search in different ways.
 
@@ -241,11 +283,10 @@ type WordFinder = Word -> [Word]
 findWordOfSize :: Game             -- The game.
                -> WordFinder       -- Function that will query the dictionary.
                -> Pos              -- The start or end point of the word.
-               -> Letter           -- The letter on the board that this word will connect to.
                -> Rack             -- The letters from the player's hand to make up the word.
                -> (FreedomDir,Int) -- The direction and max length of the word.
                -> Maybe (WordPut,[WordPut]) -- The word and its additional words.
-findWordOfSize g wf k l r (fd,i) =
+findWordOfSize g wf k r (fd,i) =
   let r' = l : take 5 (filter (/=Blank) r)
       ws = filter ((<=i) . length) $ wf r' in
     if null ws
@@ -265,12 +306,10 @@ findWordOfSize g wf k l r (fd,i) =
              Ev (Left _)   -> Nothing
              Ev (Right aw) -> Just (wp,aw)
 ```
-The `WordFinder`, `wf`, in `findWordOfSize` is doing the heavy lifting
+The `WordFinder`, `wf`, in `findWordOfSize` will be doing the heavy lifting
 of finding the words, whle the rest of the function is about picking the longest one,
-making it into a `WordPut` and finding the additional words. 
+making it into a `WordPut` and finding the additional words.
 
-The `findPrefixOfSize` function passes in a `WordFinder` that finds all prefixes then filters
-then for ones that end with the desired letter. 
 
 ```haskell
 -- Find a word of at least a certain size that ends with a certain letter.
@@ -280,16 +319,8 @@ findPrefixOfSize :: Game             -- The dictionary.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findPrefixOfSize g p l r (fd,i) =
-  findWordOfSize g (filter ((==l) . last) . findPrefixes g) p l r (fd,i)
-```
+findPrefixOfSize g p l = findWordOfSize g (findPrefixesForLetter g l) p
 
-The `findSuffixOfSize` uses the feature of our trie that allows us to
-narrow it down to a new trie containing only those words that begin
-with a certain sequence of letter. So we pass a game with a restricted
-dictionary to `findWordOfSize`.
-
-```haskell
 -- Find a word of at least a certain size that begins with a certain letter.
 findSuffixOfSize :: Game             -- The game.
                  -> Pos              -- The starting point of the word.
@@ -297,32 +328,42 @@ findSuffixOfSize :: Game             -- The game.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut,[WordPut]) -- The word and the additional words.
-findSuffixOfSize g p l = let g' = g { dict = Trie.submap (letterToText l) (dict g)} in
-  findWordOfSize g (findPrefixes g') p l
+findSuffixOfSize g p l = findWordOfSize g (findSuffixesForLetter g l) p
 ```
-
 Finally, we can put all this together to find a word. Inside the `findWord` function
 we map an inner function, `findWord'`, over the map of playable positions. This creates
 a list of `Maybes`, each of which is `Nothing` or the longest word playable at a position.
 We filter the `Nothing` values and find the longest word in the list, if there is one. 
+
+There is a lot happening in the `findWord` function. Try to read and understand its
+constituent parts -- the top level of `findWord`, the inner function `findWord'` and
+the helper function `maxWd` -- one at a time.
 
 ```haskell
 -- Pick a word for the AI to play, along with the additional words it generates. 
 findWord :: Game     -- The game.
          -> Rack     -- The rack.
          -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findWord g r = let ws = filter isJust $ Map.mapWithKey findWord' (playable g) in
-  if null ws
-  then Nothing
-  else maximumBy (\w1 w2 -> T.length w1 `compare` T.length w2) ws
+findWord g r =
+  let ws = Map.foldlWithKey (\acc k v -> case findWord' k v of
+                                Nothing  -> acc
+                                Just mws -> mws : acc) [] (playable g) in
+    maxWd ws
   where findWord' :: Pos -> (Letter,[Freedom]) -> Maybe (WordPut, [WordPut])
         findWord' k (l,fs) =
-          trace("findWord' at pos "<>show ps<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
-                         case fd of
-                           UpD    -> findPrefixOfSize g k l r (fd,i) 
-                           DownD  -> findSuffixOfSize g k l r (fd,i) 
-                           LeftD  -> findPrefixOfSize g k l r (fd,i) 
-                           RightD -> findSuffixOfSize g k l r (fd,i)) fs
+          let mwds = map (\(fd,i) ->
+                             case fd of
+                               UpD    -> findPrefixOfSize g k l r (fd,i) 
+                               DownD  -> findSuffixOfSize g k l r (fd,i) 
+                               LeftD  -> findPrefixOfSize g k l r (fd,i) 
+                               RightD -> findSuffixOfSize g k l r (fd,i)) fs
+              wds = catMaybes mwds in
+            maxWd wds
+        maxWd :: [(WordPut, [WordPut])] -> Maybe (WordPut,[WordPut])
+        maxWd wds = if null wds
+                    then Nothing
+                    else Just (maximumBy (\o1 o2 -> length (fst o1)
+                                           `compare` length (fst o2)) wds)
 ```
 
 Now that we can find a word, we can play a move. In thinking about
@@ -335,16 +376,16 @@ word to play as a `WordPut`, so we know where to put it. Although we
 haven't handled blanks yet, when we do we will need to know which positions
 in the word were originally blank, so we will have to return a list of indices
 too. Taking the updated game and the score into account, this is an awful lot 
-to pack into a tuple so for readability we'll make a Record type, `Move`, and
+to pack into a tuple so for readability we'll make a Record type, `MoveResult`, and
 refactor the `move` function to return the same type.
 
 ```haskell
-data Move = Move { mvWord :: WordPut
-                 , mvAdditionalWords :: [Word]
-                 , mvBlanks          :: [Int]
-                 , mvScore           :: Int
-                 }
-                 deriving (Show)
+data MoveResult = MoveResult { mvWord :: WordPut
+	                         , mvAdditionalWords :: [Word]
+                             , mvBlanks          :: [Int]
+                             , mvScore           :: Int
+                             }
+                             deriving (Show)
 				 
 -- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
 --   Validation of the word is carried out when finding the word.
@@ -369,50 +410,20 @@ moveAI g = do
                     >>= toggleTurn <&> (,Move w (map wordPutToWord (w:aw)) [] i)
 ```
 	
-*Work in progress*: The AI would be much better if it were more
-flexible about choosing where to play. At the moment it can only play
-perpendicular to an existing word.  It could play words that by adding
-letters to the beginning or end of existing ones, and could play words
-with the playable position somewhere in the middle. It could also be
-more careful about pruning playable positions.  In the example above
-the position `(7,7)` which has the letter 'F' on it *is* playable, but
-is currently removed from the list for simplicity. It could also put
-up more of a fight by searching for the best move, but smarter
-strategies would be needed to do this in reasonable time. These
-strategies could include trying to make words using high value tiles
-and which are placed on bonus tiles.
-	
-Because the module `Scrabble.Game.AI` needs to share a lot of code
-with `Scrabble.Game.Game`, common code is moved into its own module,
-`Scrabble.Game.Internal`. A similar change is made to the `Board`
-code, adding `Scrabble.Board.Internal`.
-	
-Files in the library:
-	
-```
-src
-├── Scrabble
-│   ├── Board
-│   │   ├── Bag.hs
-│   │   ├── Board.hs
-│   │   ├── Bonus.hs
-│   │   ├── Internal.hs
-│   │   └── Validation.hs
-│   ├── Evaluator.hs
-│   ├── Game
-│   │   ├── AI.hs
-│   │   ├── Game.hs
-│   │   ├── Internal.hs
-│   │   └── Validation.hs
-│   ├── Lang
-│   │   ├── Dict.hs
-│   │   ├── Letter.hs
-│   │   ├── Search.hs
-│   │   └── Word.hs
-│   ├── Show.hs
-│   └── Types.hs
-└── Scrabble.hs
-```
+## Work in progress
+
+The AI would be much more effective if it were more flexible about
+choosing where to play. At the moment it can only play perpendicular
+to an existing word.  It could play words that by adding letters to
+the beginning or end of existing ones, and could play words with the
+playable position somewhere in the middle. It could also be more
+careful about pruning playable positions.  In the example above the
+position `(7,7)` which has the letter 'F' on it *is* playable, but is
+currently removed from the list for simplicity. It could also put up
+more of a fight by searching for the best move, but smarter strategies
+would be needed to do this in reasonable time. These strategies could
+include trying to make words using high value tiles and which are
+placed on bonus tiles.
 
 ## In the REPL
 
@@ -478,12 +489,6 @@ Player
 ```
 The Ai played the word ZEP (there are some very strange words
 in the Scrabble dictionary). 
-
-## Optimisation
-
-This could be done by
-modifying `Scrabble.Game.AI`, especially the `findWord` function and
-the functions it depends on.
 
 ## Tests
 

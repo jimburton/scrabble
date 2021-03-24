@@ -10,8 +10,8 @@ Functions relating to searching the dictionary for the Scrabble game.
 module Scrabble.Lang.Search
   ( findWords
   , findPrefixes
-  , findPrefixesL
-  , findSuffixesL
+  , findPrefixesForLetter
+  , findSuffixesForLetter
   , wordPlaysT
   , wordsInDictM
   , wordsInDict
@@ -76,18 +76,18 @@ findPrefixes :: Game    -- ^ The game.
 findPrefixes g ls = findWords g (map wordToText (perms ls))
 
 -- | Find all the prefixes in the dictionary that end with the given letter.
-findPrefixesL :: Game    -- ^ The game.
+findPrefixesForLetter :: Game    -- ^ The game.
               -> Letter -- ^ The suffix.
               -> Word   -- ^ The letters to build the words from.
               -> [Word]
-findPrefixesL g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
+findPrefixesForLetter g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
 
 -- | Find all the prefixes in the dictionary that begin with the given letter.
-findSuffixesL :: Game    -- ^ The game.
-              -> Letter -- ^ The suffix.
-              -> Word   -- ^ The letters to build the words from.
-              -> [Word]
-findSuffixesL g l ls = findWords g (map (wordToText . (l:)) (perms ls))
+findSuffixesForLetter :: Game    -- ^ The game.
+                      -> Letter -- ^ The suffix.
+                      -> Word   -- ^ The letters to build the words from.
+                      -> [Word]
+findSuffixesForLetter g l ls = findWords g (map (wordToText . (l:)) (perms ls))
 
 -- | Find all the words that can be made with the letters on the board
 --   Returned words are made up of PREFIX + L + SUFFIX, where

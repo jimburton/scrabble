@@ -23,7 +23,8 @@ import qualified Data.Map as Map
 import Data.Maybe
   ( isJust
   , fromJust
-  , mapMaybe)
+  , mapMaybe
+  , catMaybes)
 import Data.List (maximumBy)
 import Data.Functor ((<&>))
 import Data.Text (Text)
@@ -59,7 +60,8 @@ import Scrabble.Board.Bag
 import Scrabble.Lang.Letter
   ( letterToText )
 import Scrabble.Lang.Word
-  ( wordToText )
+  ( wordToText
+  , wordPutToText )
 import Scrabble.Game.Game
   ( pass )
 import Scrabble.Game.Internal
@@ -70,8 +72,8 @@ import Scrabble.Game.Internal
   , setScore )
 import Scrabble.Lang.Search
   ( findPrefixes
-  , findPrefixesL
-  , findSuffixesL
+  , findPrefixesForLetter
+  , findSuffixesForLetter
   , wordsInDict )
 
 -- =========== AI functions ============ --
@@ -133,22 +135,27 @@ moveAI g = do
 findWord :: Game     -- The game.
          -> Rack     -- The rack.
          -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findWord g r = let ws = Map.foldlWithKey (\acc k v -> case findWord' k v of
-                                                        Nothing  -> acc
-                                                        Just mws -> mws : acc) [] (playable g) in
-  if null ws
-  then Nothing
-  else Just $ maximumBy (\o1 o2 -> length (fst o1) `compare` length (fst o2)) ws
+findWord g r =
+  let ws = Map.foldlWithKey (\acc k v -> case findWord' k v of
+                                Nothing  -> acc
+                                Just mws -> mws : acc) [] (playable g) in
+    maxWd ws
   where findWord' :: Pos -> (Letter,[Freedom]) -> Maybe (WordPut, [WordPut])
         findWord' k (l,fs) =
-          trace("findWord' at pos "<>show fs<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
-                         case fd of
-                           UpD    -> findPrefixOfSize g k l r (fd,i) 
-                           DownD  -> findSuffixOfSize g k l r (fd,i) 
-                           LeftD  -> findPrefixOfSize g k l r (fd,i) 
-                           RightD -> findSuffixOfSize g k l r (fd,i)) fs
+          let mwds = map (\(fd,i) ->
+                             case fd of
+                               UpD    -> findPrefixOfSize g k l r (fd,i) 
+                               DownD  -> findSuffixOfSize g k l r (fd,i) 
+                               LeftD  -> findPrefixOfSize g k l r (fd,i) 
+                               RightD -> findSuffixOfSize g k l r (fd,i)) fs
+              wds = trace("findWord' at pos "<>show fs<>" starting with letter "<>show l) catMaybes mwds in
+            maxWd wds
+        maxWd :: [(WordPut, [WordPut])] -> Maybe (WordPut,[WordPut])
+        maxWd wds = if null wds
+                    then Nothing
+                    else Just (maximumBy (\o1 o2 -> length (fst o1)
+                                           `compare` length (fst o2)) wds)
 
--- Map.map fromJust $ Map.filter isJust $ Map.mapWithKey findWord' (playable g) in
 -- Find a word of at least a certain size that ends with a certain letter.
 findPrefixOfSize :: Game             -- The dictionary.
                  -> Pos              -- The end point of the word.
@@ -156,8 +163,7 @@ findPrefixOfSize :: Game             -- The dictionary.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findPrefixOfSize g p l r (fd,i) =
-  findWordOfSize g (findPrefixesL g l) p l r (fd,i)
+findPrefixOfSize g p l = findWordOfSize g (findPrefixesForLetter g l) p
 
 -- Find a word of at least a certain size that begins with a certain letter.
 findSuffixOfSize :: Game             -- The game.
@@ -166,8 +172,7 @@ findSuffixOfSize :: Game             -- The game.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut,[WordPut]) -- The word and the additional words.
-findSuffixOfSize g p l = let g' = g { dict = Trie.submap (letterToText l) (dict g)} in
-  findWordOfSize g (findSuffixesL g' l) p l
+findSuffixOfSize g p l = findWordOfSize g (findSuffixesForLetter g l) p
 
 -- Get the longest sublist in a list of lists. Not safe (list must have something in it).
 longest :: [[a]] -> [a]
@@ -181,11 +186,10 @@ type WordFinder = Word -> [Word]
 findWordOfSize :: Game             -- The game.
                -> WordFinder       -- Function that will query the dictionary.
                -> Pos              -- The start or end point of the word.
-               -> Letter           -- The letter on the board that this word will connect to.
                -> Rack             -- The letters from the player's hand to make up the word.
                -> (FreedomDir,Int) -- The direction and max length of the word.
                -> Maybe (WordPut,[WordPut]) -- The word and its additional words.
-findWordOfSize g wf k l r (fd,i) =
+findWordOfSize g wf k r (fd,i) =
   let r' = take 5 (filter (/=Blank) r)
       ws = filter ((<=i) . length) $ wf r' in
     if null ws
@@ -200,13 +204,15 @@ findWordOfSize g wf k l r (fd,i) =
                DownD  -> k
                LeftD  -> (fst k,snd k-len)
                RightD -> k
-             wp = makeWordPut (wordToText w) pos dir [] in
+             wp = makeWordPut (wordToText w) pos dir [] in           
            case additionalWords g wp of
              Ev (Left _)   -> Nothing
+             Ev (Right aw) -> if not $ wordsInDict d (map wordPutToText aw)
+                              then Nothing
+                              else Just (wp,aw)
+
+{-
+case additionalWords g wp of
+             Ev (Left _)   -> Nothing
              Ev (Right aw) -> Just (wp,aw)
-      {-case additionalWords g wp of
-        Ev (Left _)   -> Nothing
-        Ev (Right aw) -> if not $ wordsInDict d (map wordPutToText aw)
-                         then Nothing
-                         else Just (wp,aw)
 -}
