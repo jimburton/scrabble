@@ -28,7 +28,6 @@ library
                , text
                , split
                , text-trie
-               , aeson
   
   exposed-modules:
       Scrabble
@@ -88,7 +87,6 @@ executable scrabble
                      , split
                      , containers
                      , haskeline
-                     , aeson
   hs-source-dirs:      cli
                      , src
   default-extensions: OverloadedStrings

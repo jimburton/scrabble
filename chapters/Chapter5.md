@@ -2,14 +2,14 @@
 
 The first client is a terminal-based CLI (command line interface). It's probably
 true that nobody would want to play a multi-player game of Scrabble this way. You
-can see each other's tiles. But it does work well enough for a one-player game, and
+can see each other's tiles. But it does work well enough for a one-player game and
 above all else it's a straightforward way to understand the general problem
 of writing clients that use the library and provide a user interface. All the client
-needs to do it print board to the terminal, read keystrokes from the user, and
+needs to do is to print the board to the terminal, read keystrokes from the user and
 interact with the library.
 
 This code will live in a completely separate area to the library. We
-wtore it under the directory `cli/` and add an `executable` stanza to
+store it under the directory `cli/` and add an `executable` stanza to
 the config file. The `cli` directory contains these files:
 
 ```
@@ -19,6 +19,52 @@ cli/
     ├── Blanks.hs
     ├── Game.hs
     └── Out.hs
+```
+
+The new stanza in the config file is shown below. It needs to list all
+of its own modules plus all of the library modules that it imports, as
+well as all the source folders in which these modules can be found,
+and any libraries it imports -- everything that `cabal` needs to compile
+it.
+
+```
+executable scrabble
+  main-is:             Main.hs
+  other-modules:       ScrabbleCLI.Game
+                     , ScrabbleCLI.Out
+                     , ScrabbleCLI.Blanks
+                     , Scrabble
+                     , Scrabble.Types
+                     , Scrabble.Evaluator
+                     , Scrabble.Game.Game
+                     , Scrabble.Game.AI
+                     , Scrabble.Game.Internal
+                     , Scrabble.Game.Validation
+                     , Scrabble.Lang.Dict
+                     , Scrabble.Lang.Letter
+                     , Scrabble.Lang.Word
+                     , Scrabble.Lang.Search
+                     , Scrabble.Board.Bag
+                     , Scrabble.Board.Board
+                     , Scrabble.Board.Bonus
+                     , Scrabble.Board.Pretty
+                     , Scrabble.Board.Validation
+                     , Scrabble.Board.Internal
+  -- ghc-options: -Wall -Werror -fno-warn-name-shadowing
+  ghc-options: -Wall -fno-warn-orphans
+  build-depends:       base >=4.12 && <4.13
+                     , random
+                     , array
+                     , text
+                     , text-trie
+                     , split
+                     , containers
+                     , haskeline
+  hs-source-dirs:      cli
+                     , src
+  default-extensions: OverloadedStrings
+  default-language:    Haskell2010
+
 ```
 The `Main` module provides a way for users to start a one or two-player game then 
 passes control to functions in `ScrabbleCLI.Game`. Here is the `Main` module in
@@ -64,7 +110,7 @@ input that it tries to interpret as moves, passing that to the library
 and providing users with the response. The first thing we need is to
 be able to start a game. This is dealt with in two functions, each of
 which creates a new `Game` object then calls the `playGame` function.
-They are both in the `IO` monad.
+
 
 ```haskell
 startGame :: Text -> Text -> IO ()
@@ -90,20 +136,6 @@ it checks whose turn it is. If the current player is a human player,
 it calls the function that reads a move from the terminal. Otherwise,
 it calls the function that plays an AI move.
 
-To make the process of entering text nicer we use the `haskeline`
-library. That means we can use the backspace and arrow keys when
-entering a move -- otherwise we would have to type everything
-perfectly the first try. `haskeline` reads input from users into its
-own monadic type, `InputT`. Any time we want to run an `IO` action
-inside an `InputT` action we need to "lift" the `IO` action using 
-`liftIO` which has the type `MonadIO m => IO a -> m a`. 
-
-The second argument to `takeTurn` is a `Maybe Text` that allos us to
-display an optional message to the user. Within the function the
-`gameOver` field of the game is checked. If it is true, we pass the game
-to the `doGameOver` function. Otherwise, either an AI player or a human
-player takes a turn.
-
 ```haskell
 takeTurn :: Game -- ^ The game
          -> Maybe Text -- ^ Previous score as text
@@ -118,7 +150,23 @@ takeTurn g msc = runInputT defaultSettings loop
        else if isAI (getPlayer g)
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
-			
+```
+
+To make the process of entering text nicer we use the `haskeline`
+library. That means we can use the backspace and arrow keys when
+entering a move -- otherwise we would have to type everything
+perfectly the first try. `haskeline` reads input from users into its
+own monadic type, `InputT`. Any time we want to run an `IO` action
+inside an `InputT` action we need to "lift" the `IO` action using 
+`liftIO` which has the type `MonadIO m => IO a -> m a`. 
+
+The second argument to `takeTurn` is a `Maybe Text` that allos us to
+display an optional message to the user. Within the function the
+`gameOver` field of the game is checked. If it is true, we pass the game
+to the `doGameOver` function. Otherwise, either an AI player or a human
+player takes a turn.
+
+```haskell			
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game
 doGameOver g = do
