@@ -1,17 +1,16 @@
 # Chapter Five: The CLI client
 
 The first client is a terminal-based CLI (command line interface). It's probably
-the case that nobody would want to play a two-player game of Scrabble this way, because
-you can see each other tiles. But it does work well enough for a one-player game and
-above all else it's quite a straightforward way to understand the general problem
-of writing clients that use the library and provide a user interface.
+true that nobody would want to play a multi-player game of Scrabble this way. You
+can see each other's tiles. But it does work well enough for a one-player game, and
+above all else it's a straightforward way to understand the general problem
+of writing clients that use the library and provide a user interface. All the client
+needs to do it print board to the terminal, read keystrokes from the user, and
+interact with the library.
 
-The basic idea is that we'll write code that takes input from users in a loop and that
-keeps playing moves in the game until it registers the fact that the game has ended.
-
-This code will live in a separate area to the library. We wtore it under the directory
-`cli/` and add an `executable` stanza to the config file. The `cli` directory contains
-these files:
+This code will live in a completely separate area to the library. We
+wtore it under the directory `cli/` and add an `executable` stanza to
+the config file. The `cli` directory contains these files:
 
 ```
 cli/
@@ -60,10 +59,12 @@ The main effort goes into `ScrabbleCLI.Game`. The other modules, `ScrabbleCLI.Bl
 
 ## Interacting with users to play the game
 
-`ScrabbleCLI.Game` contains the code that interacts with users: taking input that it interprets
-as moves, passing that to the library and providing users with the response. The first thing we
-need is to be able to start a game. This is dealt with in two functions, each of which creates
-a new `Game` object then calls the `playGame` function.
+`ScrabbleCLI.Game` contains the code that interacts with users: taking
+input that it tries to interpret as moves, passing that to the library
+and providing users with the response. The first thing we need is to
+be able to start a game. This is dealt with in two functions, each of
+which creates a new `Game` object then calls the `playGame` function.
+They are both in the `IO` monad.
 
 ```haskell
 startGame :: Text -> Text -> IO ()
@@ -80,12 +81,28 @@ startGameAI p1Name = do
   _ <- playGame (newGame1P p1Name theGen d)
   return ()
 ```
-The `playGame` function just prints the details of the two players then passes the game
-to the `takeTurn` function, which is the top level of the loop that actually plays the game.
-It prints the current state of the board then checks whether the game is over. If so, it
-prints the result. If not, it checks whose turn it it. If the current player is a human
-player, it calls the function that reads a move from the terminal. Otherwise, it calls the
-function that plays an AI move.
+The `playGame` function prints the details of the two players then passes the game
+to the `takeTurn` function. This is the top level of the loop that actually plays the game.
+
+The `takeTurn` function prints the current state of the board then
+checks whether the game is over. If so, it prints the result. If not,
+it checks whose turn it is. If the current player is a human player,
+it calls the function that reads a move from the terminal. Otherwise,
+it calls the function that plays an AI move.
+
+To make the process of entering text nicer we use the `haskeline`
+library. That means we can use the backspace and arrow keys when
+entering a move -- otherwise we would have to type everything
+perfectly the first try. `haskeline` reads input from users into its
+own monadic type, `InputT`. Any time we want to run an `IO` action
+inside an `InputT` action we need to "lift" the `IO` action using 
+`liftIO` which has the type `MonadIO m => IO a -> m a`. 
+
+The second argument to `takeTurn` is a `Maybe Text` that allos us to
+display an optional message to the user. Within the function the
+`gameOver` field of the game is checked. If it is true, we pass the game
+to the `doGameOver` function. Otherwise, either an AI player or a human
+player takes a turn.
 
 ```haskell
 takeTurn :: Game -- ^ The game
@@ -101,281 +118,378 @@ takeTurn g msc = runInputT defaultSettings loop
        else if isAI (getPlayer g)
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
+			
+-- | Handle the situation when the game ends.
+doGameOver :: Game -> IO Game
+doGameOver g = do
+  let p1     = player1 g
+      p2     = player2 g
+      draw   = score p1 == score p2
+      winner = if score p1 > score p2
+               then p1 else p2
+  T.putStrLn "Game over!"
+  T.putStrLn $ name p1 <> ": " <> T.pack (show (score p1))
+  T.putStrLn $ name p2 <> ": " <> T.pack (show (score p2))
+  if draw
+    then T.putStrLn "It's a draw!" >> pure g
+    else T.putStrLn ("Congratulations " <> name winner) >> pure g
 
 ```
 
-  ```
-  $ git checkout v-01
-  $ cabal repl
-  $ startGame "Bob" "Alice"
-  **********************************************
-  ```
-  
-  *The game starts by showing both player's names, their score and the contents
-  of their rack, with the score displayed beneath each letter.*
-  
-  
-  ```
-  Bob (0)
-  A, T, F, H, E, D, A
-  1, 1, 4, 4, 1, 2, 1
-  **********************************************
+## Taking a turn as the AI player
+
+Let's look first at the simpler case of `takeTurnAI`. It passes the game to
+`moveAI` and pattern matches on the result. If the result was `Ev (Left e)`
+is reports the error and returns the unchanged game to the loop in `takeTurn`.
+If the move succeeded it passes the updated game and a `Maybe Text` containing
+the score to `takeTurn.
+
+```haskell
+-- | Allow the computer to take a turn.
+takeTurnAI :: Game -> IO Game
+takeTurnAI g = case moveAI g of
+  Ev (Right (g',i)) -> takeTurn g' (Just (T.pack $ show i))
+  Ev (Left e)       -> do T.putStrLn e
+                          pure g
+```
+
+That's it. The library takes care of everything.
+
+## Taking a turn as the human player
+
+The case of the human player taking a turn is more complex, as there
+are more things to consider. First, need to read some input from the user
+in an `InputT` action. If they enter an empty line, we keep looping. Otherwise,
+we try to parse the input. 
+
+```haskell
+-- | Take a turn manually.
+takeTurnManual :: Game -- ^ The game
+               -> IO Game
+takeTurnManual g = runInputT defaultSettings loop
+ where
+   loop :: InputT IO Game
+   loop  = do
+     mLn <- getInputLine (T.unpack $ showTurn g)
+     case mLn of
+       Nothing -> loop
+       Just wdStr -> do
+         let wds = words wdStr
+         if null wds || (length wds /= 4 && head (head wds) /= ':')
+           then loop
+           else do
+           if head (head wds) == ':'
+             then liftIO $ do
+             let c = head wds
+             (g',ms) <- cmd (T.map toUpper (T.pack c), T.pack <$> mLn, g)
+             takeTurn g' ms
+             else do
+             (wd,is) <- liftIO $ replaceBlanks (head wds)
+             let [rowStr,colStr,dirStr] = tail $ words wdStr
+                 row = read rowStr :: Int
+                 col = read colStr :: Int
+                 dir = if map toUpper dirStr == "H" then HZ else VT
+                 wp  = makeWordPut (T.pack wd) (row,col) dir is
+             case move valGameRules g wp is of
+               Ev (Left e) -> do liftIO $ T.putStrLn e
+                                 liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
+               Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
+
+```
+If the input begins with a colon (':'), it is treated as a
+"command". These are some builtin functions for the user that allow
+her to:
+
++ pass the move by entering :PASS
++ swap some tiles by entering :SWAP <TILES>, e.g. :SWAP ABC
++ print a help message by entering :HELP
++ get a list of all words that can be made with her tiles by entering :HINT.
+
+This is handled by a new datatype, `Cmd`, the `getCmd` function that parse the input, and 
+functions that handle swapping, passing, help and hints. After running the command, the 
+`takeTurn` function is called again.
+
+```haskell
+-- | Datatype for commands entered by the user.
+data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
+
+-- | Read a command.
+getCmd :: Text -> Cmd
+getCmd ":SWAP" = Swap
+getCmd ":PASS" = Pass
+getCmd ":HINT" = Hint
+getCmd ":HELP" = Help
+getCmd _       = Unknown
+
+-- | Deal with commands entered by a player
+cmd :: (Text, Maybe Text, Game) -> IO (Game, Maybe Text)
+cmd (s, mLn, g) = case getCmd s of
+                    Swap    -> doSwap (g, mLn)
+                    Pass    -> doPass (g, mLn) 
+                    Hint    -> do hints g
+                                  return (g, mLn)
+                    Help    -> do help
+                                  return (g, mLn)
+                    Unknown -> return (g, mLn)
+```
+
+The `doSwap` function reads letters from the user until they enter an empty line
+and tries to swap these tiles. It needs to unwrap the `Evaluator` result.
+
+```haskell
+-- | Take a move by swapping some tiles.
+doSwap :: (Game, Maybe Text) -> IO (Game, Maybe Text)
+doSwap (g, mLn) = do
+  putStrLn "Enter tiles to swap and type return when done:"
+  ln <- getLine
+  case swap (fromJust $ stringToWord (map toUpper ln)) g of
+    Ev (Right g') -> pure (g',mLn)
+    Ev (Left e)   -> do T.putStrLn e
+                        pure (g,mLn)
+```
+The `doSwap` function is very similar.
+
+```haskell
+-- | Take a move by passing.
+doPass :: (Game, Maybe Text) -> IO (Game, Maybe Text)
+doPass (g, mLn) = case pass g of
+  Ev (Right g') -> pure (g', Just "Passed move")
+  Ev (Left e)   -> do T.putStrLn e
+                      pure (g,mLn)
+```
+The `help` function is work-in-progress. The hints function calls `findPrefixes`
+to find all of the words in the dictionary that can be made with the current
+player's rack.
+
+```haskell
+-- | Print the help message.
+--   TODO
+help :: IO ()
+help = T.putStrLn "HELP: TODO"
+
+-- | Print some word suggestions based ont hte current player's rack.
+hints :: Game -> IO ()
+hints g = do
+  let w = rack (getPlayer g) 
+  T.putStrLn "HINTS:"
+  mapM_ print $ findPrefixes g w
+
+```
+If the input didn't start with a colon, we expect it to be of the form 
+
+```
+WORD ROW COL DIR
+```
+
+where WORD is a word made from the player's rack, ROW and COL are numbers representing
+a row and a column respectively, and DIR is either H (horizontal) or V (vertical). Let's
+repeat this part of the `takeTurnManual`.
+
+```haskell
+(wd,is) <- liftIO $ replaceBlanks (head wds)
+let [rowStr,colStr,dirStr] = tail $ words wdStr
+    row = read rowStr :: Int
+    col = read colStr :: Int
+    dir = if map toUpper dirStr == "H" then HZ else VT
+    wp  = makeWordPut (T.pack wd) (row,col) dir is
+case move valGameRules g wp is of
+  Ev (Left e) -> do liftIO $ T.putStrLn e
+                    liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
+  Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
+```
+
+First we replace any balnks that were in the WORD part of the input. This is done by interrogating
+the user and producing a list of pairs of replacements and their indices. This code is in
+`ScrabbleCLI.Blanks` and we won't go through it here. Then weparse the other parts of the input 
+with the `words` function, the `makeWordPut` function
+is used to create a `WordPut` from what we have, and the game and the `WordPut` are passed
+to the `move` function. Finally, the `Evaluator` result is pattern matched. As with `takeTurnAI`,
+we either print an error message and send the unchanged game to `takeTurn` loop, or send the
+new, updated game to `takeTurn`.
+
+## Running the game
+
+We no longer need to call functions in the RELP. Now we can actually run the game.
+Here is the first couple of moves of an AI game in which the human player asks
+for hints and at one point plays a blank tile.
+
+```
+$ cabal run scrabble
+Enter 1P or 2P
+1P
+Enter name of player
+Bob
+
+**********************************************
+Bob (0)
+O, I, C, E, T, L, R
+1, 1, 3, 1, 1, 1, 1
+**********************************************
 
 
-  **********************************************
-  Alice (0)
-  W, O, D, E, E, Q, V
-  4, 1, 2, 1, 1, 10, 4
-  **********************************************
-  ```
-  
-  *Then, for each turn it displays the current board, the current player's rack
-  and prompts them for a move.*
-  
-  
-  ``` 
+**********************************************
+Haskell (0)
+I, P, B, J, U, F, X
+1, 3, 3, 8, 1, 4, 8
+**********************************************
 
-    | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-  ------------------------------------------------
-   0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   7|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   8|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   9|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  10|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  ------------------------------------------------
+  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+ 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+ 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+ 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+ 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+ 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+ 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 7|W3|  |  |L2|  |  |  |W2|  |  |  |L2|  |  |W3|
+ 8|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 9|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+10|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+11|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+12|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+13|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+------------------------------------------------
 
 
-  **********************************************
-  Bob (0)
-  A, T, F, H, E, D, A
-  1, 1, 4, 4, 1, 2, 1
-  **********************************************
-  Enter WORD ROW COL DIR[H/V]:
-  
-  ```
-  *Bob enters a move. The resulting board and the score for the move 
-  is displayed.*
-  
-  ```
-  fated 7 7 v
-    | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-  ------------------------------------------------
-   0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   7|  |  |  |  |  |  |  | F|  |  |  |  |  |  |  |
-   8|  |  |  |  |  |  |  | A|  |  |  |  |  |  |  |
-   9|  |  |  |  |  |  |  | T|  |  |  |  |  |  |  |
-  10|  |  |  |  |  |  |  | E|  |  |  |  |  |  |  |
-  11|  |  |  |  |  |  |  | D|  |  |  |  |  |  |  |
-  12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  ------------------------------------------------
-  22
+**********************************************
+Bob (0)
+O, I, C, E, T, L, R
+1, 1, 3, 1, 1, 1, 1
+**********************************************
+Enter WORD ROW COL DIR[H/V]:
+:hint
+HINTS:
+[E,R]
+[R,E]
+<long list of hints elided>
+[R,E,C,O,I,L]
+[T,E,R,C,I,O]
+[E,R,O,T,I,C]
+[C,I,T,O,L,E]
+[C,O,R,T,I,L,E]
+  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+ 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+ 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+ 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+ 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+ 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+ 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 7|W3|  |  |L2|  |  |  |W2|  |  |  |L2|  |  |W3|
+ 8|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 9|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+10|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+11|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+12|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+13|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+------------------------------------------------
 
-  ```
-  
-  *Alice is prompted for a move, enters it, and so on.*
-  
-  
-  ``` 
-  **********************************************
-  Alice (0)
-  W, O, D, E, E, Q, V
-  4, 1, 2, 1, 1, 10, 4
-  **********************************************
-  Enter WORD ROW COL DIR[H/V]:
-  wode 11 5 h
-    | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-  ------------------------------------------------
-   0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-   7|  |  |  |  |  |  |  | F|  |  |  |  |  |  |  |
-   8|  |  |  |  |  |  |  | A|  |  |  |  |  |  |  |
-   9|  |  |  |  |  |  |  | T|  |  |  |  |  |  |  |
-  10|  |  |  |  |  |  |  | E|  |  |  |  |  |  |  |
-  11|  |  |  |  |  | W| O| D| E|  |  |  |  |  |  |
-  12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-  ------------------------------------------------
+**********************************************
+Bob (0)
+O, I, C, E, T, L, R
+1, 1, 3, 1, 1, 1, 1
+**********************************************
+Enter WORD ROW COL DIR[H/V]:
+cortile 7 7 v
+  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+ 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+ 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+ 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+ 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+ 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+ 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 7|W3|  |  |L2|  |  |  | C|  |  |  |L2|  |  |W3|
+ 8|  |  |L2|  |  |  |L2| O|L2|  |  |  |L2|  |  |
+ 9|  |L3|  |  |  |L3|  | R|  |L3|  |  |  |L3|  |
+10|  |  |  |  |W2|  |  | T|  |  |W2|  |  |  |  |
+11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
+12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
+13|  |W2|  |  |  |L3|  | E|  |L3|  |  |  |W2|  |
+14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+------------------------------------------------
+70
+  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+ 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+ 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+ 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+ 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+ 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+ 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 7|W3|  |  | P| U| B| I| C|  |  |  |L2|  |  |W3|
+ 8|  |  |L2|  |  |  |L2| O|L2|  |  |  |L2|  |  |
+ 9|  |L3|  |  |  |L3|  | R|  |L3|  |  |  |L3|  |
+10|  |  |  |  |W2|  |  | T|  |  |W2|  |  |  |  |
+11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
+12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
+13|  |W2|  |  |  |L3|  | E|  |L3|  |  |  |W2|  |
+14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+------------------------------------------------
 
-  8
+**********************************************
+Bob (70)
+Y, N, O, E, R, G, _
+4, 1, 1, 1, 1, 2, 0
+**********************************************
+Enter WORD ROW COL DIR[H/V]:
+green_ 13 5 h
+Enter a letter for the blank:s
 
-  ```
-  The code lives in the `src` directory.
-  
-  **Things to look out for in the code:**
-  
-  + The `Main` module contains the `startGame` function and the `playGame` and `takeTurn`
-    functions that play the game.
-	The use of `getLine` in `takeTurn` means that if you try to use the backspace
-	key when entering a move it will show up as garbage (we'll fix this in the next version). 
-	Type carefully or you will have to quit the game with `Ctrl-C` and start again.
-  + To toggle the display of bonus squares on the board (double and triple letter squares, double
-    and triple word squares), go to the `takeTurn` function and  change the boolean in the call to 
-	`printBoard` from `False` to `True`.
+| 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+ 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+ 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+ 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+ 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+ 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+ 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 7|W3|  |  | P| U| B| I| C|  |  |  |L2|  |  |W3|
+ 8|  |  |L2|  |  |  |L2| O|L2|  |  |  |L2|  |  |
+ 9|  |L3|  |  |  |L3|  | R|  |L3|  |  |  |L3|  |
+10|  |  |  |  |W2|  |  | T|  |  |W2|  |  |  |  |
+11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
+12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
+13|  |W2|  |  |  | G| R| E| E| N| S|  |  |W2|  |
+14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+------------------------------------------------
 
-  + The datatypes live in the module `Scrabble.Types`.
+12
+  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+ 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
+ 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
+ 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
+ 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
+ 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
+ 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
+ 7|W3|  |  | P| U| B| I| C|  |  |  |L2|  |  |W3|
+ 8|  |  |L2| E|  |  |L2| O|L2|  |  |  |L2|  |  |
+ 9|  |L3|  | R|  |L3|  | R|  |L3|  |  |  |L3|  |
+10|  |  |  | T|W2|  |  | T|  |  |W2|  |  |  |  |
+11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
+12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
+13|  |W2|  |  |  | G| R| E| E| N| S|  |  |W2|  |
+14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
+------------------------------------------------
 
-  + The main code for playing the game is in `Scrabble.Game`. Start by
-    studying the functions `playGame` and `takeTurn` in there. Look
-    for the code that fills a `Bag` with letters then takes letters
-    from the bag to fill the `Rack` of each `Player`.
-  + Moves are validated in the `playGame` function by other functions whose
-    names begin `validate...`q. They each return
-    `Either String a` where the String is an error message and `a` may
-    be any type.  After each validation function is called we need to check whether the result
-	is an error message (`Left e`) or a "good" result (`Right x`). The following things are 
-	validated:
-	+ Does the first move touch the centre square on the board?
-	+ Is this move made up of letters that are either in the player's rack or on the board?
-	+ Were some new tiles played onto the board in this move?
-	+ Is the new word in the dictionary?
-	+ Are all of the additional words generated by playing this word in the dictionary? To understand
-	  the idea of additional words being generated, look at the following board (with bonus squares
-	  shown):
-	  
-	  ```
-	    | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-      ------------------------------------------------
-       0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-       1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
-       2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
-       3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
-       4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
-       5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
-       6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
-       7|W3|  |  |L2|  |  |  | F|  |  |  |L2|  |  |W3|
-       8|  |  |L2|  |  |  |L2| O|L2|  |  |  |L2|  |  |
-       9|  |L3|  |  |  | N| O| U| S|L3|  |  |  |L3|  |
-      10|  |  |  |  |W2|  |  | L|  |  |W2|  |  |  |  |
-      11|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
-      12|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
-      13|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
-      14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-      ------------------------------------------------
-      
-      6
-      
-      **********************************************
-      Bob (14)
-      Z, D, R, T, Blank, E, I
-      10, 2, 1, 1, 0, 1, 1
-      **********************************************
-      Enter WORD ROW COL DIR[H/V]:
-      toe 8 6 v
-	  ```
-	  Bob plays the word TOE vertically, starting at position (8,6). 'T' is worth 1 point but is
-	  played on a double-letter bonus square so it contributes 2 to the score for the word. 'O'
-	  and 'E' are each worth one point so the 
-	  score for TOE is 4. Placing this word generates two additional
-	  words, TO ((8,6), horizontal) and EL ((10,6) horizontal). The bonus underneath 'T' is counted 
-	  again in the score for TO. The score for the additional words is added to the 
-	  score for TOE, but any bonus squares under the existing tiles do not count (there aren't any
-	  in this case). 
-	  
-	  The final score for the move is 9.
-	  
-	  ```
-        | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-      ------------------------------------------------
-       0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-       1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
-       2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
-       3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
-       4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
-       5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
-       6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
-       7|W3|  |  |L2|  |  |  | F|  |  |  |L2|  |  |W3|
-       8|  |  |L2|  |  |  | T| O|L2|  |  |  |L2|  |  |
-       9|  |L3|  |  |  | N| O| U| S|L3|  |  |  |L3|  |
-      10|  |  |  |  |W2|  | E| L|  |  |W2|  |  |  |  |
-      11|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
-      12|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
-      13|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
-      14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-      ------------------------------------------------
-      
-      9
-	  ```
+**********************************************
+Bob (82)
+N, V, T, P, O, Y, O
+1, 4, 1, 3, 1, 4, 1
+**********************************************
+Enter WORD ROW COL DIR[H/V]:
+```
 
-  + To see how the score is calculated, study the functions
-    `scoreWord` and `scoreWords` in `Scrabble.Board`. Every tile in a
-    new word adds its face value multiplied by the letter-bonus of the
-    square it is placed on, if any. Then the score for the whole word
-    is multiplied by any word-bonus that a new tile has been placed
-    on. A `Map` called `bonusMap` is maintained of the positions of
-    bonus squares on the board. Bonus squares can double or triple the
-    value of the tile played on them (shown in the ASCII board as `L2`
-    and `L3`) and double or triple the value of entire words (`2W` and
-    `3W`). However, bonuses are only applied once, when a new tile has been
-    placed on them. If all seven tiles are played in a move there is a fifty
-	point bonus.
-	
-  + It may be convenient to switch off the dictionary checking in
-	development or while playing with the code so that you don't have to come up with a valid word
-	every time you want to enter a move. You can switch the dictionary
-	checking off or on by changing the call to the function
-	`validateGameRulesAndDict` in `Scrabble.playGame` to
-	`validateGameRules`.
-  + Blank tiles can't be played for now.
-  + There is no way to check whether the game has ended or who won.
-  
-## Miscellaneous improvements to make the game more playable
-
-+ **`v-0.4`**:
-  + "Commands" are added to the CLI. These are strings entered by the user that begin
-    with a colon. This is supported by the `cmd` function in `cli/Main.hs`.
-    + `:HINT` command. The current player is able to ask for hints based on the letters in their rack. 
-    + `:SWAP` command. This allows the current player to sacrifice a move by swapping some tiles.
-	+ `:PASS` command. This allows the current player to sacrifice a move altogether without
-	  swapping tiles (needed at the end of the game if the bag is empty and they still have
-	  tiles but can't go).
-  + We can now detect when the game is over and announce the winner,
-    if there is one. A boolean called `gameOver` is added to the
-    `Game` object, initially set to false. It is the responsibility of
-    clients to check it.  A game ends in one of two ways:
-	
-	+ each player passes their move, or
-	+ the bag and both racks are empty.
-
-    To detect that there have been two passes in a row, a boolean
-	called `lastMovePass` is added to the `Game` object, initially set
-	to false. When a player wants to pass a move, if `lastMovePass` is
-	true then `gameOver` is set to true. Otherwise, `lastMovePass` is
-	set to true. When a player takes a move by playing or swapping,
-	`lastMovePass` is set to false.
-	
-	The code to detect that there are no tiles left is in `Scrabble.Game.Game.toggleTurn`.
-	
-  + Blanks can be played. If the player has one or more blanks in their rack they can enter a word 
-    containing underscores. They are then queried for the letter they want the blank to stand for.
-	A `WordPut` is created in which each "unblanked" letter is given a score of zero, so that the
-	move will eventually generate the right score. The unblanked 
-	word is passed from the CLI to the `move` function in the library along with a list 
-	of the indices in the `WordPut` that were originally blanks (this is needed so that the code that
-	validates the move doesn't complain about the player not having those letters in their rack).
+## Tests
 
 
 [Contents](../README.md) | [Chapter Six](Chapter6.md)

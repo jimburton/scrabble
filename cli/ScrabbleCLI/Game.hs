@@ -98,12 +98,13 @@ takeTurnManual g = runInputT defaultSettings loop
          if null wds || (length wds /= 4 && head (head wds) /= ':')
            then loop
            else do
-           (wd,is) <- liftIO $ replaceBlanks (head wds)
-           if head wd == ':'
+           if head (head wds) == ':'
              then liftIO $ do
-             (g',ms) <- cmd (T.map toUpper (T.pack wd), T.pack <$> mLn, g)
+             let c = head wds
+             (g',ms) <- cmd (T.map toUpper (T.pack c), T.pack <$> mLn, g)
              takeTurn g' ms
              else do
+             (wd,is) <- liftIO $ replaceBlanks (head wds)
              let [rowStr,colStr,dirStr] = tail $ words wdStr
                  row = read rowStr :: Int
                  col = read colStr :: Int
@@ -113,6 +114,7 @@ takeTurnManual g = runInputT defaultSettings loop
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
                Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
+           
 
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game
