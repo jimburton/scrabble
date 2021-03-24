@@ -48,7 +48,7 @@ import Scrabble.Types
   , Dict
   , Word
   , Validator
-  , Move(..) )
+  , MoveResult(..) )
 import Scrabble.Board.Board
   ( scoreWords
   , newBoard
@@ -104,12 +104,12 @@ move :: Validator -- ^ Validates the word against the board.
      -> Game      -- ^ The game.
      -> WordPut   -- ^ The word to play
      -> [Int]     -- ^ The list positions which were blanks
-     -> Evaluator (Game, Move)
+     -> Evaluator (Game, MoveResult)
 move validate g w is = additionalWords g w >>= \aw -> setBlanks w is g
   >>= \g' -> validate (w:aw) g' >> scoreWords g w aw
   >>= \sc -> setScore g' sc 
   >>= updatePlayer w >>= updatePlayables w >>= updateBoard w
-  >>= endNonPassMove >>= checkEndOfGame <&> (,Move w (map wordPutToWord aw) is sc)
+  >>= endNonPassMove >>= checkEndOfGame <&> (,MoveResult w (map wordPutToWord aw) is sc)
 
 -- | Take a move by swapping tiles.
 swap :: Word -- ^ The tiles to swap.

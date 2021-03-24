@@ -18,13 +18,11 @@ import Prelude hiding (Word)
 import qualified Network.WebSockets as WS
 import Data.Aeson
 import Data.Text (Text)
-import Data.Text as T
 import Scrabble.Types
   ( Player(..)
   , Word
   , WordPut
-  , Move(..))
-import qualified Scrabble.Types as S (Move)
+  , MoveResult(..))
 import ScrabbleWeb.Types
   ( WebGame(..)
   , Game(..)
@@ -81,12 +79,10 @@ msgTurn :: WebGame -> IO ()
 msgTurn wg = msg wg (MsgTurn $ turn (theGame wg))
 
 -- | Acknowledge to a legal move, sending the move to both players.
-msgMoveAck :: WebGame  -- ^ The webgame.
-           -> S.Move   -- ^ The move that was played.
+msgMoveAck :: WebGame    -- ^ The webgame.
+           -> MoveResult -- ^ The move that was played.
            -> IO ()
-msgMoveAck wg mv = msg wg (MsgMoveAck
-                           (MoveAck
-                             (Right (mvWord mv, (mvAdditionalWords mv, mvBlanks mv, mvScore mv)))))
+msgMoveAck wg mv = msg wg (MsgMoveAck (MoveAck (Right mv)))
 
 -- | Send the scores to both players.
 msgScores :: WebGame -> IO ()

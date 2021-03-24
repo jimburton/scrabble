@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 {-|
 Module      : Scrabble.Types
 Description : Types for the scrabble library.
@@ -29,7 +28,7 @@ module Scrabble.Types
   , Evaluator(..)
   , Validator
   , Tile
-  , Move(..))
+  , MoveResult(..))
 
 where
 
@@ -39,10 +38,6 @@ import Data.Trie.Text ( Trie )
 import Data.Text ( Text )
 import qualified Data.Map as Map
 import System.Random ( StdGen )
-import Data.Aeson
-  ( FromJSON
-  , ToJSON )
-import GHC.Generics
 
 -- ============ Types for the application ================ --
 
@@ -50,7 +45,7 @@ import GHC.Generics
 data Letter =
   A | B | C | D | E | F | G | H | I | J | K | L | M |
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
-  deriving (Show, Read, Enum, Eq, Ord, Generic, FromJSON, ToJSON)
+  deriving (Show, Read, Enum, Eq, Ord)
 
 -- | A tile is a letter and a value.
 type Tile = (Letter,Int)
@@ -90,12 +85,12 @@ data Player = Player { name  :: Text -- ^ The name of the player.
                      , rack  :: Rack -- ^ The rack.
                      , score :: Int  -- ^ The score.
                      , isAI  :: Bool -- ^ True if this player is the AI player.
-                     } deriving (Show, Eq, Generic, FromJSON, ToJSON)
+                     } deriving (Show, Eq)
 
 -- | Which player's turn it is within the game. 
 data Turn = P1 -- ^ Player 1.
           | P2 -- ^ Player 2.
-          deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
+          deriving (Show, Read, Eq)
 
 -- | The bag is a list of letters.
 type Bag = [Letter]
@@ -122,7 +117,7 @@ data FreedomDir = UpD     -- ^ The Up direction.
                 | DownD   -- ^ The Down direction.
                 | LeftD   -- ^ The Left direction.
                 | RightD  -- ^ The Right direction.
-  deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
+  deriving (Show, Read, Eq)
 
 -- | A Freedom is a direction and a distance.
 type Freedom = (FreedomDir, Int)
@@ -139,13 +134,13 @@ newtype Evaluator a = Ev (Either Text a)
 type Validator = [WordPut] -> Game -> Evaluator ()
 
 -- | The Record returned by move functions.
-data Move = Move
-            { mvWord            :: WordPut -- ^ The word that was played.
-            , mvAdditionalWords :: [Word]  -- ^ The additional words.
-            , mvBlanks          :: [Int]   -- ^ The positions in the word that were blank.
-            , mvScore           :: Int     -- ^ The score.
-            }
-          deriving (Show)
+data MoveResult = MoveResult
+                  { mrWord            :: WordPut -- ^ The word that was played.
+                  , mrAdditionalWords :: [Word]  -- ^ The additional words.
+                  , mrBlanks          :: [Int]   -- ^ The positions in the word that were blank.
+                  , mrScore           :: Int     -- ^ The score.
+                  }
+                deriving (Show, Read, Eq)
 
 
 

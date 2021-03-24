@@ -26,7 +26,7 @@ import Scrabble.Types
   , Player(..)
   , Evaluator(..)
   , Dir(..)
-  , Move(..))
+  , MoveResult(..))
 import ScrabbleCLI.Out
   ( printBoard
   , printPlayer
@@ -112,7 +112,7 @@ takeTurnManual g = runInputT defaultSettings loop
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-               Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mvScore mv)))
+               Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
 
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game

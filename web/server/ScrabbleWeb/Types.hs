@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, StandaloneDeriving #-}
 module ScrabbleWeb.Types
   ( Move(..)
   , MoveAck(..)
@@ -24,9 +24,25 @@ import Scrabble.Types
   , Turn(..)
   , Game(..) 
   , Evaluator(..)
-  , Word ) 
+  , Word
+  , MoveResult(..)) 
 
 -- ======== Types for ScrabbleWeb ========== --
+
+-- ==== Make types from Scrabble.Types serialisable in JSON ========== --
+-- Make MakeResult serialisable in JSON
+
+deriving instance Generic  MoveResult
+deriving instance FromJSON MoveResult
+deriving instance ToJSON   MoveResult
+
+deriving instance Generic  Letter
+deriving instance FromJSON Letter
+deriving instance ToJSON   Letter
+
+deriving instance Generic  Turn
+deriving instance FromJSON Turn
+deriving instance ToJSON   Turn
 
 -- | The name of the player and the WebSocket connection.
 type Client = (Text, WS.Connection)
@@ -57,11 +73,8 @@ data Move = Move
 -- | The response to a move -- Either an error message or
 --   a pair of the WordPut and a triple of the additional words,
 --   indices of blanks, and score.
-newtype MoveAck = MoveAck ( Either Text -- Error message
-                           ( WordPut    -- The WordPut
-                           , ( [Word]   -- Additional words 
-                             , [Int]    -- Indices of blanks
-                             , Int)))    -- Score
+newtype MoveAck = MoveAck ( Either Text -- The error message.
+                            MoveResult) -- The result.
   deriving ( Show, Read, Generic, FromJSON, ToJSON )
 
 -- | A score and a player, identified by the turn.
