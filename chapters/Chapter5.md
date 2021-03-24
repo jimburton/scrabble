@@ -536,6 +536,18 @@ N, V, T, P, O, Y, O
 **********************************************
 Enter WORD ROW COL DIR[H/V]:
 ```
+## Wrapping up
+
+We have seen that writing a client for the Scrabble library meant
+writing `IO`-bound code that interacts with the user and calling the
+functions in the library that know how to take a move. We could easily
+extend this approach to clients with different (mor realistic) interfaces 
+written for, say, mobile devices or  the desktop.
+
+In the next chapter, however, we make a much more general interface
+for networked clients which is based on a web service, thus decoupling
+the library from clients altogether. From then on, clients can be written
+in any language, and we'll write one in Javascript.
 
 ## Tests
 

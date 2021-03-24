@@ -1,10 +1,12 @@
-# Chapter Six: The web client
+# Chapter Six: The web server and client
+
+We can write any number of clients in the style of the last chapter, but they all need to 
+import the library so they must be written in Haskell. In this chapter we develop a simple
+webservice that accepts JSON requests for games, moves and so on, and send the results back to
+clients as JSON objects. In this way the library is fully decoupled from clients, and we
+demonstrate this by writing a web-based client using HTML, CSS and Javascript.
 
 ## A (much) nicer UI that allows proper remote multiplayer functionality
-
-+ **`v-0.6`**:
-  + A web interface is added, using websockets and the `aeson` library
-    to handle encoding and decoding JSON, and a client written using HTML and JavaScript. 
 
 ### The server
   + The `aeson` library is a
@@ -35,26 +37,68 @@
 	and adding the extensions to the `cabal` config file. Now we can turn a `Player` into JSON and 
 	read some JSON into a `Player` object:
 	
-	```
-	> :m + Scrabble.Types
-    > :m + Data.Aeson
-    > encode (Player {name="James", rack=[A, B, C], score=42, isAI=False})
-    "{\"name\":\"James\",\"rack\":[\"A\",\"B\",\"C\"],\"score\":42,\"isAI\":false}"
-	> decode it :: Maybe Player
-    Just
-        ( Player
-            { name = "James"
-            , rack =
-                [ A
-                , B
-                , C
+```
+$ cabal repl scrabble-server
+> :m + Scrabble
+> :m + ScrabbleWeb.Types
+> :m + Data.Aeson
+> let w = [((0,0),(C,3)),((0,1),(A,1)),((0,2),(T,1))]
+> let bs = [[M,A,T]]
+> encode (MoveResult w bs [] 42)
+"{"mrScore":42,"mrWord":[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],"mrAdditionalWords":[["M","A","T"]],"mrBlanks":[]}"
+> decode it :: Maybe MoveResult
+Just
+    ( MoveResult
+        { mrWord =
+            [
+                (
+                    ( 0
+                    , 0
+                    )
+                ,
+                    ( C
+                    , 3
+                    )
+                )
+            ,
+                (
+                    ( 0
+                    , 1
+                    )
+                ,
+                    ( A
+                    , 1
+                    )
+                )
+            ,
+                (
+                    ( 0
+                    , 2
+                    )
+                ,
+                    ( T
+                    , 1
+                    )
+                )
+            ]
+        , mrAdditionalWords =
+            [
+                [ C
+                , O
+                , W
                 ]
-            , score = 42
-            , isAI = False
-            }
-        )
-	```
-	`Aeson` is great -- to find out how it works, [read the tutorial](https://artyom.me/aeson).
+            ]
+        , mrBlanks = []
+        , mrScore = 42
+        }
+    )
+> encode (MsgMoveAck (MoveAck (Right (MoveResult w bs [] 9))))
+"{"contents":{"Right":{"mrScore":9,"mrWord":[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],"mrAdditionalWords":[["C","O","W"]],"mrBlanks":[]}},"tag":"MsgMoveAck"}"
+
+``` 
+
+`Aeson` is great -- for the full detail on how it works, [read the
+tutorial](https://artyom.me/aeson).
 	
   + We need to write a server that webclients can connect to, and that
 	can interact with the `Scrabble` library.  It consists of a

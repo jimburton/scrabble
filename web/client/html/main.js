@@ -18,15 +18,14 @@
 //
 // MsgMoveAck (MoveAck (Left "Error!"))
 //   <-> {"contents":{"Left":"Error!"},"tag":"MsgMoveAck"} CLIENT <- SERV
-// MsgMoveAck (MoveAck (Right ( [((0,0),(C,0)), ((0,1),(A,0)), ((0,2),(T,1))] -- WordPut
-//                             , ( [[M,A,T]]       -- additional words
-//                               , [0,1]    -- indices of blanks
-//                               , 42 ) ) ) )    -- score
-//   <-> {"contents":{"Right":[ [[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]], -- WordPut
-//                            , [ [["M","A","T"]] -- Additional words
-//                                , [0,1] -- indices of blanks
-//                                , 42] ]} -- score
-//         ,"tag":"MsgMoveAck"}
+// MsgMoveAck (MoveAck (Right ( MoveResult [((0,0),(C,0)), ((0,1),(A,0)), ((0,2),(T,1))] -- WordPut
+//                                         [[M,A,T]] -- additional words
+//                                         [0,1]     -- indices of blanks
+//                                         42 ) ) )  -- score
+//   <-> {"contents":{"Right":
+//                    {"mrScore":42,"mrWord":[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],
+//                    "mrAdditionalWords":[["M","A","T"]],"mrBlanks":[0,1]}},
+//                    "tag":"MsgMoveAck"}
 //
 // MsgHint (Just [[C,A,T],[M,A,T]])
 //   <-> {"contents":[["C","A","T"],["M","A","T"]],"tag":"MsgHint"} CLIENT <-> SERV
@@ -106,10 +105,10 @@ function Client(socket) {
 		returnToRack();
 	    } else {
 		var additionalWords = "";
-		var wp = d.contents.Right[0];
-		var aw = d.contents.Right[1][0];
-		var bs = d.contents.Right[1][1];
-		var sc = d.contents.Right[1][2];
+		var wp = d.contents.Right.mrWord;
+		var aw = d.contents.Right.mrAdditionalWords;
+		var bs = d.contents.Right.mrBlanks;
+		var sc = d.contents.Right.mrScore;
 		if (aw.length > 1) {
 		    additionalWords = " ("+aw.map(a => a.join(''))+")";
 		}
@@ -126,7 +125,6 @@ function Client(socket) {
 	    }
 	    break;
 	case "MsgScore":
-	    console.log("Received score.");
 	    var plSc = (player.turn==="P1") ? d.contents[0].theScore : d.contents[1].theScore;
 	    var opSc = (player.turn==="P1") ? d.contents[1].theScore : d.contents[0].theScore;
 	    console.log("Player score: "+plSc);
@@ -163,7 +161,6 @@ function isCurrentPlayer() {
 
 function addMoveToBoard(move) {
     move.forEach((el,i,a) => {
-	console.log("el: "+el);
 	var r = el[0][0];
 	var c = el[0][1];
 	$("div[data-row='"+r+"'][data-column='"+c+"']").text(el[1][0]);
@@ -218,7 +215,6 @@ function sendMove(wp, blanks) {
 	// each element in the wordput is of the form [[row,col],[letter,score]]
 	blanks.forEach(b => wp[b[0]][1][0] = b[1]);
 	var m = {"contents":{"word":wp,"blanks":blanks.map(b => b[0])},"tag":"MsgMove"};
-	console.log(JSON.stringify(m));
 	socket.send(JSON.stringify(m));
     }
 }
@@ -229,7 +225,6 @@ function setCharAt(str,index,chr) {
 }
 
 function setRack(letters) {
-    console.log("Putting letters in rack: "+letters);
     player.rack = [];
     for (var t in letters) {
 	var tile = { letter: letters[t] };
@@ -289,7 +284,6 @@ function swap() {
 }
 
 function doSwap(letters) {
-    console.log("Do swap: "+letters);
     var sw = {"contents":letters.split(''),"tag":"MsgSwap"};
     socket.send(JSON.stringify(sw));
 }
@@ -304,6 +298,163 @@ function doHints(hs) {
     hs.forEach(h => pBlock.prepend(h.join('')+'<br/>'));
     serverMessageRaw(pBlock);
     serverMessage("Hints:");
+}
+
+// Find the letters on the board that come before a word that has been played.
+function prefixOfWord(word) {
+    // elements of word are [[r,c],[l,letterValue(l)]]
+    var prefix = [];
+    if (word.length > 1) {
+	var p1 = word[0][0];
+	var p2 = word[1][0];
+	if (p1[0] < p2[0]) { // it's a vertical word
+	    prefix = lettersUp([p1[0]-1,p1[1]]);
+	} else {
+	    prefix = lettersToLeft([p1[0],p1[1]-1]);
+	}
+    }
+    return prefix;
+}
+
+// Find the letters on the board that come after a word that has been played.
+function suffixOfWord(word) {
+    var suffix = [];
+    if (word.length > 1) {
+	var p1 = word[0][0];
+	var p2 = word[1][0];
+	var last = word[word.length - 1][0];
+	if (p1[0] < p2[0]) { // it's a vertical word
+	    suffix = lettersDown([last[0]+1,last[1]]);
+	} else {
+	    suffix = lettersToRight([last[0],last[1]+1]);
+	}
+    }
+    return suffix;
+}
+
+
+function lettersUp(pos) {
+    var up = [pos[0]-1,pos[1]];
+    var l = getTile(pos);
+    if (onBoard(pos) && l != null) {
+	return [[pos,[l,letterValue(l)]]].concat(lettersUp(up));
+    } else {
+	return [];
+    }
+}
+
+function lettersToLeft(pos) {
+    var left = [pos[0],pos[1]-1];
+    var l = getTile(pos);
+    if (onBoard(pos) && l != null) {
+	return [[pos,[l,letterValue(l)]]].concat(lettersToLeft(left));
+    } else {
+	return [];
+    }
+}
+
+function lettersDown(pos) {
+    var down = [pos[0]+1,pos[1]];
+    var l = getTile(pos);
+    if (onBoard(pos) && l != null) {
+	return [[pos,[l,letterValue(l)]]].concat(lettersDown(down));
+    } else {
+	return [];
+    }
+}
+
+function lettersToRight(pos) {
+    var right = [pos[0],pos[1]+1];
+    var l = getTile(pos);
+    if (onBoard(pos) && l != null) {
+	return [[pos,[l,letterValue(l)]]].concat(lettersToRight(right));
+    } else {
+	return [];
+    }
+}
+
+function fillGaps(word) {
+    var filled = word;
+    if (word.length > 1) {
+	var p1 = word[0][0];
+	var p2 = word[1][0];
+	var vertical = p1[0] < p2[0]; // it's a vertical word
+	var fillOffset = 0;
+	var pos;
+	var lastPos = word[0][0];
+	for (i=1;i<word.length;i++) {
+	    pos = word[i][0];
+	    if (vertical && pos[0] != lastPos[0]+1) { // there's a vertical gap
+		for(j=1;j<pos[0]-lastPos[0];j++) {
+		    var l = getTile([lastPos[0]+j,lastPos[1]]);
+		    filled.splice(i+fillOffset,0,[[lastPos[0]+j,lastPos[1]],[l,letterValue(l)]]);
+		    fillOffset++;
+		}
+	    } else if (pos[1] != lastPos[1]+1) { // there's a horizontal gap
+		for(j=1;j<pos[1]-lastPos[1];j++) {
+		    var l = getTile([lastPos[0],lastPos[1]+j]);
+		    filled.splice(i+fillOffset,0,[[lastPos[0],lastPos[1]+j],[l,letterValue(l)]]);
+		    fillOffset++;
+		}
+	    }
+	    lastPos = pos;
+	}
+    }
+    return filled;
+}
+
+function onBoard(pos) {
+    return pos[0] >= 0 && pos[0] < 14 && pos[1] >= 0 && pos[1] < 14; 
+}
+
+function getTile(pos) {
+    var l = $("div[data-row='"+pos[0]+"'][data-column='"+pos[1]+"']").text();
+    if (l != '') {
+	return l;
+    } else {
+	return null;
+    }
+}
+
+// Return the value of a letter.
+function letterValue(l) {
+    createBag();
+    var selectedTile = tileBag.find(function(tile1) {
+        return tile1.letter === l;
+    });
+    return selectedTile.score;
+}
+
+function createBag() {
+    tileBag = [
+        { letter: "E", score: 1, count: 12 },
+        { letter: "A", score: 1, count: 9 },
+        { letter: "I", score: 1, count: 9 },
+        { letter: "O", score: 1, count: 8 },
+        { letter: "N", score: 1, count: 6 },
+        { letter: "R", score: 1, count: 6 },
+        { letter: "T", score: 1, count: 6 },
+        { letter: "L", score: 1, count: 4 },
+        { letter: "S", score: 1, count: 4 },
+        { letter: "U", score: 1, count: 4 },
+        { letter: "D", score: 2, count: 4 },
+        { letter: "G", score: 2, count: 3 },
+        { letter: "B", score: 3, count: 2 },
+        { letter: "C", score: 3, count: 2 },
+        { letter: "M", score: 3, count: 2 },
+        { letter: "P", score: 3, count: 2 },
+        { letter: "F", score: 4, count: 2 },
+        { letter: "H", score: 4, count: 2 },
+        { letter: "V", score: 4, count: 2 },
+        { letter: "W", score: 4, count: 2 },
+        { letter: "Y", score: 4, count: 2 },
+        { letter: "K", score: 5, count: 1 },
+        { letter: "J", score: 8, count: 1 },
+        { letter: "X", score: 8, count: 1 },
+        { letter: "Q", score: 10, count: 1 },
+        { letter: "Z", score: 10, count: 1 },
+	{ letter: "_", score: 0, count: 2 }
+    ];
 }
 
 
@@ -355,38 +506,6 @@ $(function() {
             }]
         }
     
-    var createBag = function() {
-        tileBag = [
-            { letter: "E", score: 1, count: 12 },
-            { letter: "A", score: 1, count: 9 },
-            { letter: "I", score: 1, count: 9 },
-            { letter: "O", score: 1, count: 8 },
-            { letter: "N", score: 1, count: 6 },
-            { letter: "R", score: 1, count: 6 },
-            { letter: "T", score: 1, count: 6 },
-            { letter: "L", score: 1, count: 4 },
-            { letter: "S", score: 1, count: 4 },
-            { letter: "U", score: 1, count: 4 },
-            { letter: "D", score: 2, count: 4 },
-            { letter: "G", score: 2, count: 3 },
-            { letter: "B", score: 3, count: 2 },
-            { letter: "C", score: 3, count: 2 },
-            { letter: "M", score: 3, count: 2 },
-            { letter: "P", score: 3, count: 2 },
-            { letter: "F", score: 4, count: 2 },
-            { letter: "H", score: 4, count: 2 },
-            { letter: "V", score: 4, count: 2 },
-            { letter: "W", score: 4, count: 2 },
-            { letter: "Y", score: 4, count: 2 },
-            { letter: "K", score: 5, count: 1 },
-            { letter: "J", score: 8, count: 1 },
-            { letter: "X", score: 8, count: 1 },
-            { letter: "Q", score: 10, count: 1 },
-            { letter: "Z", score: 10, count: 1 },
-	    { letter: "_", score: 0, count: 2 }
-        ]
-    }
-
     //////////////////
     // Bonus squares
     //////////////////
@@ -482,16 +601,6 @@ $(function() {
         }
     }
 
-    //returns the score value of a given tile
-    var letterValue = function(l) {
-        //var selectedLetter = tile.text();
-        createBag();
-        var selectedTile = tileBag.find(function(tile1) {
-            return tile1.letter === l;
-        });
-        return selectedTile.score;
-    }
-
     //given 2 tiles, returns the direction the 'adjacent' one is to the 'original' one
     var direction = function(original, adjacent) {
         if (original.attr('data-row') < adjacent.attr('data-row')) {
@@ -514,14 +623,17 @@ $(function() {
 	    var l = this.innerText
 	    w.push([[r,c],[l,letterValue(l)]]);
 	});
+	var pre = prefixOfWord(w);
+	var suf = suffixOfWord(w);
+	var word = fillGaps(pre.concat(w).concat(suf));
 	var blanks = [];
-	w.forEach((l, i) => {
+	word.forEach((l, i) => {
 	    if (l[1][0]==='_') {
 		var b = prompt("Enter the letter to replace the blank at position "
-			       +(i+1)+" in "+w.join(''));
+			       +(i+1)+" in "+word.join(''));
 		blanks.push([i,b]);
 	    }});
-	sendMove(w, blanks);
+	sendMove(word, blanks);
     }
 
     //opens or closes the letter key on right side of the screen

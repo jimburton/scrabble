@@ -96,6 +96,8 @@ positions when really there should be some available.
 *** TODO Additional words picking substrings of the main word
    Happens (at least) if you play a horizontal word ending on an existing one.
 
+*** TODO Web client not registering old tiles as part of new word. 
+Sending everything but existing tiles to the server.
 
 * Testing
 
