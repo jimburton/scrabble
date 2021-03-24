@@ -22,7 +22,8 @@ import qualified Data.Trie.Text as Trie
 import qualified Data.Map as Map
 import Data.Maybe
   ( isJust
-  , fromJust )
+  , fromJust
+  , mapMaybe)
 import Data.List (maximumBy)
 import Data.Functor ((<&>))
 import Data.Text (Text)
@@ -130,10 +131,12 @@ moveAI g = do
 findWord :: Game     -- The game.
          -> Rack     -- The rack.
          -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findWord g r = let ws = Map.map fromJust $ Map.filter isJust $ Map.mapWithKey findWord' (playable g) in
+findWord g r = let ws = Map.foldlWithKey (\acc k v -> case findWord' k v of
+                                                        Nothing  -> acc
+                                                        Just mws -> mws : acc) [] (playable g) in
   if null ws
   then Nothing
-  else Just (maximumBy (\o1 o2 -> length (fst o1) `compare` length (fst o2)) (Map.elems ws))
+  else Just $ maximumBy (\o1 o2 -> length (fst o1) `compare` length (fst o2)) ws
   where findWord' :: Pos -> (Letter,[Freedom]) -> Maybe (WordPut, [WordPut])
         findWord' k (l,fs) =
           trace("findWord' at pos "<>show fs<>" starting with letter "<>show l) msum $ map (\(fd,i) ->
@@ -143,6 +146,7 @@ findWord g r = let ws = Map.map fromJust $ Map.filter isJust $ Map.mapWithKey fi
                            LeftD  -> findPrefixOfSize g k l r (fd,i) 
                            RightD -> findSuffixOfSize g k l r (fd,i)) fs
 
+-- Map.map fromJust $ Map.filter isJust $ Map.mapWithKey findWord' (playable g) in
 -- Find a word of at least a certain size that ends with a certain letter.
 findPrefixOfSize :: Game             -- The dictionary.
                  -> Pos              -- The end point of the word.
