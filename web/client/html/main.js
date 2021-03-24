@@ -78,9 +78,9 @@ function Client(socket) {
 	    serverMessage("Joined game!");
 	    serverMessage("Your name is "+player.name+" and you are "+turnString(player.turn));
 	    serverMessage("Your opponent is "+opponent.name);
-	    $('#playerDisplayName').text(player.name+"'s score");
+	    $('#playerDisplayName').text(player.name);
 	    $('#playerDisplayScore').text(0);
-	    $('#opponentDisplayName').text(opponent.name+"'s score");
+	    $('#opponentDisplayName').text(opponent.name);
 	    $('#opponentDisplayScore').text(0);
 	    displayRack();
 	    break;
@@ -106,11 +106,12 @@ function Client(socket) {
 	    } else {
 		var additionalWords = "";
 		var wp = d.contents.Right.mrWord;
+		var w  = wordPutToWord(wp)
 		var aw = d.contents.Right.mrAdditionalWords;
 		var bs = d.contents.Right.mrBlanks;
 		var sc = d.contents.Right.mrScore;
-		if (aw.length > 1) {
-		    additionalWords = " ("+aw.map(a => a.join(''))+")";
+		if (aw.length > 0) {
+		    additionalWords = " ("+w+","+aw.map(a => a.join(''))+")";
 		}
 		serverMessage(wordPutToWord(wp)+": " + sc + additionalWords);
 		if (isCurrentPlayer()) {
