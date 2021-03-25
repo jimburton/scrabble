@@ -183,7 +183,7 @@ doPass (g, mLn) = case pass g of
 help :: IO ()
 help = T.putStrLn "HELP: TODO"
 
--- | Print some word suggestions based ont hte current player's rack.
+-- | Print some word suggestions based on the current player's rack.
 hints :: Game -> IO ()
 hints g = do
   let w = g ^. getPlayer g ^. rack

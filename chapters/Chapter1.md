@@ -1,21 +1,16 @@
-# Chapter 1: Getting started
+# Chapter One: Getting started
 
 [Contents](../README.md)
 
-In this chapter we will set the scene, explaining the initial state of
-the project, creating some basic datatypes that allow us to model the
-game of Scrabble and some simple functions for placing words on
-boards.
-
-## Who and what is this book for
+## Who this book is for and what it is for
 
 This book is primarily aimed at students on the Introduction to
 Functional Programming course at the University of Brighton, or anyone
-else at the same stage of learning. It is introduced after students
-have learned the basics of Haskell, written quite a few small
+else at the same stage of learning. The contents are introduced after
+students have learned the basics of Haskell, written quite a few small
 functions, learned about recursion, folds, practised a little bit of
 IO and heard about typeclasses like `Functor` and `Monad`. They have
-also used `cabal` a little bit.
+used `cabal` a little bit.
 
 There is a notoriously big gap between learning the basics of Haskell
 listed above, which mostly means a lot of fiddling about with lists,
@@ -27,8 +22,9 @@ little resemblance to their exercises.
 
 This book is meant to go some way towards filling that gap. By the end
 you'll have been introduced to some major and widely used libraries,
-sophisticated data structures, functional design patterns, and structuring
-a software project so that you can keep on top of it as it grows.
+sophisticated data structures, functional design patterns, and means
+for structuring a Haskell project so that you can keep on top of it
+as it grows.
 
 I'm reluctant to say it will take you from being a *Beginner* to an
 *Intermediate* Haskell programmer; Haskell is a deep language and if
@@ -40,7 +36,7 @@ a bit of a stretch. But you won't be a *Beginner* any more.
 Throughout this book the code in the **Scrabbλe** project will be
 developed incrementally. We will be adding to it, removing from it and
 improving it as we go. There is a branch in the repository for each chapter,
-named `chapter1`, `chapter2`, etc, up to `chapter6`. As you read each chapter 
+named `chapter1`, `chapter2`, etc, up to `chapter7`. As you read each chapter 
 you should check out the corresponding branch and study the code. There are 
 exercises at the end of each chapter which expect you to be working on the
 code from the right branch.
@@ -50,9 +46,9 @@ code from the right branch.
 We're using `cabal` to manage the project. `cabal` deals in
 *libraries* and *executables*. We will evantually be making several
 executables but the core code for playing the game is contained in a
-library. Since it is a library, there isn't an entry point or any way
-for users to run the code. It is intended for ourselves and others to
-import it into code that *is* intended for users.
+library. As such, there isn't an entry point or any way for users to
+run the code. It is intended for ourselves and others to import into
+code that *does* provide an interface for users.
 
 The library is defined in this stanza in the config file:
 
@@ -71,6 +67,8 @@ library
       Scrabble
       Scrabble.Types
       Scrabble.Game
+	  Scrabble.Board
+	  Scrabble.Dict
 
   default-extensions: OverloadedStrings
   
@@ -79,17 +77,15 @@ library
 
 The `hs-source-dirs` property tells `cabal` where to find the
 code. Take a look at the `exposed-modules` property. These are the
-modules in our library and currently there are three of them:
-`Scrabble`, `Scrabble.Types` and `Scrabble.Game`.  These are defined
-in the files `src/Scrabble.hs`, `src/Scrabble/Types.hs` and
-`src/Scrabble.Game.hs`.
+modules in our library. These are defined in the files
+`src/Scrabble.hs`, `src/Scrabble/Types.hs`, `src/Scrabble.Game.hs`,
+`src/Scrabble.Board.hs` and `src/Scrabble.Dict.hs`.
 
 **TODO: source tree**
 
 The `Scrabble` module just imports and re-exports the entire
-library. The `Scrabble.Game` module contains the functions we'll be
-describing in this chapter, while the `Scrabble.Types` module contains
-datatypes and type aliases.
+library. The `Scrabble.Types` module contains all of our datatypes and
+type aliases.
 
 It is a fairly common Haskell idiom to put the datatypes into a module
 of their own. It makes them easy to track down and can help you avoid
@@ -98,15 +94,11 @@ other to get access to some types, something which isn't allowed by
 the compiler.  As the projects gets bigger, it's handy to know just
 where to look for the definition of a type.
 
-To experiment with the code, use the command `cabal repl`. You still need to load
-the modules containing types and functions:
+To experiment with the code, use the command `cabal repl`. You still
+need to load the modules containing types and functions. As all of these 
+are re-exported by the `Scrabble` module, just import that.:
 
-```
-$ cabal repl
-> :m + Scrabble.Types
-> :m + Scrabble.Game
-```
-The code includes `haddock` style comments, so one way to browse the code may 
+The code includes `haddock` style comments, so one way to browse the code would 
 be to build the docs and view them in your browser. When you run `cabal haddock`
 it tells you where it has stored the output:
 
@@ -117,8 +109,11 @@ Documentation created:
 <path-to-docs>/jb-scrabble/index.html
 ```
 
-However, only those functions and types that are exported by a module have `haddock`
-comments, so read the source code to see the whole thing.
+However, only those functions and types that are exported by a module
+have `haddock` comments, so read the source code to see the whole
+thing. Each module exports only what other modules need and imports
+only what it needs. Good information hiding and encapsulation is key
+to creating software that is nice to work on.
 
 ## Building blocks of the game
 
@@ -187,14 +182,13 @@ normally imported with a qualified name (e.g. `Map`) like this:
 import qualified Data.Map as Map
 ```
 Since `Data.Map` isn't in the `Prelude`, we need to tell `cabal` where
-to find it. If we try to import it without doing anything else, `cabal` will prompt us to
-add the package that includes it, `containers`, to the `build-depends`
-section of the `cabal` file. We will do that, and you should bear in mind
-that we need to do this whenever importing non-`Prelude` types in
-future. Often `cabal` will be able to tell us the name of the package
-to add but if not, use google to find the type you need on hackage and
-check which package it is in.
-
+to find it. If we try to import it without doing anything else, `cabal` 
+will prompt us to add the package that includes it, `containers`, to 
+the `build-depends` section of the `cabal` file. We will do that, 
+and you should bear in mind that this is done whenever importing 
+non-`Prelude` types in future. Often `cabal` will be able to tell us 
+the name of the package to add but if not, use google to find the type 
+you need on hackage and check which package it is in.
 
 ```haskell
 import qualified Data.Map as Map
@@ -211,28 +205,24 @@ letterToScoreList = [
 letterToScoreMap :: Map Letter Int
 letterToScoreMap = Map.fromList letterToScoreList
 
--- | Find the score of a letter. Exported.
+-- | Find the score of a letter. Safe.
 scoreLetter :: Letter -> Int
 scoreLetter = fromJust . flip Map.lookup letterToScoreMap
 
 ``` 
-
-Of these functions, the only one we want to export is `scoreLetter`
-(and so it's the only function that has `haddock`-style
-comments). Good information hiding and encapsulation is key to
-creating software that is nice to work on.
 
 Note the use of `fromJust` in `scoreLetter`. The `fromJust` function
 is *unsafe*, meaning that it can fail at runtime causing the program
 to crash. This happens when it is called on a value that isn't `Just x`, 
 i.e. which is `Nothing`. In this case, we know we won't get any
 errors because we know that there is an entry in the map for every
-letter. But whenever you use an unsafe function such as `fromJust` or
-`head`, ask yourself whether this is definitely the right thing to do.
+letter, so the `scoreLatter` function is safe. But whenever you use an
+unsafe function such as `fromJust` or `head`, ask yourself whether
+this is definitely safe to do.
 
 ## The board
 
-A Scrabble board is a 15x15 matrix of rows and columns, and so a natural way to
+A Scrabble board is a 15x15 matrix of rows and columns, so a natural way to
 model it is as a two-dimensional array. The values stored in
 the array will be `Maybe Tile`s (i.e. either `Nothing` for an empty
 square, or something like `Just (A,1)` for a square with an 'A' tile
@@ -241,9 +231,9 @@ on it).
 In many languages we would create an array of arrays to achieve this,
 where each element of the 15-element outer array is a 15-element array
 representing a row. However, Haskell supports true multi-dimensional
-arrays, so we can create one where the type of indices is
-`(Int,Int)`. The `Array` type constructor takes two arguments, the
-type of indices and the type of elements.
+arrays, so we can create one where the type of indices is `(Int,Int)`
+(for our purpose, `(row,column)`. The `Array` type constructor takes
+two arguments, the type of indices and the type of elements.
 
 ```haskell
 import Data.Array
@@ -251,7 +241,7 @@ import Data.Array
 type Board = Array (Int,Int) (Maybe Tile)
 
 ```
-Then, if we have a board called `b`, we can access the value in row `r`,
+Then, if we have a board called `b` we can access the value in row `r`,
 column `c`, by `b ! (r,c)`. These `(r,c)` pairs are going to be used a lot
 so we make a type for those too.
 
@@ -376,65 +366,6 @@ dictContainsWord :: Dict -> Text -> Bool
 dictContainsWord = flip Trie.member 
 
 ```
-
-## Players and the game
-
-Now we can move on to think about **players** and the **game** itself. A
-player has a **name**, a **rack** and a **score**. 
-
-The name is stored as `Data.Text` rather than `String`. Wherever
-possible, when we need to store some text we will use the `Text`
-datatype instead of `String`. This is because `String`, being a simple
-linked list, is inefficient. Like `Data.Map`, it is usual practice to
-import `Data.Text` with a qualified name, apart from the name of the
-type itself which is imported directly for convenience.
-
-```haskell
-import Data.Text (Text)
-import qualified Data.Text as T
-
-data Player = Player { name  :: Text
-                     , rack  :: Rack
-                     , score :: Int
-                     } deriving (Show, Eq)
-```
-
-To make working with `Text` easier, we turn on the `OverloadedStrings`
-extension in our code. This means that any literal strings in our code
-are treated as `Text`.  The extension is turned on in the `cabal`
-config file and by including a "language pragma" (an instruction to
-the compiler) at the top of any files that need it:
-
-```haskell
-{-# LANGUAGE OverloadedStrings #-}
-```
-
-Now we have enough types to create the `Game` datatype. This needs to
-store everything we need to know in order to play the game (including
-whose turn it is, so we create a datatype for that too). We also need
-to know whether this is the first move because a special rule applies
-to that (it must touch the centre square). Here is the first version,
-which we'll add to as we uncover new requirements.
-
-```haskell
-data Turn = P1 | P2 deriving (Show, Eq)
-
-data Game = Game { board     :: Board    -- ^ The board
-                 , bag       :: Bag      -- ^ The bag.
-                 , player1   :: Player   -- ^ Player 1.
-                 , player2   :: Player   -- ^ Player 2.
-                 , turn      :: Turn     -- ^ Which player's turn it is.
-                 , gen       :: StdGen   -- ^ The StdGen for all things random.
-                 , firstMove :: Bool     -- ^ Is it the first move?
-                 , dict      :: DictTrie -- ^ The dictionary.
-                 }
-```
-
-Note that the game includes a `StdGen`, or generator for pseudo-random
-numbers. We need this because we want to supply players with tiles
-taken at "random" from the bag, something that we'll come to in the
-next chapter.
-
 ## Putting a word on the board
 
 To create the initial empty board we can use the `array` function to
@@ -563,5 +494,6 @@ be run and how. It points to the file `tests/Main.hs` as the entry point.
 
 TODO write some tests and explain them.
 
+## Exercises
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)

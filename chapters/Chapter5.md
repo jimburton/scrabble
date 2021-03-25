@@ -1,555 +1,544 @@
-# Chapter Five: The CLI client
+# Chapter Four: Playing against the computer
 
-The first client is a terminal-based CLI (command line interface). It's probably
-true that nobody would want to play a multi-player game of Scrabble this way. You
-can see each other's tiles. But it does work well enough for a one-player game and
-above all else it's a straightforward way to understand the general problem
-of writing clients that use the library and provide a user interface. All the client
-needs to do is to print the board to the terminal, read keystrokes from the user and
-interact with the library.
+In this chapter a basic AI is added so games can be played against
+the computer. 
 
-This code will live in a completely separate area to the library. We
-store it under the directory `cli/` and add an `executable` stanza to
-the config file. The `cli` directory contains these files:
+Most of the code in this chapter will go into a new module
+`Scrabble.Game.AI`.  This needs to share a lot of code with
+`Scrabble.Game.Game`, so common code is moved into its own module,
+`Scrabble.Game.Internal`. Similar to the benefits of having seperate 
+`Types` module, this helps with avoiding circular imports and is a 
+pretty common practice in Haskell development. To make it easier for
+clients to find functions, `Scrabble.Game.Game` will re-export the 
+important functions from `Scrabble.Game.Internal`.
 
+A similar change is made to the `Board` code, adding `Scrabble.Board.Internal`.
+	
+The current state of files in the library:
+	
 ```
-cli/
-├── Main.hs
-└── ScrabbleCLI
-    ├── Blanks.hs
-    ├── Game.hs
-    └── Out.hs
+src
+├── Scrabble
+│   ├── Board
+│   │   ├── Bag.hs
+│   │   ├── Board.hs
+│   │   ├── Bonus.hs
+│   │   ├── Internal.hs
+│   │   └── Validation.hs
+│   ├── Evaluator.hs
+│   ├── Game
+│   │   ├── AI.hs
+│   │   ├── Game.hs
+│   │   ├── Internal.hs
+│   │   └── Validation.hs
+│   ├── Lang
+│   │   ├── Dict.hs
+│   │   ├── Letter.hs
+│   │   ├── Search.hs
+│   │   └── Word.hs
+│   ├── Show.hs
+│   └── Types.hs
+└── Scrabble.hs
 ```
 
-The new stanza in the config file is shown below. It needs to list all
-of its own modules plus all of the library modules that it imports, as
-well as all the source folders in which these modules can be found,
-and any libraries it imports -- everything that `cabal` needs to compile
-it.
+To accomodate the AI player, a list of *playable* positions
+is maintained. A playable position is one where the AI could play a
+word, so we need to know the letter at that position, the amount of
+space around it and the direction of that space. Several new types are
+added to support this. We call that playable space a *freedom*.
 
-```
-executable scrabble
-  main-is:             Main.hs
-  other-modules:       ScrabbleCLI.Game
-                     , ScrabbleCLI.Out
-                     , ScrabbleCLI.Blanks
-                     , Scrabble
-                     , Scrabble.Types
-                     , Scrabble.Evaluator
-                     , Scrabble.Game.Game
-                     , Scrabble.Game.AI
-                     , Scrabble.Game.Internal
-                     , Scrabble.Game.Validation
-                     , Scrabble.Lang.Dict
-                     , Scrabble.Lang.Letter
-                     , Scrabble.Lang.Word
-                     , Scrabble.Lang.Search
-                     , Scrabble.Board.Bag
-                     , Scrabble.Board.Board
-                     , Scrabble.Board.Bonus
-                     , Scrabble.Board.Pretty
-                     , Scrabble.Board.Validation
-                     , Scrabble.Board.Internal
-  -- ghc-options: -Wall -Werror -fno-warn-name-shadowing
-  ghc-options: -Wall -fno-warn-orphans
-  build-depends:       base >=4.12 && <4.13
-                     , random
-                     , array
-                     , text
-                     , text-trie
-                     , split
-                     , containers
-                     , haskeline
-  hs-source-dirs:      cli
-                     , src
-  default-extensions: OverloadedStrings
-  default-language:    Haskell2010
-
-```
-The `Main` module provides a way for users to start a one or two-player game then 
-passes control to functions in `ScrabbleCLI.Game`. Here is the `Main` module in
-full:
+## Calculating freedom
+	
+A `FreedomDir` is a direction on the board. A `Freedom` is a `FreedomDir` 
+and a distance.
 
 ```haskell
-import Data.Text (toUpper)
-import qualified Data.Text.IO as T
-import ScrabbleCLI.Game (startGame, startGameAI)
+data FreedomDir = UpD     -- ^ The Up direction.
+                | DownD   -- ^ The Down direction.
+                | LeftD   -- ^ The Left direction.
+                | RightD  -- ^ The Right direction.
+  deriving (Show, Read, Eq, Generic, FromJSON, ToJSON)
 
--- ========= Entry point for a CLI game of Scrabble =========== --
-
-main :: IO ()
-main = do
-  T.putStrLn "Enter 1P or 2P"
-  str <- fmap toUpper T.getLine
-  case str of
-    "1P" -> doAIGame
-    "2P" -> doManualGame
-    _    -> main
-
-doManualGame :: IO ()
-doManualGame = do
-  T.putStrLn "Enter name of Player 1"
-  p1Str <- T.getLine
-  T.putStrLn "Enter name of Player 2"
-  p2Str <- T.getLine
-  startGame p1Str p2Str
-
-doAIGame :: IO ()
-doAIGame = do
-  T.putStrLn "Enter name of player"
-  pStr <- T.getLine
-  startGameAI pStr
+-- | A Freedom is a direction and a distance.
+type Freedom = (FreedomDir, Int)
 ```
-The main effort goes into `ScrabbleCLI.Game`. The other modules, `ScrabbleCLI.Blanks` and
-`ScrabbleCLI.Out`, handle blank tiles and output to the user respectively.
+	
+Then we can create a map with the type `Map Pos (Letter, [Freedom])`,
+which is added to the game state and updated after each move is
+played.
 
-## Interacting with users to play the game
+When the AI comes to make a move it needs to repeatedly take a
+playable position and try to create a word that can be played against
+it. If the direction of the freedom is `UpD` or `LeftD` the AI needs
+to find a word that *ends* with the letter in question. If the
+direction is `RightD` or `DownD` it needs to find a word that *begins*
+with the letter in question. In each case the freedom tells the AI the
+maximum length of the word.
+	
+The freedoms map needs to be updated after each word is played -- each
+new word adds new playable positions but also may reduce the
+playable space around existing playable positions, or remove playable
+spaces entirely. The figure below shows the freedoms on the board
+after the first move. The freedom of one of the positions with a tile
+on it is shown: `[(LeftD, 7), (RightD, 7)]`. In this case, all of the
+playable positions have the same freedom.
+	
+![](/images/freedoms0.png)
+	
+Note that it would be possible to make a legal move by extending the
+word with a prefix or suffix.  For instance, playing tiles to make the
+word `FOULED`, or `BEFOUL` or even putting tiles before and after the
+word to make `BEFOULED`. The AI currently makes no attempt to do
+this. Nor does it try to get a high score! We will talk about these
+optimisations at the end of the chapter
+	
+![](/images/freedoms1.png)
+	
+The figure above shows what happens after more tiles are placed on the
+board. Several freedoms have been removed (too many, in fact -- see
+below). 
 
-`ScrabbleCLI.Game` contains the code that interacts with users: taking
-input that it tries to interpret as moves, passing that to the library
-and providing users with the response. The first thing we need is to
-be able to start a game. This is dealt with in two functions, each of
-which creates a new `Game` object then calls the `playGame` function.
+For each new `WordPut`, `wp`, we have to calculate the freedoms from 
+each position in `wp`. For any given position we can calculate the
+free space above and below it, or to the right and left of it, with
+these functions:
+
+```haskell
+-- Is this position on the board and unoccupied?
+canPlay :: Board -> Pos -> Bool
+canPlay b p = onBoard p && isNothing (getSquare b p)
+
+-- The playable space above and below this position.
+rowFreedom :: Board        -- ^ The board.
+           -> Pos          -- ^ The pos.
+           -> Letter       -- ^ The letter on the pos.
+           -> (Pos, Letter, (Freedom, Freedom))
+rowFreedom b (r,c) l =
+  let mins = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decRow p)))
+             (iterate decRow (r,c))
+      minR = if null mins then r else fst (last mins)  
+      maxs = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incRow p)))
+             (iterate incRow (r,c))
+      maxR = if null maxs then r else fst (last maxs)  in
+    ((r,c),l, ((UpD, r-minR), (DownD, maxR-r)))
+
+-- The playable space to the left and right of this position.
+colFreedom :: Board        -- ^ The board.
+           -> Pos          -- ^ The pos.
+           -> Letter       -- ^ The letter on the pos.
+           -> (Pos, Letter, (Freedom, Freedom))
+colFreedom b (r,c) l =
+  let mins = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decCol p)))
+             (iterate decCol (r,c))
+      minC = if null mins then c else snd (last mins)  
+      maxs = takeWhile (\p -> canPlay b p && (fst p == 14 || canPlay b (incCol p)))
+             (iterate incCol (r,c))
+      maxC = if null maxs then c else snd (last maxs) in 
+    ((r,c),l, ((LeftD, c-minC), (RightD, maxC-c)))
+```
+
+When a move is played, we only want to calculate the freedoms in one direction, the
+opposite of the one in which the word was played. If a word was played horizontally
+we want to calculate the row freedom (up and down), and if *vice versa* the column freedom
+(to the left and right).
+
+```haskell
+-- The playable space around an occupied position on the board.
+freedom :: Board  -- ^ The board.
+        -> Pos    -- ^ The pos.
+        -> Letter -- ^ The letter on the pos.
+        -> Dir    -- ^ The direction of the word the letter is part of.
+        -> (Pos, Letter, (Freedom, Freedom))
+freedom b p l d =
+  if d == HZ
+  then rowFreedom b p l 
+  else colFreedom b p l 
+```
+
+Now we can map the `freedom` function over every position in a new `WordPut`.
+
+```haskell
+-- | The value of a Freedom
+freeness :: Freedom -> Int
+freeness = snd
+
+-- | All of the playable spaces around a word on the board.
+freedomsFromWord :: WordPut -> Board -> [(Pos, Letter, (Freedom, Freedom))]
+freedomsFromWord w b =
+  let d  = getDirection w in 
+    filter (\(_,_,(n,s)) -> freeness n > 0 || freeness s > 0) 
+    $ map (\(p,(l,_)) -> freedom b p l d) w
+```
+
+## Updating the map of playable positions
+
+We write a function `updatePlayables`, which needs to be added to the
+chain of evaluations after `updateBoard` in the `move` function.
+
+```haskell
+newTiles :: Board -> WordPut -> [(Pos, Tile)]
+newTiles b = filter (\(p,_) -> isNothing (getSquare b p))
+
+adjacent :: Pos -> Pos -> Bool
+adjacent (r1,c1) (r2,c2) = abs (r1-r2) <= 1 && abs (c1-c2) <= 1
+
+updatePlayables :: WordPut -> Game -> Evaluator Game
+updatePlayables w g = do
+  let ps  = playable g
+      b   = board g
+      nt  = newTiles b w
+      ntp = map fst nt
+      -- assuming any existing playable that is adjacent to the new word
+      -- will no longer be playable.
+      ps' = Map.filterWithKey (\k _ -> not (any (adjacent k) ntp))  ps
+      fs  = freedomsFromWord nt b
+      f (u,p) = filter ((>0) . freeness) [u, p]
+      nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
+  pure (g { playable = nps })
+```
+
+## Finding a word
+
+Now we know where the AI might be able to play a word, we need to pick
+a word based on the contents of the AI player's rack. To make things
+easier for ourselves, we won't consider blanks for now.
+
+We'll start by finding all the words that can be made with a rack and
+that end with a given letter that isn't in the rack. We write
+functions to find all possible combinations of a rack. We start by
+finding the *powerset* of the letters, the set (or list, in this case)
+of all subsets (sublists). The function that does that, `powerSet`, is
+very concise! It makes use of the fact that the list type is a monad. 
+Read more about it at http://evan-tech.livejournal.com/220036.html, or
+just accept the fact that it works :-)
+
+```haskell
+-- Generate a power set.  The algorithm used here is from
+--   <http://evan-tech.livejournal.com/220036.html>.
+powerSet :: [a] -> [[a]]
+powerSet = filterM (const domain)
+```
+Then we use the `permutations` function from `Data.List`, which
+generates all combinations of the contents of a list, and remove
+any duplicates from the list.
+
+```haskell
+-- Generate a power set's permutations.
+powerSetPermutations :: [a] -> [[a]]
+powerSetPermutations = concatMap permutations . powerSet
+
+-- Generate a power set's unique permutations.
+uniquePowerSetPermutations :: Eq a => [a] -> [[a]]
+uniquePowerSetPermutations = nub . powerSetPermutations
+```
+Finally, words need to be at least two letters long so in the
+`perms` function we use `filter`.
+
+```haskell
+-- Permutations of a list
+perms :: Eq a => [a] -> [[a]]
+perms = filter ((>1) . length) . uniquePowerSetPermutations 
+```
+Now we can find out which of these permutations are words in the dictionary.
+We will need to consider two cases -- words made from a permutation with a
+given letter appended to the end, and words made from a permutation with a letter
+consed on the front.
+
+```haskell
+-- | Convert a @Word@ to @Text@
+wordToText :: Word -> Text
+wordToText w = T.pack (wordToString w)
+
+-- | Find all the prefixes in the dictionary that end with the given letter.
+findPrefixesForLetterL :: Game    -- ^ The game.
+              -> Letter -- ^ The suffix.
+              -> Word   -- ^ The letters to build the words from.
+              -> [Word]
+findPrefixesForLetterL g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
+
+-- | Find all the prefixes in the dictionary that begin with the given letter.
+findSuffixesForLetter :: Game    -- ^ The game.
+                      -> Letter -- ^ The suffix.
+                      -> Word   -- ^ The letters to build the words from.
+                      -> [Word]
+findSuffixesForLetter g l ls = findWords g (map (wordToText . (l:)) (perms ls))
+
+-- | Find all the words in the dictionary that can be made with the given letters.
+findWords :: Game      -- ^ The dictionary to search
+          -> [Text]    -- ^ The letters to build the words from.
+          -> [Word]
+findWords g ws = map textToWord $ filter (`Trie.member` dict g) ws
+```
+Now we need to write functions that find words of a given size and which either
+begin with or end with a certain letter. Two functions that do that would be identical 
+apart from small details.  So we can factor this into a function that finds words from
+the dictionary of a certain length, and then two functions that filter
+the results of that search in different ways.
+
+```haskell
+-- A function for finding words in the dictionary.
+type WordFinder = Word -> [Word] 
+
+-- Find a word of a certain size.
+findWordOfSize :: Game             -- The game.
+               -> WordFinder       -- Function that will query the dictionary.
+               -> Pos              -- The start or end point of the word.
+               -> Rack             -- The letters from the player's hand to make up the word.
+               -> (FreedomDir,Int) -- The direction and max length of the word.
+               -> Maybe (WordPut,[WordPut]) -- The word and its additional words.
+findWordOfSize g wf k r (fd,i) =
+  let r' = l : take 5 (filter (/=Blank) r)
+      ws = filter ((<=i) . length) $ wf r' in
+    if null ws
+    then Nothing
+    else let d   = dict g
+             w   = longest ws
+             len = length w - 1
+             dir = if fd == UpD || fd == DownD then VT else HZ
+			 -- where does this word begin?
+             pos = case fd of
+               UpD    -> (fst k-len,snd k)
+               DownD  -> k
+               LeftD  -> (fst k,snd k-len)
+               RightD -> k
+             wp = makeWordPut (wordToString w) pos dir [] in
+           case additionalWords g wp of
+             Ev (Left _)   -> Nothing
+             Ev (Right aw) -> Just (wp,aw)
+```
+The `WordFinder`, `wf`, in `findWordOfSize` will be doing the heavy lifting
+of finding the words, whle the rest of the function is about picking the longest one,
+making it into a `WordPut` and finding the additional words.
 
 
 ```haskell
-startGame :: Text -> Text -> IO ()
-startGame p1Name p2Name = do
-  theGen <- getStdGen
-  d      <- englishDictionary
-  _ <- playGame (newGame p1Name p2Name theGen d)
-  return ()
+-- Find a word of at least a certain size that ends with a certain letter.
+findPrefixOfSize :: Game             -- The dictionary.
+                 -> Pos              -- The end point of the word.
+                 -> Letter           -- The letter on the board that this word will connect to.
+                 -> Rack             -- The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- The direction and max length of the word.
+                 -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
+findPrefixOfSize g p l = findWordOfSize g (findPrefixesForLetter g l) p
 
-startGameAI :: Text -> IO ()
-startGameAI p1Name = do
-  theGen <- getStdGen
-  d      <- englishDictionary
-  _ <- playGame (newGame1P p1Name theGen d)
-  return ()
+-- Find a word of at least a certain size that begins with a certain letter.
+findSuffixOfSize :: Game             -- The game.
+                 -> Pos              -- The starting point of the word.
+                 -> Letter           -- The letter on the board that this word will connect to.
+                 -> Rack             -- The letters from the player's hand to make up the word
+                 -> (FreedomDir,Int) -- The direction and max length of the word.
+                 -> Maybe (WordPut,[WordPut]) -- The word and the additional words.
+findSuffixOfSize g p l = findWordOfSize g (findSuffixesForLetter g l) p
 ```
-The `playGame` function prints the details of the two players then passes the game
-to the `takeTurn` function. This is the top level of the loop that actually plays the game.
+Finally, we can put all this together to find a word. Inside the `findWord` function
+we map an inner function, `findWord'`, over the map of playable positions. This creates
+a list of `Maybes`, each of which is `Nothing` or the longest word playable at a position.
+We filter the `Nothing` values and find the longest word in the list, if there is one. 
 
-The `takeTurn` function prints the current state of the board then
-checks whether the game is over. If so, it prints the result. If not,
-it checks whose turn it is. If the current player is a human player,
-it calls the function that reads a move from the terminal. Otherwise,
-it calls the function that plays an AI move.
+There is a lot happening in the `findWord` function. Try to read and understand its
+constituent parts -- the top level of `findWord`, the inner function `findWord'` and
+the helper function `maxWd` -- one at a time.
 
 ```haskell
-takeTurn :: Game -- ^ The game
-         -> Maybe Text -- ^ Previous score as text
-         -> IO Game
-takeTurn g msc = runInputT defaultSettings loop
- where
-   loop :: InputT IO Game
-   loop  = do
-     liftIO $ printBoard True (board g) msc
-     if gameOver g
-       then liftIO $ doGameOver g
-       else if isAI (getPlayer g)
-            then liftIO $ takeTurnAI g
-            else liftIO $ takeTurnManual g
+-- Pick a word for the AI to play, along with the additional words it generates. 
+findWord :: Game     -- The game.
+         -> Rack     -- The rack.
+         -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
+findWord g r =
+  let ws = Map.foldlWithKey (\acc k v -> case findWord' k v of
+                                Nothing  -> acc
+                                Just mws -> mws : acc) [] (playable g) in
+    maxWd ws
+  where findWord' :: Pos -> (Letter,[Freedom]) -> Maybe (WordPut, [WordPut])
+        findWord' k (l,fs) =
+          let mwds = map (\(fd,i) ->
+                             case fd of
+                               UpD    -> findPrefixOfSize g k l r (fd,i) 
+                               DownD  -> findSuffixOfSize g k l r (fd,i) 
+                               LeftD  -> findPrefixOfSize g k l r (fd,i) 
+                               RightD -> findSuffixOfSize g k l r (fd,i)) fs
+              wds = catMaybes mwds in
+            maxWd wds
+        maxWd :: [(WordPut, [WordPut])] -> Maybe (WordPut,[WordPut])
+        maxWd wds = if null wds
+                    then Nothing
+                    else Just (maximumBy (\o1 o2 -> length (fst o1)
+                                           `compare` length (fst o2)) wds)
 ```
 
-To make the process of entering text nicer we use the `haskeline`
-library. That means we can use the backspace and arrow keys when
-entering a move -- otherwise we would have to type everything
-perfectly the first try. `haskeline` reads input from users into its
-own monadic type, `InputT`. Any time we want to run an `IO` action
-inside an `InputT` action we need to "lift" the `IO` action using 
-`liftIO` which has the type `MonadIO m => IO a -> m a`. 
-
-The second argument to `takeTurn` is a `Maybe Text` that allos us to
-display an optional message to the user. Within the function the
-`gameOver` field of the game is checked. If it is true, we pass the game
-to the `doGameOver` function. Otherwise, either an AI player or a human
-player takes a turn.
-
-```haskell			
--- | Handle the situation when the game ends.
-doGameOver :: Game -> IO Game
-doGameOver g = do
-  let p1     = player1 g
-      p2     = player2 g
-      draw   = score p1 == score p2
-      winner = if score p1 > score p2
-               then p1 else p2
-  T.putStrLn "Game over!"
-  T.putStrLn $ name p1 <> ": " <> T.pack (show (score p1))
-  T.putStrLn $ name p2 <> ": " <> T.pack (show (score p2))
-  if draw
-    then T.putStrLn "It's a draw!" >> pure g
-    else T.putStrLn ("Congratulations " <> name winner) >> pure g
-
-```
-
-## Taking a turn as the AI player
-
-Let's look first at the simpler case of `takeTurnAI`. It passes the game to
-`moveAI` and pattern matches on the result. If the result was `Ev (Left e)`
-is reports the error and returns the unchanged game to the loop in `takeTurn`.
-If the move succeeded it passes the updated game and a `Maybe Text` containing
-the score to `takeTurn.
+Now that we can find a word, we can play a move. In thinking about
+writing the `moveAI` function we uncover a discrepancy with the way
+`move` works for human players. That function returns a pair with type
+`(Game, ([Word],Int))` in the `Evaluator` monad, where the list of
+words is the word played and all additional words and the int is the
+score. This won't quite do for the AI version. We need to return the
+word to play as a `WordPut`, so we know where to put it. Although we
+haven't handled blanks yet, when we do we will need to know which positions
+in the word were originally blank, so we will have to return a list of indices
+too. Taking the updated game and the score into account, this is an awful lot 
+to pack into a tuple so for readability we'll make a Record type, `MoveResult`, and
+refactor the `move` function to return the same type.
 
 ```haskell
--- | Allow the computer to take a turn.
-takeTurnAI :: Game -> IO Game
-takeTurnAI g = case moveAI g of
-  Ev (Right (g',i)) -> takeTurn g' (Just (T.pack $ show i))
-  Ev (Left e)       -> do T.putStrLn e
-                          pure g
+data MoveResult = MoveResult { mvWord :: WordPut
+	                         , mvAdditionalWords :: [Word]
+                             , mvBlanks          :: [Int]
+                             , mvScore           :: Int
+                             }
+                             deriving (Show)
+				 
+-- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
+--   Validation of the word is carried out when finding the word.
+--   Sets the new board, updates the current player's score, refills their rack with letters, then
+--   toggles the current turn.
+--   Returns:
+--     + the updated game,
+--     + the word played,
+--     + additional words generated by the move,
+--     + the indices of any blanks played in the move, and
+--     + the score.
+moveAI :: Game      -- ^ The game.
+       -> Evaluator (Game, Move)
+moveAI g = do
+  let r  = rack (getPlayer g)
+      mw = findWord g (filter (/=Blank) r)
+  case mw of
+    Nothing -> pass g >>= \g' -> pure (g',([],[],[],0))
+    Just (w,aw)  -> scoreWords g w aw >>=
+                    \i -> setScore g { firstMove = False } i >>= updatePlayer w
+                    >>= updatePlayables w >>= updateBoard w
+                    >>= toggleTurn <&> (,Move w (map wordPutToWord (w:aw)) [] i)
 ```
 
-That's it. The library takes care of everything.
+Finally for the code in this chapter, we need to begin a new AI
+game. This is very similar to the previous `newGame` function but the
+second player is generated by the library.
 
-## Taking a turn as the human player
-
-The case of the human player taking a turn is more complex, as there
-are more things to consider. First, need to read some input from the user
-in an `InputT` action. If they enter an empty line, we keep looping. Otherwise,
-we try to parse the input. 
 
 ```haskell
--- | Take a turn manually.
-takeTurnManual :: Game -- ^ The game
-               -> IO Game
-takeTurnManual g = runInputT defaultSettings loop
- where
-   loop :: InputT IO Game
-   loop  = do
-     mLn <- getInputLine (T.unpack $ showTurn g)
-     case mLn of
-       Nothing -> loop
-       Just wdStr -> do
-         let wds = words wdStr
-         if null wds || (length wds /= 4 && head (head wds) /= ':')
-           then loop
-           else do
-           if head (head wds) == ':'
-             then liftIO $ do
-             let c = head wds
-             (g',ms) <- cmd (T.map toUpper (T.pack c), T.pack <$> mLn, g)
-             takeTurn g' ms
-             else do
-             (wd,is) <- liftIO $ replaceBlanks (head wds)
-             let [rowStr,colStr,dirStr] = tail $ words wdStr
-                 row = read rowStr :: Int
-                 col = read colStr :: Int
-                 dir = if map toUpper dirStr == "H" then HZ else VT
-                 wp  = makeWordPut (T.pack wd) (row,col) dir is
-             case move valGameRules g wp is of
-               Ev (Left e) -> do liftIO $ T.putStrLn e
-                                 liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-               Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
+-- | Start a new game against the computer.
+newGame1P :: Text   -- ^ Name of Player
+          -> StdGen   -- ^ The random generator
+          -> Dict -- ^ The dictionary
+          -> Game
+newGame1P pName theGen d = 
+  let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
+      p1 = Player { name  = pName
+                  , rack  = rack1
+                  , score = 0
+                  , isAI  = False }
+      Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
+      p2 = Player { name  = "Haskell"
+                  , rack  = rack2
+                  , score = 0
+                  , isAI  = True }
+      g  = Game { board     = newBoard
+                , bag       = bag2
+                , player1   = p1
+                , player2   = p2
+                , turn      = P1
+                , gen       = gen''
+                , firstMove = True
+                , dict      = d
+                , gameOver  = False
+                , playable  = Map.empty
+                , lastMovePass = False } in
+    g
+```
+	
+## Work in progress
+
+The AI would be much more effective if it were more flexible about
+choosing where to play. At the moment it can only play perpendicular
+to an existing word.  It could play words that by adding letters to
+the beginning or end of existing ones, and could play words with the
+playable position somewhere in the middle. It could also be more
+careful about pruning playable positions.  In the example above the
+position `(7,7)` which has the letter 'F' on it *is* playable, but is
+currently removed from the list for simplicity. It could also put up
+more of a fight by searching for the best move, but smarter strategies
+would be needed to do this in reasonable time. These strategies could
+include trying to make words using high value tiles and which are
+placed on bonus tiles.
+
+## In the REPL
+
+Let's have a go at playing against the computer.
 
 ```
-If the input begins with a colon (':'), it is treated as a
-"command". These are some builtin functions for the user that allow
-her to:
-
-+ pass the move by entering :PASS
-+ swap some tiles by entering :SWAP <TILES>, e.g. :SWAP ABC
-+ print a help message by entering :HELP
-+ get a list of all words that can be made with her tiles by entering :HINT.
-
-This is handled by a new datatype, `Cmd`, the `getCmd` function that parse the input, and 
-functions that handle swapping, passing, help and hints. After running the command, the 
-`takeTurn` function is called again.
-
-```haskell
--- | Datatype for commands entered by the user.
-data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
-
--- | Read a command.
-getCmd :: Text -> Cmd
-getCmd ":SWAP" = Swap
-getCmd ":PASS" = Pass
-getCmd ":HINT" = Hint
-getCmd ":HELP" = Help
-getCmd _       = Unknown
-
--- | Deal with commands entered by a player
-cmd :: (Text, Maybe Text, Game) -> IO (Game, Maybe Text)
-cmd (s, mLn, g) = case getCmd s of
-                    Swap    -> doSwap (g, mLn)
-                    Pass    -> doPass (g, mLn) 
-                    Hint    -> do hints g
-                                  return (g, mLn)
-                    Help    -> do help
-                                  return (g, mLn)
-                    Unknown -> return (g, mLn)
+> :m + Scrabble
+> :m + System.Random
+> g <- getStdGen
+> d <- englishDictionary 
+> let g1 = newGame1P "Bob" g d
 ```
 
-The `doSwap` function reads letters from the user until they enter an empty line
-and tries to swap these tiles. It needs to unwrap the `Evaluator` result.
-
-```haskell
--- | Take a move by swapping some tiles.
-doSwap :: (Game, Maybe Text) -> IO (Game, Maybe Text)
-doSwap (g, mLn) = do
-  putStrLn "Enter tiles to swap and type return when done:"
-  ln <- getLine
-  case swap (fromJust $ stringToWord (map toUpper ln)) g of
-    Ev (Right g') -> pure (g',mLn)
-    Ev (Left e)   -> do T.putStrLn e
-                        pure (g,mLn)
-```
-The `doSwap` function is very similar.
-
-```haskell
--- | Take a move by passing.
-doPass :: (Game, Maybe Text) -> IO (Game, Maybe Text)
-doPass (g, mLn) = case pass g of
-  Ev (Right g') -> pure (g', Just "Passed move")
-  Ev (Left e)   -> do T.putStrLn e
-                      pure (g,mLn)
-```
-The `help` function is work-in-progress. The hints function calls `findPrefixes`
-to find all of the words in the dictionary that can be made with the current
-player's rack.
-
-```haskell
--- | Print the help message.
---   TODO
-help :: IO ()
-help = T.putStrLn "HELP: TODO"
-
--- | Print some word suggestions based ont hte current player's rack.
-hints :: Game -> IO ()
-hints g = do
-  let w = rack (getPlayer g) 
-  T.putStrLn "HINTS:"
-  mapM_ print $ findPrefixes g w
+Let's have a look at the players:
 
 ```
-If the input didn't start with a colon, we expect it to be of the form 
+> player1 g1
+Player
+    { name = "Bob"
+    , rack =
+        [ L
+        , N
+        , A
+        , J
+        , Blank
+        , N
+        , E
+        ]
+    , score = 0
+    , isAI = False
+    }
+> player2 g1
+Player
+    { name = "Haskell"
+    , rack =
+        [ L
+        , P
+        , E
+        , H
+        , E
+        , R
+        , V
+        ]
+    , score = 0
+    , isAI = True
+    }
+```
+
+Now we'll take a move with Bob's rack and let the AI have a go.
 
 ```
-WORD ROW COL DIR
+> let w = [((7,7),(L,1)), ((8,7),(A,1)), ((9,7),(N,1)), ((10,7),(E,1))]
+> let (Ev (Right (g2,mv))) = move valGameRules g1 w []
+> let (Ev (Right (g3,mv))) = moveAI g2 
+> showBoard False (board g3)
+"  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 7|  |  |  |  |  |  |  | L|  |  |  |  |  |  |  |
+ 8|  |  |  |  |  |  |  | A| L| E| P| H|  |  |  |
+ 9|  |  |  |  |  |  |  | N|  |  |  |  |  |  |  |
+10|  |  |  |  |  |  |  | E|  |  |  |  |  |  |  |
+11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+------------------------------------------------
+"
 ```
-
-where WORD is a word made from the player's rack, ROW and COL are numbers representing
-a row and a column respectively, and DIR is either H (horizontal) or V (vertical). Let's
-repeat this part of the `takeTurnManual`.
-
-```haskell
-(wd,is) <- liftIO $ replaceBlanks (head wds)
-let [rowStr,colStr,dirStr] = tail $ words wdStr
-    row = read rowStr :: Int
-    col = read colStr :: Int
-    dir = if map toUpper dirStr == "H" then HZ else VT
-    wp  = makeWordPut (T.pack wd) (row,col) dir is
-case move valGameRules g wp is of
-  Ev (Left e) -> do liftIO $ T.putStrLn e
-                    liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-  Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
-```
-
-First we replace any balnks that were in the WORD part of the input. This is done by interrogating
-the user and producing a list of pairs of replacements and their indices. This code is in
-`ScrabbleCLI.Blanks` and we won't go through it here. Then weparse the other parts of the input 
-with the `words` function, the `makeWordPut` function
-is used to create a `WordPut` from what we have, and the game and the `WordPut` are passed
-to the `move` function. Finally, the `Evaluator` result is pattern matched. As with `takeTurnAI`,
-we either print an error message and send the unchanged game to `takeTurn` loop, or send the
-new, updated game to `takeTurn`.
-
-## Running the game
-
-We no longer need to call functions in the RELP. Now we can actually run the game.
-Here is the first couple of moves of an AI game in which the human player asks
-for hints and at one point plays a blank tile.
-
-```
-$ cabal run scrabble
-Enter 1P or 2P
-1P
-Enter name of player
-Bob
-
-**********************************************
-Bob (0)
-O, I, C, E, T, L, R
-1, 1, 3, 1, 1, 1, 1
-**********************************************
-
-
-**********************************************
-Haskell (0)
-I, P, B, J, U, F, X
-1, 3, 3, 8, 1, 4, 8
-**********************************************
-
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
- 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
- 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
- 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
- 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
- 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
- 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 7|W3|  |  |L2|  |  |  |W2|  |  |  |L2|  |  |W3|
- 8|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 9|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
-10|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
-11|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
-12|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
-13|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
-14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-------------------------------------------------
-
-
-**********************************************
-Bob (0)
-O, I, C, E, T, L, R
-1, 1, 3, 1, 1, 1, 1
-**********************************************
-Enter WORD ROW COL DIR[H/V]:
-:hint
-HINTS:
-[E,R]
-[R,E]
-<long list of hints elided>
-[R,E,C,O,I,L]
-[T,E,R,C,I,O]
-[E,R,O,T,I,C]
-[C,I,T,O,L,E]
-[C,O,R,T,I,L,E]
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
- 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
- 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
- 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
- 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
- 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
- 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 7|W3|  |  |L2|  |  |  |W2|  |  |  |L2|  |  |W3|
- 8|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 9|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
-10|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
-11|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
-12|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
-13|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
-14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-------------------------------------------------
-
-**********************************************
-Bob (0)
-O, I, C, E, T, L, R
-1, 1, 3, 1, 1, 1, 1
-**********************************************
-Enter WORD ROW COL DIR[H/V]:
-cortile 7 7 v
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
- 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
- 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
- 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
- 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
- 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
- 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 7|W3|  |  |L2|  |  |  | C|  |  |  |L2|  |  |W3|
- 8|  |  |L2|  |  |  |L2| O|L2|  |  |  |L2|  |  |
- 9|  |L3|  |  |  |L3|  | R|  |L3|  |  |  |L3|  |
-10|  |  |  |  |W2|  |  | T|  |  |W2|  |  |  |  |
-11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
-12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
-13|  |W2|  |  |  |L3|  | E|  |L3|  |  |  |W2|  |
-14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-------------------------------------------------
-70
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
- 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
- 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
- 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
- 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
- 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
- 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 7|W3|  |  | P| U| B| I| C|  |  |  |L2|  |  |W3|
- 8|  |  |L2|  |  |  |L2| O|L2|  |  |  |L2|  |  |
- 9|  |L3|  |  |  |L3|  | R|  |L3|  |  |  |L3|  |
-10|  |  |  |  |W2|  |  | T|  |  |W2|  |  |  |  |
-11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
-12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
-13|  |W2|  |  |  |L3|  | E|  |L3|  |  |  |W2|  |
-14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-------------------------------------------------
-
-**********************************************
-Bob (70)
-Y, N, O, E, R, G, _
-4, 1, 1, 1, 1, 2, 0
-**********************************************
-Enter WORD ROW COL DIR[H/V]:
-green_ 13 5 h
-Enter a letter for the blank:s
-
-| 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
- 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
- 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
- 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
- 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
- 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
- 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 7|W3|  |  | P| U| B| I| C|  |  |  |L2|  |  |W3|
- 8|  |  |L2|  |  |  |L2| O|L2|  |  |  |L2|  |  |
- 9|  |L3|  |  |  |L3|  | R|  |L3|  |  |  |L3|  |
-10|  |  |  |  |W2|  |  | T|  |  |W2|  |  |  |  |
-11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
-12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
-13|  |W2|  |  |  | G| R| E| E| N| S|  |  |W2|  |
-14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-------------------------------------------------
-
-12
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
- 1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
- 2|  |  |W2|  |  |  |L2|  |L2|  |  |  |W2|  |  |
- 3|L2|  |  |W2|  |  |  |L2|  |  |  |W2|  |  |L2|
- 4|  |  |  |  |W2|  |  |  |  |  |W2|  |  |  |  |
- 5|  |L3|  |  |  |L3|  |  |  |L3|  |  |  |L3|  |
- 6|  |  |L2|  |  |  |L2|  |L2|  |  |  |L2|  |  |
- 7|W3|  |  | P| U| B| I| C|  |  |  |L2|  |  |W3|
- 8|  |  |L2| E|  |  |L2| O|L2|  |  |  |L2|  |  |
- 9|  |L3|  | R|  |L3|  | R|  |L3|  |  |  |L3|  |
-10|  |  |  | T|W2|  |  | T|  |  |W2|  |  |  |  |
-11|L2|  |  |W2|  |  |  | I|  |  |  |W2|  |  |L2|
-12|  |  |W2|  |  |  |L2| L|L2|  |  |  |W2|  |  |
-13|  |W2|  |  |  | G| R| E| E| N| S|  |  |W2|  |
-14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
-------------------------------------------------
-
-**********************************************
-Bob (82)
-N, V, T, P, O, Y, O
-1, 4, 1, 3, 1, 4, 1
-**********************************************
-Enter WORD ROW COL DIR[H/V]:
-```
-## Wrapping up
-
-We have seen that writing a client for the Scrabble library meant
-writing `IO`-bound code that interacts with the user and calling the
-functions in the library that know how to take a move. We could easily
-extend this approach to clients with different (mor realistic) interfaces 
-written for, say, mobile devices or  the desktop.
-
-In the next chapter, however, we make a much more general interface
-for networked clients which is based on a web service, thus decoupling
-the library from clients altogether. From then on, clients can be written
-in any language, and we'll write one in Javascript.
+The Ai played the word ALEPH. At least that's a beginning :-) 
 
 ## Tests
 
-
-[Contents](../README.md) | [Chapter Six](Chapter6.md)
+TODO
+ 
+[Contents](../README.md) | [Chapter Five](Chapter5.md)

@@ -64,10 +64,10 @@ setBlanks :: WordPut -- ^ Word that had blanks in it.
           -> Game    -- ^ The game.
           -> Evaluator Game -- ^ The updated game.
 setBlanks w bs g = pure (getPlayer g)
-                   >>= \p -> pure (g ^. p & rack .~ (setBlanks' (g ^. p ^. rack) bs))
+                   >>= \p -> pure (g ^. p & rack %~ setBlanks' bs)
                    >>= setPlayer g 
-  where setBlanks' :: Rack -> [Int] -> Rack
-        setBlanks' = foldl (\acc i -> replaceBlank acc (fst (snd (w !! i))))
+  where setBlanks' :: [Int] -> Rack -> Rack
+        setBlanks' bs r = foldl (\acc i -> replaceBlank acc (fst (snd (w !! i)))) r bs
         replaceBlank :: Rack -> Letter -> Rack
         replaceBlank [] _         = []
         replaceBlank (Blank:rs) l = l : rs
@@ -102,21 +102,20 @@ updatePlayables w g = do
 -- | Update the rack of the current player and the bag.
 updatePlayer :: WordPut -> Game -> Evaluator Game
 updatePlayer w g = do
-  let p      = getPlayer g
-      r      = g ^. p ^. rack
+  let p      = g ^. getPlayer g
+      r      = p ^. rack
       theBag = g ^. bag 
       theGen = g ^. gen
   takeFromRack r (map (fst . snd) (filter (\(pos,_) -> empty (g ^. board) pos) w))
     >>= \r' -> fillRack r' theBag theGen
-    >>= \(r'', theBag', theGen') -> setPlayer g (g ^. p & rack .~ r'' )
+    >>= \(r'', theBag', theGen') -> setPlayer g (p & rack .~ r'' )
     >>= \g' -> pure (g' & bag .~ theBag' & gen .~ theGen')
 
 -- | Update the current player in the game. 
 setPlayer :: Game -> Player -> Evaluator Game
 setPlayer g p = pure $ g & getPlayer g .~ p 
 
--- | Get the current player in the game.
--- getPlayer :: Game -> Player
+-- | Get the lens for the current player in the game.
 getPlayer g = if g ^. turn == P1 then player1 else player2
 
 -- | Toggle the turn in the game (between P1 and P2)

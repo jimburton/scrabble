@@ -28,7 +28,7 @@ import Prelude hiding
 import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
 import Data.Text ( Text )
-import Lens.Simple ((.~),(%~),(^.),(&))
+import Lens.Simple ((.~),(^.),(&))
 import Scrabble.Game.Internal
   ( getPlayer
   , setPlayer 
@@ -127,7 +127,7 @@ swap ls g = do
   takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
     >>= \(r'', theBag', theGen') -> setPlayer g (p & rack .~ r'')
     >>= endNonPassMove >>= checkEndOfGame
-    >>= \g' -> pure (g' & bag %~ (ls++)
+    >>= \g' -> pure (g' & bag .~ (ls++theBag')
                       & gen .~ theGen'
                       & lastMovePass .~ False )
 

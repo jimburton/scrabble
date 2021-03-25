@@ -1,432 +1,238 @@
-# Chapter Two: Validating moves
+# Chapter Two: Players and the game
 
-The code corresponding to this version of the project is in the branch 
-`chapter2`.
+[Contents](../README.md)
 
-In this chapter we introduce monadic error checking, leading to a
-design for the entire application. It will allow us to thread the
-state of the game through a long and growing series of computations
-without having to worry at each stage about whether anything went
-wrong.
+Now we can move on to think about **players** and the **game** itself. A
+player has a **name**, a **rack** and a **score**. 
 
-We are going to introduce a lot of functions that relate specifically to
-boards, so we create a new module for that, and refactor the dictionary code 
-into new modules too. 
-
-**TODO source tree**
-
-## Checking the structure and position of words
-
-Now that we can place words onto the board, we want to check whether
-doing so is valid. The rules about word placement are as follows:
-
-+ Words are at least two letters long.
-+ Words must be actually on the board.
-+ A word must be continuous and either horizontal or vertical.
-+ The first word must cross the centre square, while subsequent words
-  must connect with an existing word.
-+ The word and all additional words that it generates must be in the
-  dictionary.
-  
-Two positions on the board, `(r1,c1)` and `(r2,c2)`, are in a
-coninuous straight line if either `r1==r2-1` and `c1==c2` or `r1==r2`
-and `c1==c2-1`. This indicates the need to know which direction a word
-is played in, so we can also make a datatype and function for
-that. One approach to writing `straight` would simply to return `True`
-if the word is straight:
+The name is stored as `Data.Text` rather than `String`. Wherever
+possible, when we need to store some text we will use the `Text`
+datatype instead of `String`. This is because `String`, being a simple
+linked list, is very inefficient. Like `Data.Map`, it is usual practice to
+import `Data.Text` with a qualified name, apart from the name of the
+type itself which is imported directly for convenience.
 
 ```haskell
-data Dir = HZ | VT deriving (Show, Read, Eq)
+import Data.Text (Text)
+import qualified Data.Text as T
 
-getDirection :: WordPut -> Dir
-getDirection w = let r1 = fst $ fst $ head w
-                     r2 = fst $ fst $ head (tail w) in
-                   if  r1<r2 then VT else HZ
-				   
-straight :: WordPut -> Bool
-straight wp | length wp > 2 = 
-                let ps  = map fst wp
-                (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
-                f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
-                  (all f . zip ps $ tail ps)
-            | otherwise    = False
+-- | A player has a name, a rack and a score.
+data Player = Player { name  :: Text -- ^ The name of the player.
+                     , rack  :: Rack -- ^ The rack.
+                     , score :: Int  -- ^ The score.
+                     } deriving (Show, Eq)
 ```
-
-But there are lots of ways in which a move might be invalid we'd
-like to be able to let the user know exactly what went wrong. If we
-carry on with validation checks that return true or false we will need lots
-of `if` statements that work out what to report back to the user.
-
-A common solution to writing a function that can fail is to use the
-type `Either Text a`. Values of this type are either `Left e`, where
-`e` is an error message, or `Right x` where `x` is any type. In the
-case of `straight`, if it returns any kind of `Right` value then we
-know things went well. So there's no need to return a `Bool`, we can
-just return `Left e` for an error or `Right ()` if things went
-well. 
+To make working with `Text` easier, we turn on the `OverloadedStrings`
+extension in our code. This means that any literal strings in our code
+are treated as `Text`.  The extension is turned on in the `cabal`
+config file and by including a "language pragma" (an instruction to
+the compiler) at the top of any files that need it:
 
 ```haskell
-straight :: WordPut -> Either String ()
-straight wp | length wp > 2 =
-                let ps      = map fst wp
-                    (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
-                    f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
-                  if (all f . zip ps $ tail ps)
-                   then Right ()
-                   else Left "Not in a straight line"
-            | otherwise    = Left "Too few letters"
+{-# LANGUAGE OverloadedStrings #-}
 ```
 
-To check whether a word connects with an existing word, we need to look at the
-"neighbours" of each position in the new word and check whether at least one
-neighbour has a tile in it. Since this only applies if this is not the first move,
-we pass a boolean parameter which is true if this is the first move.
+Now we have enough types to create the `Game` datatype. This needs to
+store everything we need to know in order to play the game (including
+whose turn it is, so we create a datatype for that too). We also need
+to know whether this is the first move because a special rule applies
+to that (it must touch the centre square). Here is the first version,
+which we'll need to add to as we uncover new requirements.
 
 ```haskell
-onBoard :: Pos -> Bool
-onBoard (r,c) = r >= 0 && r < 15 && c >= 0 && c < 15
+data Turn = P1 | P2 deriving (Show, Eq)
 
-neighbours :: Pos -> [Pos]
-neighbours (r,c) = filter onBoard [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
-
-getSquare :: Board -> Pos -> Maybe Tile
-getSquare b pos = if onBoard pos
-                    then b ! pos
-                    else Nothing
-
-occupiedNeighbours :: Board -> Pos -> [Pos]
-occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
-
-connects :: WordPut -> Board -> Bool -> Either Text ()
-connects ws b fm =
-  let end = if fm then Right () else Left "Not touching any other tile" in
-    foldl (\acc (pos,_) -> if (not . all null) (occupiedNeighbours b pos)
-                           then Right ()
-                           else acc) end ws
+-- | A game is comprised of all the state that is needed to play a game. 
+data Game = Game { board     :: Board    -- ^ The board
+                 , bag       :: Bag      -- ^ The bag.
+                 , player1   :: Player   -- ^ Player 1.
+                 , player2   :: Player   -- ^ Player 2.
+                 , turn      :: Turn     -- ^ Which player's turn it is.
+                 , gen       :: StdGen   -- ^ The StdGen for all things random.
+                 , firstMove :: Bool     -- ^ Is it the first move?
+                 , dict      :: DictTrie -- ^ The dictionary.
+                 }
 ```
-Checking that a word is on the board just means checking that every position is on
-the board.
+
+
+Note that the game includes a `StdGen`, or generator for pseudo-random
+numbers. We need this because we want to supply players with tiles
+taken at "random" from the bag, something that we'll come to in the
+next chapter.
+
+## Records, their clumsiness, and *lenses*
+
+As the `Player` and `Game` datatypes are records we can create them with
+named fields and update them by assigning those fields inside braces. The
+compiler screates an accessor function for each field with the same name
+as the field.
+
+```
+> let p = Player {name = "Bob", rack = [A, B, C, D, E, F, G], score = 0}
+> name p
+"Bob"
+> p { name = "Alice", score = 42 }
+Player
+    { name = "Alice"
+    , rack =
+        [ A
+        , B
+        , C
+        , D
+        , E
+        , F
+        , G
+        ]
+    , score = 42
+    }
+```
+
+Our main record will be `Game` and it has two `Player` values nested within it. As soon
+as we want to update values in this structure we encounter a well-known problem -- the
+syntax for records makes this awkward. Let's say we have a game called `g` and we want 
+to increase the score of Player 1 by 10:
+
+```
+> let g' = g { player1 = (player1 g) { score = score (player1 g) + 10 } }
+```
+
+Ouch! Considering that in an OO language we could probably do
+something like `p.player1.score += 10`, this is very cumbersome. This
+is the problem that *lenses* overcome.
+
+Lenses are first class getters and setters for records (and tuples,
+and many other types, but we're only using them for records). They can
+be composed, so they allow us to access and modify values that are
+*deeply nested* values in data, like the `score` field above. 
+
+This isn't the place for an in-depth lens tutorial, and I'm aiming to
+tell you just enough about them to understand the way they're used in
+this project, which is very basic. It's highly recommended that you
+do read such a tutorial eventually, such as the [standard
+one](http://hackage.haskell.org/package/lens-tutorial-1.0.4/docs/Control-Lens-Tutorial.html).
+
+Each lens comes with two main functions: `view`, which gives the value
+of the field, and `over`, which modifies its value. Rather than using
+these functions by name we normally use one of the lens operators. If
+we define lenses for `Player` and `Game` and use one of the standard
+lens librarys, we can rewrite the the code above like this:
+
+```
+> let g' = g & player1 . score %~ (+10)
+```
+
+It's a lot cleaner, even if it is gobbledegook for now. Let's break it
+down. 
+
+The point is to produce a new `Game` based on `g` but in which the
+partially applied function `(+10)` has been applied to the `score`
+field nested inside `player1`. 
+
+In this context, `score` is *not* the accessor function we saw before,
+it's a lens. The `(&)` operator is like `($)` but it takes its
+arguments in reverse order, so this is the same as writing `(player1
+. score %~ (+10)) g`. So `g` is applied to a function which is made of
+up two lenses, `player1` and `score`, composed with the usual
+composition operator, `(.)`.  Then comes the `(%~)` operator, which
+takes a lens as its first argument and a function as its second, and
+supplies the value from the lens to the function. The modifier
+function is `(+10)`.  Haskell is still a purely functional language of
+course, so no change is made to `g`, but a new `Game` record is
+produced which we assign to `g'`.
+
+Lenses can be used to access the value of the field or to change
+it. Which purpose the lens serves depends on the context, which is set
+by the lens operators involved. For example, the lens `player1` acts
+like a getter in `g ^. player1`. It acts like a setter in `g & player1
+.~  p` (setting `player1` in `g` to some new value `p`).
+
+The `(&)` operator has a very simple type, `(&) :: a -> (a -> b) -> b`, 
+but is icredibly useful. We use it to supply the object at the top
+of the chain (`g` in the example above) but because a record update
+returns a new record we can also use it to chain updates. In the code
+below (taken from the library) we start with a game called `g`,
+set the score of Player 1 to some value `p1s`, set Player 2's score to
+`p2s` and set `gameOver` to `True`, all (seemingly) in one go:
 
 ```haskell
-wordOnBoard :: WordPut -> Either String ()
-wordOnBoard w = if all (onBoard . fst) w
-                 then Right ()
-                 else Left "Word not on board"
+g & player1 . score .~ p1s 
+  & player2 . score .~ p2s 
+  & gameOver .~ True 
 ```
-Checking that the first word touches the centre square is also 
-straightforward with the `touches` function.
+
+We are going to use the `Lens.Simple` library, so we add it to the
+cabal dependencies. We could define our own lenses for each field in
+the `Player` and `Game` records, *or* we can use the `makeLenses` 
+function and have them made for us. To do this, we name each field
+beginning with an underscore followed by the name we want for the lens
+and cast the magic spell `$(makeLenses ''RecordName)` beneath the definition.
 
 ```haskell
-touches :: Pos -> WordPut -> Bool
-touches p = any ((==p) .  fst)
+-- | A player has a name, a rack and a score, and is either an interactive or an AI player.
+data Player = Player { _name  :: Text -- ^ The name of the player.
+                     , _rack  :: Rack -- ^ The rack.
+                     , _score :: Int  -- ^ The score.
+                     } deriving (Show, Eq)
+-- | Make lenses for Player
+$(makeLenses ''Player)
 
-firstMoveTouchesCentre :: WordPut -> Bool -> Either Text ()
-firstMoveTouchesCentre w fm = if (not fm || touches (7,7) w) 
-                               then Right ()
-                               else Left "First move must touch the centre square"
-```
-We also need to check that the letters in the word to be played are actually in the player's 
-rack or are already on the board.
-
-```haskell
-lettersAvailable :: WordPut -> Player -> Board -> Either Text ()
-lettersAvailable w p b = if all available w
-                          then Right ()
-                          else "Letters not in rack or not on board."
-  where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
-
-``` 
-
-So, we already have lots of things to check about the validity of a
-move. We need to check whether the word is straight, whether it
-touches another word and whether the tile are available, and this is
-before we have even got onto checking the dictionary. Each of these
-function calls will return an `Either String a` and we may find
-ourselves doing a lot of case statements and pattern matching on
-`Either` values. A function that puts together the various ways we
-migh validate move could look like this:
-	
-```
-validateMove :: Board   -- ^ The board
-             -> Player  -- ^ The player making the move
-             -> WordPut -- ^ The word to play
-             -> Bool    -- ^ Is first move
-             -> Either String Bool
-validateMove b p w fm = case connects w b fm of
-  Right _ -> case straight w of
-               Right _ -> case firstMoveTouchesCentre w fm of
-                            Right _ -> case lettersAvailable w p b of
-                                         Right -> Right ()
-                                         Left e -> Left e
-                            Left e -> Left e
-               Left e -> Left e
-  Left e -> Left e
- ```
- 
-The technical term for this kind of code is "nasty". Such a deeply
-nested and indented structure is hard to read, hard to maintain and
-hard to extend.  Fortunately, what we can do here is to use a monad to
-encapsulate the checks for `Left` and `Right`. We make our `Either`
-type into a monad, where the monad instance says what to do when we
-encounter a `Left` value, and then when we use the monad we can carry
-on as if everything is a `Right` value -- no more case statements.
-
-We create a new type for arbitrary "evaluations" in the game, called
-`Evaluator`. 
-
-```haskell
-newtype Evaluator a = Ev (Either Text a)
-```
-This type wraps up an `Either Text a` type where, as you
-may expect, the `Text` is an error message and the `a` value is
-whatever is being evaluated. For instance, `a` could be `()` in cases 
-where moves are being checked for validity, or `Game` when a function 
-either fails or returns an updated version of the game, or `Int` when
-a function either fails or calculates the score of a word. A value of
-the type `Evaluator Int` would be something like `Ev (Left "Something went wrong.")`
-or `Ev (Right 42)`. 
-
-Now we need to make a monad instance for `Evaluator`. That requires us
-to first define the `Functor` and `Applicative` instances,
-since every monad is an applicative and every applicative is a
-functor. The spirit of these definitions is that if we are dealing
-with an `Ev (Left _)` value we want to **stop what we are doing and
-report the error**, while if we are dealing with a `Ev (Right _)`
-value we can **keep going**.
-
-```haskell
-instance Functor Evaluator where
-  -- fmap :: (a -> b) -> f a -> f b 
-  fmap _ (Ev (Left e))  = Ev (Left e)      -- report the error
-  fmap f (Ev (Right g)) = Ev (Right (f g)) -- keep going
-
-instance Applicative Evaluator where
-  -- pure :: a -> f a
-  pure k = Ev (Right k)
-  -- (<*>) :: f (a -> b) -> f a -> f b
-  Ev (Left  e)  <*>  _  =  Ev (Left e) -- report the error
-  Ev (Right f)  <*>  r  =  fmap f r    -- keep going
-
-instance Monad Evaluator where
-    (Ev ev) >>= k =
-        case ev of
-          Left msg -> Ev (Left msg) -- report the error
-          Right v  -> k v           -- keep going
-    return   = pure
-    fail msg = Ev (Left (T.pack msg))
-```
-Now we need to rewrite all of the functions that returned `Either Text a`
-to return `Evaluator a`. The ones we have seen so far tested a boolean condition,
-`b`, and returned `Right ()` if `b` succeeded or `Left Text` if `b` failed. We can
-make an abstraction for this pattern.
-
-```haskell
-evalBool :: Bool -> Text -> Evaluator ()
-evalBool b e = if b then pure () else fail (T.unpack e)
-```
-(Note that the `fail` function takes a `String` so we have to `unpack` the `Text`.) 
-Now our validation functions will all have a similar structure to the new version 
-of `lettersAvailable` below -- a call to `evalBool` where the first argument is a boolean 
-condition and the second is an error message.
-
-```haskell
-lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
-lettersAvailable w p b = all available w `evalBool`"Letters not in rack or not on board."
-  where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
-
-``` 
-
-Monadic style allows us to remove all those case statments and write
-`validateMove` in a far nicer style. In effect, the case statements
-are all replaced by the one in the definition of the monad
-instance. If any of the validation functions encounters an error, the
-appropriate message is delivered.
-
-```
-validateMove :: Board   -- ^ The board
-             -> Player  -- ^ The player making the move
-             -> WordPut -- ^ The word to play
-             -> Bool    -- ^ Is first move
-             -> Evaluator ()
-validateMove b p w fm = 
-	   connects w b fm 
-	   >> straight w 
-	   >> firstMoveTouchesCentre w fm 
-	   >> lettersAvailable w p b
-```
-	
-The validation functions are now *combinators*. We can combine small
-ones like `connects` into larger ones like `validateMove` that check
-several things. Functions at the top level can run an evaluator then
-unpack the result in a single case statement to see if all went well
-or, if not, exactly what went wrong.
-								 
-## Checking words in the dictionary
-
-We have already seen how to check that a word is in the dictionary
-using `dictContainsWord`. Instead of returning a boolean we now want this to fit in
-with the combinator style of validation, so we alter it to run in the `Evaluator`
-monad.
-
-```haskell
-dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t) 
+-- | A game is comprised of all the state that is needed to play a game. 
+data Game = Game { _board     :: Board    -- ^ The board
+                 , _bag       :: Bag      -- ^ The bag.
+                 , _player1   :: Player   -- ^ Player 1.
+                 , _player2   :: Player   -- ^ Player 2.
+                 , _turn      :: Turn     -- ^ Which player's turn it is.
+                 , _gen       :: StdGen   -- ^ The StdGen for all things random.
+                 , _firstMove :: Bool     -- ^ Is it the first move?
+                 , _dict      :: Dict     -- ^ The dictionary.
+                 , _gameOver  :: Bool     -- ^ Is the game over?
+                 , _playable  :: Playable -- ^ The map of playable positions.
+                 , _lastMovePass :: Bool  -- ^ Was the last move a pass?
+                 }
+-- | Make lenses for Game.
+$(makeLenses ''Game)
 ```
 
-We need to apply this function to the new
-word and all additional words generated by the move. The classic
-instructions give the example of this board:
+As we can tell from the `$` sign, the call to `makeLenses` is Template
+Haskell. This is the language extension that provides *metaprogramming*. We
+need to include the pragma `{-# LANGUAGE TemplateHaskell #-}` at the
+top of each file that has an expression like this in it, and add
+`TemplateHaskell` to the list of language extensions being used in the
+config file. When the code is compiled the preprocessor runs and
+generates code for us. As a result there are lens functions defined with the
+name of each field, minus the underscores. We need to export these
+from the `Scrabble.Types` module and import them wherever they are
+needed.
 
-```
-   F
-   A
- HORN 
-   M
- PASTE
-```
-In the next move the word MOB is played, generating two additional words,
-NOT and BE. 
+Lens libraries define a lot (a *lot*!) of operators like the `(%~)`
+one used above, and when you get them wrong the type errors are hard
+to figure out, at least at first. We are going to stick to a small number
+of the most basic operators though:
 
-```
-   F
-   A
- HORN 
-   MOB
- PASTE
-```
-Any bonus squares under the new letters (O and B) add to the score but no bonuses 
-are counted for the letters that are already on the board. In the next move the 
-word BIT is played, generating the additional words PI and AT.
 
-```
-   F
-   A
- HORN 
-   MOB
- PASTE
-BIT
-```
-To find the additional words generated by a move we will first determine the 
-direction of the new word. All additional words will be in the opposite direction.
-Next we create a temporary board in which the word has been played and, for each position in the 
-word, we see if that position is part of a word in the opposite direction. This is what the
-functions `wordOnRow`, `wordOnCol`, `startOfWord` and `wordFromPos` do. We also define 
-some functions that transform positions and a convenient type for them, `PosTransform`. 
-The `catMaybes`function from `Data.Maybe` takes a list of `Maybe a` values and returns 
-the list of `a` values from everything that isn't `Nothing`.
+| Operator | Name   | Example                                                                     |
+| -------- | ------ | --------------------------------------------------------------------------- |
+| `(^.)`   | view   | `g ^. player1`: gets Player 1 in `g`.                                       |
+| `(.~)`   | set    | `g & player1 . score .~ 0`: sets the score of Player 1 to 0.                |
+| `(%~)`   | over   | `g & player1 . name %~ map T.toUpper`: applies `map T.toUpper` to the name. |
+| `(&)`    | apply  | Reverse application, used for supplying the first record to a composed lens, and for chaining operations |
 
-```haskell
-import Data.Maybe (catMaybes)
+If you aren't using nested records in your code, or you only do so in
+one or two places, then the complexity lenses add may not be worth
+it. We are going to make enough use of nested records for our codebase
+to benefit from them though. Also, if you carry on using Haskell you
+will need to read other people's code that uses lenses as they are
+very widely used, so you need to understand how they work at some
+point.
 
-type PosTransform = Pos -> Pos
+The best way to get started with them is to use them, and you don't
+need to understand them inside out to do that (but you do need to read
+a good tutorial thoroughly at some point). Like many things in
+Haskell, they can seem difficult to understand at first but it's not
+brain surgery, just types.
 
-incRow :: PosTransform
-incRow (r,c) = (r+1,c)
+## Testing
 
-incCol :: PosTransform
-incCol (r,c) = (r,c+1)
+## Exercises
 
-startOfWord :: Board -> PosTransform -> Pos -> Pos
-startOfWord b f pos = let pos' = f pos in
-  if not (onBoard pos') || isNothing (getSquare b pos')
-  then pos
-  else startOfWord b f pos'
-
-wordFromSquare :: Board -> PosTransform -> Pos -> Maybe WordPut
-wordFromSquare b f pos =  maybe [] (\t -> (pos, t) 
-                                     : wordFromSquare b f (f pos)) (getSquare b pos)
-
-wordOnRow :: Board -> Pos -> Maybe WordPut
-wordOnRow b pos = wordFromSquare b incCol (startOfWord b decCol pos)
-
-wordOnCol :: Board -> Pos -> Maybe WordPut
-wordOnCol b pos = wordFromSquare b incRow (startOfWord b decRow pos)
-
-additionalWords :: Board -> WordPut -> [WordPut]
-additionalWords b w = 
-  let b'     = updateBoard b w
-      oppDir = if getDirection w == HZ then VT else HZ 
-      mWds   = if oppDir == HZ then map (wordOnRow b') w else map (wordOnCol b') w in
-   catMaybes mWds
-```
-To check that a word and all of its additional words are in the dictionary we first apply
-`dictContainsWord` every word in the list. That function has this type:
-
-```haskell
-dictContainsWord :: Dict -> Text -> Evaluator ()
-```
-So if we `map` `dictContainsWord d` over a list of `Text` values we will get a list of
-type `[Evaluator ()]`, a list of evaluations, whereas we want one evaluation with the list in 
-it. The `mapM` function does what we need, having the type 
-
-```haskell
-mapM :: (Traversable t, Monad m) => (a -> m b) -> t a -> m (t b)
-```
-If we use `mapM` to apply the function over the list of texts we get something with the type
-`Evaluator [()]` instead of `[Evaluator ()]`, pulling the monad type out of the list. 
-
-We then want to compress, or concatenate, the list of `()` values into
-a single value so we can return the type `Evaluator ()`, since all we
-want to know is that all the words are in the dictionary and if any of
-them weren't we'd be getting back a `Left` with an error message in
-it. The `mconcat` function works with all instances of the `Monoid`
-typeclass and has the type `mconcat :: Monoid a => [a] -> a`. `()` is
-a monoid so this function is the one we need.
-
-```haskell
-wordsInDictM :: Dict -> [Text] -> Evaluator ()
-wordsInDictM t ws = mconcat <$> mapM (dictContainsWord t) ws
-```
-
-## Putting it all together
-
-We have lots of ways in which we can validate moves and a nice neat way of combining them.
-Validating that a move follows the most basic rules (e.g. the tiles are actually on the board)
-is different from checking the words are in the dictionary, something we may or may not want to
-do every time. It could be handy to turn off dictionary checking during development, and if an
-AI player finds a word in the dictionary there's no point in checking it again.
-
-We can turn the idea of validation into an abstraction (a type) and
-combine the various smaller checks we have into coherent blocks.
-
-```haskell
-validateMove :: Board -> Player -> WordPut -> Bool -> Evaluator ()
-validateMove b p w fm =
-  connects w b fm
-  >> straight w
-  >> firstMoveTouchesCentre w fm
-  >> lettersAvailable w p b
-
-validateRack :: Board -> Rack -> WordPut -> Evaluator ()
-validateRack b r w = someNewTiles b w >>
-  all (\(pos,(t,_)) -> t `elem` r
-           || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
-  `evalBool` ("Not all tiles in rack or on board: " ++ formatWP w)
-
-type Validator = [WordPut] -> Game -> Evaluator ()
-
-valGameRules :: Validator
-valGameRules ws g = do
-  let b  = board g
-      p  = getPlayer g
-      w  = head ws
-      fm = firstMove g
-  validateRack b (rack p) w >> validateMove b p w fm
-  
-valGameRulesAndDict :: Validator
-valGameRulesAndDict ws g = do
-  let d  = dict g
-      ts = map (wordToText . map (fst .snd)) ws
-  valGameRules ws g >> wordsInDictM d ts 
-
-```
-
-In the next chapter we will use these validators when we start playing moves
-within the game.
-
-## Tests
-
-TODO
- 
 [Contents](../README.md) | [Chapter Three](Chapter3.md)
-

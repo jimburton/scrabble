@@ -25,12 +25,13 @@ extended.
 Testing is a continuous topic, so new tests are added in each chapter.
 
 + [Chapter One](chapters/Chapter1.md): Getting started.
-+ [Chapter Two](chapters/Chapter2.md): Validating moves.
-+ [Chapter Three](chapters/Chapter3.md): Playing the game.
-+ [Chapter Four](chapters/Chapter4.md): Playing against the computer.
-+ [Chapter Five](chapters/Chapter5.md): The CLI client.
-+ [Chapter Six](chapters/Chapter6.md): The web client.
-+ [Chapter Seven](chapters/Chapter7.md): Conclusion.
++ [Chapter Two](chapters/Chapter2.md): Players and the game.
++ [Chapter Three](chapters/Chapter2.md): Validating moves.
++ [Chapter Four](chapters/Chapter3.md): Playing the game.
++ [Chapter Five](chapters/Chapter4.md): Playing against the computer.
++ [Chapter Six](chapters/Chapter5.md): The CLI client.
++ [Chapter Seven](chapters/Chapter6.md): The web client.
++ [Chapter Eight](chapters/Chapter7.md): Conclusion.
 
 ## Having a quick game
 
@@ -107,34 +108,9 @@ hone 7 7 v
 
 14
 
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 7|  |  |  |  |  |  |  | H| I| L| D|  |  |  |  |
- 8|  |  |  |  |  |  |  | O|  |  |  |  |  |  |  |
- 9|  |  |  |  |  |  |  | N|  |  |  |  |  |  |  |
-10|  |  |  |  |  |  |  | E|  |  |  |  |  |  |  |
-11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-------------------------------------------------
-
-**********************************************
-bob (14)
-L, I, E, A, O, N, E
-1, 1, 1, 1, 1, 1, 1
-**********************************************
-Enter WORD ROW COL DIR[H/V]:
 ```
 
-To start a web-based game you need to start to server then start one
+To start a web-based game you need to start the server then start one
 or two clients. Start the server with `cabal run
 scrabble-server`. Then start the first client by opening
 `web/client/html/index.html` in a browser. Select the checkbox for a one-player
@@ -143,11 +119,10 @@ tab for a two player game.
 
 <img src="/images/webgame.png" alt="Playing Scrabble on the web" width="500px" />
 
-If you want to run clients on a network start the client server with
+If you want to run clients on a network, start the client server with
 `cabal run scrabble-client`. This serves the web client on 
 http://localhost:8000/index.html. To change the hostname, port, etc, see
 `web/client/Main.hs`.
-
 
 ## Disclaimer
 

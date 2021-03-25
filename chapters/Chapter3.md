@@ -1,465 +1,432 @@
-# Chapter Three: Playing the game
+# Chapter Two: Validating moves
 
 The code corresponding to this version of the project is in the branch 
-`chapter3`.
+`chapter2`.
 
-We now have enough resources to start playing the game. There is no UI
-as yet, and what we mean by "playing" is using the REPL to generate an
-initial game state then calling functions to "take turns" that generate
-new game states. 
+In this chapter we introduce monadic error checking, leading to a
+design for the entire application. It will allow us to thread the
+state of the game through a long and growing series of computations
+without having to worry at each stage about whether anything went
+wrong.
 
-Code that takes turns repeatedly until the game is over is not part of
-this section. That functionality is the responsibility of clients,
-because it will necessarily involve IO, and the desired response when
-something goes wrong will be different for each client. All the
-library knows how to do is to use pure functions to produce a fresh
-game given some starting conditions, and to produce a new game based
-on an existing one, i.e. by playing a move.
+We are going to introduce a lot of functions that relate specifically to
+boards, so we create a new module for that, and refactor the dictionary code 
+into new modules too. 
 
-## Setting up the game
+**TODO source tree**
 
-To start a fresh game we need to create a full bag then two players,
-each with a rack that has been filled with tiles taken at "random" from
-the bag. Then the two players and the depleted bag are added to the
-game state.
+## Checking the structure and position of words
 
-For the randomness, we are going to use a pseudo-random number
-generator (PRNGs). These are completely deterministic
-(i.e. non-renadom) data structures. They are created using a *seed*,
-and can produce a stream of values whose sequence is hard enough for
-humans to predict that it appears to be truly random. But there's
-nothing magical happening -- PRNGs created with the same seed return
-the same stream of values, and ones in the same state (i.e. in the
-same position in its stream of values) returns the same value
-next. 
+Now that we can place words onto the board, we want to check whether
+doing so is valid. The rules about word placement are as follows:
 
-Every time we use the PRNG it returns the latest value and an updated
-version of itself, primed to return the next value. So our function
-that fills a rack needs to take a rack to be filled, a bag to fill the
-rack from and a PRNG as parameters, and return a triple of the filled
-rack, the depleted bag and, crucially, the updated PRNG. The type for
-PRNGs that we'll be using is `StdGen`. The function `randomR (n,m) g`
-takes an upper and lower bound and a `StdGen` then returns a number
-between `n` and `m` and the updated `StdGen`.
++ Words are at least two letters long.
++ Words must be actually on the board.
++ A word must be continuous and either horizontal or vertical.
++ The first word must cross the centre square, while subsequent words
+  must connect with an existing word.
++ The word and all additional words that it generates must be in the
+  dictionary.
+  
+Two positions on the board, `(r1,c1)` and `(r2,c2)`, are in a
+coninuous straight line if either `r1==r2-1` and `c1==c2` or `r1==r2`
+and `c1==c2-1`. This indicates the need to know which direction a word
+is played in, so we can also make a datatype and function for
+that. One approach to writing `straight` would simply to return `True`
+if the word is straight:
 
 ```haskell
-getTile :: Bag -> StdGen -> (Letter, Bag, StdGen)
-getTile b g = let (i, g') = randomR (0, length b -1) g
-                  t = b !! i
-                  b' = take i b ++ drop (i+1) b in
-              (t, b', g')
-			  
-fillRack :: Rack -> Bag -> StdGen -> Evaluator (Rack, Bag, StdGen)
-fillRack r b g = pure $ fillRack' (7 - length r) r b g
-  where fillRack' 0 r' b' g' = (r', b', g')
-        fillRack' _ r' [] g' = (r', [], g')
-        fillRack' n r' b' g' =
-          let (t, b'', g'') = getTile b' g' in
-            fillRack' (n-1) (t:r') b'' g''
+data Dir = HZ | VT deriving (Show, Read, Eq)
+
+getDirection :: WordPut -> Dir
+getDirection w = let r1 = fst $ fst $ head w
+                     r2 = fst $ fst $ head (tail w) in
+                   if  r1<r2 then VT else HZ
+				   
+straight :: WordPut -> Bool
+straight wp | length wp > 2 = 
+                let ps  = map fst wp
+                (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
+                f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
+                  (all f . zip ps $ tail ps)
+            | otherwise    = False
 ```
 
-When we start a game we need to begin with a new `StdGen`. We can get
-one created with a seed based on the system time using `getStdGen ::
-IO StdGen` then keep updating it throughout the game. Because we don't
-want everything in our library to be polluted with `IO` we leave the
-call to `getStdGen` to clients and presume they can supply one to the
-`newGame` function below. Reading in the dictionary file is also an
-`IO` action that we presume is done elsewhere.
+But there are lots of ways in which a move might be invalid we'd
+like to be able to let the user know exactly what went wrong. If we
+carry on with validation checks that return true or false we will need lots
+of `if` statements that work out what to report back to the user.
+
+A common solution to writing a function that can fail is to use the
+type `Either Text a`. Values of this type are either `Left e`, where
+`e` is an error message, or `Right x` where `x` is any type. In the
+case of `straight`, if it returns any kind of `Right` value then we
+know things went well. So there's no need to return a `Bool`, we can
+just return `Left e` for an error or `Right ()` if things went
+well. 
 
 ```haskell
-numTilesList :: [(Letter,Int)]
-numTilesList = [
-  (A, 9), (B, 2), (C, 2), (D, 4), (E, 12), (F, 2), (G, 3),
-  (H, 2), (I, 9), (J, 1), (K, 1), (L, 4), (M, 2), (N, 6),
-  (O, 8), (P, 2), (Q, 1), (R, 6), (S, 4), (T, 6), (U, 4),
-  (V, 2), (W, 2), (X, 1), (Y, 2), (Z, 1), (Blank, 2) ]
+straight :: WordPut -> Either String ()
+straight wp | length wp > 2 =
+                let ps      = map fst wp
+                    (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
+                    f       = \(x',y') -> s1 x' == s1 y' - 1 && s2 x' == s2 y' in 
+                  if (all f . zip ps $ tail ps)
+                   then Right ()
+                   else Left "Not in a straight line"
+            | otherwise    = Left "Too few letters"
+```
 
-newBag :: Bag
-newBag = concatMap (\(l,n) -> replicate n l) numTilesList
+To check whether a word connects with an existing word, we need to look at the
+"neighbours" of each position in the new word and check whether at least one
+neighbour has a tile in it. Since this only applies if this is not the first move,
+we pass a boolean parameter which is true if this is the first move.
 
-newGame :: Text -> Text -> StdGen -> Dict -> Game
-newGame p1Name p2Name theGen d = 
-  let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
-      p1 = Player { name  = p1Name
-                  , rack  = rack1
-                  , score = 0 }
-      Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
-      p2 = Player { name  = p2Name
-                  , rack  = rack2
-                  , score = 0 }
-      g  = Game { board     = newBoard
-                , bag       = bag2
-                , player1   = p1
-                , player2   = p2
-                , turn      = P1
-                , gen       = gen''
-                , firstMove = True
-                , dict      = d 
-				, gameOver  = False 
-				, lastMovePass = False} in
-    g
+```haskell
+onBoard :: Pos -> Bool
+onBoard (r,c) = r >= 0 && r < 15 && c >= 0 && c < 15
+
+neighbours :: Pos -> [Pos]
+neighbours (r,c) = filter onBoard [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
+
+getSquare :: Board -> Pos -> Maybe Tile
+getSquare b pos = if onBoard pos
+                    then b ! pos
+                    else Nothing
+
+occupiedNeighbours :: Board -> Pos -> [Pos]
+occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
+
+connects :: WordPut -> Board -> Bool -> Either Text ()
+connects ws b fm =
+  let end = if fm then Right () else Left "Not touching any other tile" in
+    foldl (\acc (pos,_) -> if (not . all null) (occupiedNeighbours b pos)
+                           then Right ()
+                           else acc) end ws
+```
+Checking that a word is on the board just means checking that every position is on
+the board.
+
+```haskell
+wordOnBoard :: WordPut -> Either String ()
+wordOnBoard w = if all (onBoard . fst) w
+                 then Right ()
+                 else Left "Word not on board"
+```
+Checking that the first word touches the centre square is also 
+straightforward with the `touches` function.
+
+```haskell
+touches :: Pos -> WordPut -> Bool
+touches p = any ((==p) .  fst)
+
+firstMoveTouchesCentre :: WordPut -> Bool -> Either Text ()
+firstMoveTouchesCentre w fm = if (not fm || touches (7,7) w) 
+                               then Right ()
+                               else Left "First move must touch the centre square"
+```
+We also need to check that the letters in the word to be played are actually in the player's 
+rack or are already on the board.
+
+```haskell
+lettersAvailable :: WordPut -> Player -> Board -> Either Text ()
+lettersAvailable w p b = if all available w
+                          then Right ()
+                          else "Letters not in rack or not on board."
+  where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
+
 ``` 
 
-Note that we updated the `Game` type to include two new booleans, `gameOver`
-and `lastMovePass`. These relate to the two ways in which a game can end. 
-Normally the game ends when the bag is empty and one of the
-players has used all of their tiles. ALternatively, the game is over if each
-player passes their move. 
-
-We will deal first with the simplest way of playing a move, which is
-by *passing*. Then we consider the almost equally simple case of taking
-a move by *swapping tiles*, before looking at the "normal" way of taking
-a move by *playing a word* on the board.
-
-## Passing a move
-
-A player can take a move by passing their turn. The rule is that if
-there are two passes in the row then the game is ended, so now we need
-to think about how to end games. All the library will do to end a game
-is to make some changes to the score then set `gameOver` to `True`. We
-will leave it up to clients to check this value and make an
-announcement to the players if necessary.
-
-The `lastMovePass` field is there to detect the situation where
-there have been two passes in a row. We set it to `True` when a player passes
-and to `False` when they take a move in any other way. When there are
-two passes in a row we pass the game to `endGame`, which sets the
-`gameOver` field and finalises the scores. Remaining tiles in each
-player's rack are subtracted from their score, and if one player has
-used all of their tiles, the tiles in the other player's rack are
-added to their score.
-
-The other way that the game can end is if we run out of tiles in the
-bag and one player has used all of the tiles in their rack. This is
-checked in `checkEndOfGame`, which also calls `endGame` if necessary.
-
-```haskell
-rackValue :: Rack -> Int
-rackValue = sum . map scoreLetter
-
-endGame :: Game -> Evaluator Game
-endGame g = do
-  let r1v = rackValue (rack (player1 g))
-      r2v = rackValue (rack (player2 g))
-      p1s = (score (player1 g) - r1v) + r2v
-      p2s = (score (player2 g) - r2v) + r1v
-  pure g { player1 = (player1 g) { score = p1s }
-         , player2 = (player2 g) { score = p2s }
-         , gameOver = True }
-		 
-checkEndOfGame :: Game -> Evaluator Game
-checkEndOfGame g =
-  let eog = null (bag g) &&
-        (null (rack (player1 g)) || null (rack (player2 g))) in
-  if eog
-  then endGame g
-  else pure g
-
-toggleTurn :: Game -> Evaluator Game
-toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
-
-pass :: Game -> Evaluator Game
-pass g = if lastMovePass g
-         then endGame g
-         else toggleTurn g { lastMovePass = True } >>= checkEndOfGame
-
+So, we already have lots of things to check about the validity of a
+move. We need to check whether the word is straight, whether it
+touches another word and whether the tile are available, and this is
+before we have even got onto checking the dictionary. Each of these
+function calls will return an `Either String a` and we may find
+ourselves doing a lot of case statements and pattern matching on
+`Either` values. A function that puts together the various ways we
+migh validate move could look like this:
+	
 ```
-## Swapping tiles
-
-A player can take a move by swapping some tiles from their rack for
-new ones from the bag. We take the tiles to swap from the rack, refill
-the rack, then add the old tiles from the rack back to the bag. The
-`endNonPassMove` function manages the state of the fields `firstMove`
-and `lastMovePass`.
-
-```haskell
-endNonPassMove :: Game -> Evaluator Game
-endNonPassMove g = toggleTurn $ g { firstMove = False, lastMovePass = False }
-
-swap :: Word -> Game -> Evaluator Game
-swap ls g = do
-  let p      = getPlayer g
-      r      = rack p
-      theBag = bag g
-      theGen = gen g
-  takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
-    >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
-    >>= endNonPassMove >>= checkEndOfGame
-    >>= \g' -> pure g' { bag = ls++theBag'
-                       , gen = theGen'
-                       , lastMovePass = False }
-
-```
-
-## Playing a move
-
-Now we need to write a function that plays a word onto the board in
-the normal way. It will need a `Validator` to heck the move, a game,
-and a word to play. If all goes well it will return an updated game and a
-pair of a list of all new words and the score. Like the other ways of playing a
-move it will run in the `Evaluator` monad, so failure at any point is
-handled nicely.
-
-We'll write this top level function then fill in
-the parts that it needs to do its work.
-
-```haskell
-move :: Validator -> Game -> WordPut -> Evaluator (Game, ([Word],Int))
-move validate g w = additionalWords g w >>= \aw -> validate (w:aw) g
-    >> scoreWords g w aw >>= \sc -> setScore g sc 
-    >>= updatePlayer >>= updateBoard w >>= endNonPassMove 
-	>>= checkEndOfGame <&> (,(map wordPutToWord (w:aw),sc))
-```
-
-There is a lot going on here! We won't go through every part in
-detail, but you should study the code in `src/Scrabble/Game.hs`. At
-each stage the game state is being updated or some other value is
-being calculated, such as the score. Some things to note:
-
-+ Because the `Validator` is a parameter we can call `move` with
-  `valGameRules` only if we don't want to include a dictionary check,
-  or `valGameRulesAndDict` to check everything.
-+ To see how the score is calculated, study the functions `scoreWord`
-  and `scoreWords` in `Scrabble.Board`. (*Disclaimer*: these functions
-  are unpleasantly messy, but this seems to be unavoidable.) 
-  
-  Every tile in a new word adds its face value multiplied by the
-  letter-bonus of the square it is placed on, if any. Then the score
-  for the whole word is multiplied by any word-bonus that a new tile
-  has been placed on. A `Map` called `bonusMap` is maintained of the
-  positions of bonus squares on the board. Bonus squares can double or
-  triple the value of the tile played on them (shown in the ASCII
-  board as `L2` and `L3`) and double or triple the value of entire
-  words (`2W` and `3W`). However, bonuses are only applied once, when
-  a new tile has been placed on them. If all seven tiles are played in
-  a move there is a fifty point bonus.
-  
-+ The `checkEndOfGame` function produces a game (which might be
-  updated to say that this is the end of the game). We pass this game
-  to the `(<&>)` operator from `Data.Functor`.  This operator is the
-  same as `(<$>)` but with the order of the arguments reversed:
-  
-  ```haskell
- (<&>) :: Functor f => f a -> (a -> b) -> f b 
-  ```
-  
-  So it takes a functor (the game, wrapped up in the `Evaluator`
-  functor) and a pure function as it's second argument, then applies
-  that function within the functor. The pure function uses a *tuple
-  section* -- the triple `(,(map wordPutToWord (w:aw),sc))` is missing
-  its first component and is a partially applied function "waiting"
-  for that part. This requires a language extension, `TupleSections`,
-  which is turned on at the top of the module and added to the `cabal`
-  file. We could always have written this part of the code like this:
-  
-  ```
-  >>= checkEndOfGame >>= \g' -> pure (g',(map wordPutToWord (w:aw),sc))
-  ```
+validateMove :: Board   -- ^ The board
+             -> Player  -- ^ The player making the move
+             -> WordPut -- ^ The word to play
+             -> Bool    -- ^ Is first move
+             -> Either String Bool
+validateMove b p w fm = case connects w b fm of
+  Right _ -> case straight w of
+               Right _ -> case firstMoveTouchesCentre w fm of
+                            Right _ -> case lettersAvailable w p b of
+                                         Right -> Right ()
+                                         Left e -> Left e
+                            Left e -> Left e
+               Left e -> Left e
+  Left e -> Left e
+ ```
  
-## In the REPL
+The technical term for this kind of code is "nasty". Such a deeply
+nested and indented structure is hard to read, hard to maintain and
+hard to extend.  Fortunately, what we can do here is to use a monad to
+encapsulate the checks for `Left` and `Right`. We make our `Either`
+type into a monad, where the monad instance says what to do when we
+encounter a `Left` value, and then when we use the monad we can carry
+on as if everything is a `Right` value -- no more case statements.
 
-We've now made just about all of the building blocks of the
-library. You can experiment with the current code in the REPL like
-this:
+We create a new type for arbitrary "evaluations" in the game, called
+`Evaluator`. 
 
+```haskell
+newtype Evaluator a = Ev (Either Text a)
 ```
-$ cabal repl 
-> :m + Scrabble
-> :m System.Random
-> theGen <- getStdGen
-> d <- englishDictionary
-> let g = newGame "Bob" "Alice" theGen d
-> player1 g
-Player
-    { name = "Bob"
-    , rack =
-        [ E
-        , I
-        , O
-        , A
-        , P
-        , C
-        , V
-        ]
-    , score = 0
-    , isAI = False
-    }
-```
-We create a `WordPut` from the tiles in Bob's rack and play the first move,
-which has to touch the centre square:
+This type wraps up an `Either Text a` type where, as you
+may expect, the `Text` is an error message and the `a` value is
+whatever is being evaluated. For instance, `a` could be `()` in cases 
+where moves are being checked for validity, or `Game` when a function 
+either fails or returns an updated version of the game, or `Int` when
+a function either fails or calculates the score of a word. A value of
+the type `Evaluator Int` would be something like `Ev (Left "Something went wrong.")`
+or `Ev (Right 42)`. 
 
-```
-> let w = [((7,7),(P,3)), ((7,8),(I,1)), ((7,9),(E,1))]
-> let (Ev (Right (g2,(ws,sc)))) = move valGameRules g w []
-λ> ws
-[
-    [ P
-    , I
-    , E
-    ]
-]
-> sc
-10
-```
-We take a move as Alice:
+Now we need to make a monad instance for `Evaluator`. That requires us
+to first define the `Functor` and `Applicative` instances,
+since every monad is an applicative and every applicative is a
+functor. The spirit of these definitions is that if we are dealing
+with an `Ev (Left _)` value we want to **stop what we are doing and
+report the error**, while if we are dealing with a `Ev (Right _)`
+value we can **keep going**.
 
+```haskell
+instance Functor Evaluator where
+  -- fmap :: (a -> b) -> f a -> f b 
+  fmap _ (Ev (Left e))  = Ev (Left e)      -- report the error
+  fmap f (Ev (Right g)) = Ev (Right (f g)) -- keep going
+
+instance Applicative Evaluator where
+  -- pure :: a -> f a
+  pure k = Ev (Right k)
+  -- (<*>) :: f (a -> b) -> f a -> f b
+  Ev (Left  e)  <*>  _  =  Ev (Left e) -- report the error
+  Ev (Right f)  <*>  r  =  fmap f r    -- keep going
+
+instance Monad Evaluator where
+    (Ev ev) >>= k =
+        case ev of
+          Left msg -> Ev (Left msg) -- report the error
+          Right v  -> k v           -- keep going
+    return   = pure
+    fail msg = Ev (Left (T.pack msg))
 ```
-> player2 g2
-Player
-    { name = "Alice"
-    , rack =
-        [ V
-        , Z
-        , Y
-        , T
-        , E
-        , Blank
-        , H
-        ]
-    , score = 0
-    , isAI = False
-    }
-> let w2 = [((7,7),(P,3)), ((8,7),(E,1)), ((9,7),(T,1))]
-> let (Ev (Right (g3,(ws,sc)))) = move valGameRules g2 w2 []
-> showBoard False (board g3)
-"  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 7|  |  |  |  |  |  |  | P| I| E|  |  |  |  |  |
- 8|  |  |  |  |  |  |  | E|  |  |  |  |  |  |  |
- 9|  |  |  |  |  |  |  | T|  |  |  |  |  |  |  |
-10|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-------------------------------------------------
-"
+Now we need to rewrite all of the functions that returned `Either Text a`
+to return `Evaluator a`. The ones we have seen so far tested a boolean condition,
+`b`, and returned `Right ()` if `b` succeeded or `Left Text` if `b` failed. We can
+make an abstraction for this pattern.
+
+```haskell
+evalBool :: Bool -> Text -> Evaluator ()
+evalBool b e = if b then pure () else fail (T.unpack e)
 ```
-We swap some tiles:
+(Note that the `fail` function takes a `String` so we have to `unpack` the `Text`.) 
+Now our validation functions will all have a similar structure to the new version 
+of `lettersAvailable` below -- a call to `evalBool` where the first argument is a boolean 
+condition and the second is an error message.
+
+```haskell
+lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
+lettersAvailable w p b = all available w `evalBool`"Letters not in rack or not on board."
+  where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
+
+``` 
+
+Monadic style allows us to remove all those case statments and write
+`validateMove` in a far nicer style. In effect, the case statements
+are all replaced by the one in the definition of the monad
+instance. If any of the validation functions encounters an error, the
+appropriate message is delivered.
 
 ```
-> turn g3
-P1
-> player1 g3
-Player
-    { name = "Bob"
-    , rack =
-        [ M
-        , N
-        , S
-        , O
-        , A
-        , C
-        , V
-        ]
-    , score = 10
-    , isAI = False
-    }
-> let (Ev (Right g4)) = swap [M,N,S,O] g3
-> player1 g4
-Player
-    { name = "Bob"
-    , rack =
-        [ O
-        , E
-        , N
-        , N
-        , A
-        , C
-        , V
-        ]
-    , score = 10
-    , isAI = False
-    }
-> turn g4
-P2
+validateMove :: Board   -- ^ The board
+             -> Player  -- ^ The player making the move
+             -> WordPut -- ^ The word to play
+             -> Bool    -- ^ Is first move
+             -> Evaluator ()
+validateMove b p w fm = 
+	   connects w b fm 
+	   >> straight w 
+	   >> firstMoveTouchesCentre w fm 
+	   >> lettersAvailable w p b
 ```
-Finally we pass the move:
+	
+The validation functions are now *combinators*. We can combine small
+ones like `connects` into larger ones like `validateMove` that check
+several things. Functions at the top level can run an evaluator then
+unpack the result in a single case statement to see if all went well
+or, if not, exactly what went wrong.
+								 
+## Checking words in the dictionary
 
-```
-> let (Ev (Right g6)) = pass g5
-> turn g6
-P1
-```
-Let's try playing some bad moves:
+We have already seen how to check that a word is in the dictionary
+using `dictContainsWord`. Instead of returning a boolean we now want this to fit in
+with the combinator style of validation, so we alter it to run in the `Evaluator`
+monad.
 
-```
-> turn g6
-P1
-> player1 g6
-Player
-    { name = "Ted"
-    , rack =
-        [ M
-        , N
-        , S
-        , O
-        , A
-        , C
-        , V
-        ]
-    , score = 10
-    , isAI = False
-    }
-```
-First, a move for which we don't have the tiles:
-
-```
-> let notInRack = [((5,7),(D,3)), ((5,8),(D,1)), ((5,9),(D,1))]
-> let (Ev (Left e)) = move valGameRules g2 notInRack []
-> e
-"Not all tiles in rack or on board: DDD: (5,7) HZ"
-```
-One that isn't played on the board in a straight line:
-
-```
-> let notStraight = [((7,10),(S,1)), ((8,10),(O,1)), ((9,11),(N,1))]
-> let (Ev (Left e1)) = move valGameRules g2 notStraight []
-> e1
-"Not in a straight line"
-```
-One that doesn't touch any existing tile on the board:
-
-```
-> let notConnected = [((8,10),(S,1)), ((9,10),(O,1)), ((10,11),(N,1))]
-> let (Ev (Left e2)) = move valGameRules g2 notConnected []
-> e2
-"Not touching any other tile"
-```
-One that isn't in a continuous line:
-
-```
-> let notContinuous = [((7,10),(S,1)), ((8,10),(O,1)), ((10,10),(N,1))]
-> let (Ev (Left e43)) = move valGameRules g2 notContinuous []
-λ> e3
-"Not in a straight line"
-```
-Note that we aren't distinguishing between being straight and being continuous.
-We could fix that by refactoring `straight` into `straight` and a new check,
-`continuous`, if we thought it mattered. 
-
-Finally, using a different validator, we try to play a word which is all OK except 
-that it doesn't exist:
-
-```
-> let notAWord = [((7,10),(S,1)), ((8,10),(V,4)), ((9,10),(N,1))]
-> let (Ev (Left e4)) = move valGameRulesAndDict g2 notAWord []
-> e4
-"Not in dictionary: SVN"
-> 
+```haskell
+dictContainsWord :: Dict -> Text -> Evaluator ()
+dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t) 
 ```
 
-In the next chapter we'll make it possible to play against the computer.
+We need to apply this function to the new
+word and all additional words generated by the move. The classic
+instructions give the example of this board:
+
+```
+   F
+   A
+ HORN 
+   M
+ PASTE
+```
+In the next move the word MOB is played, generating two additional words,
+NOT and BE. 
+
+```
+   F
+   A
+ HORN 
+   MOB
+ PASTE
+```
+Any bonus squares under the new letters (O and B) add to the score but no bonuses 
+are counted for the letters that are already on the board. In the next move the 
+word BIT is played, generating the additional words PI and AT.
+
+```
+   F
+   A
+ HORN 
+   MOB
+ PASTE
+BIT
+```
+To find the additional words generated by a move we will first determine the 
+direction of the new word. All additional words will be in the opposite direction.
+Next we create a temporary board in which the word has been played and, for each position in the 
+word, we see if that position is part of a word in the opposite direction. This is what the
+functions `wordOnRow`, `wordOnCol`, `startOfWord` and `wordFromPos` do. We also define 
+some functions that transform positions and a convenient type for them, `PosTransform`. 
+The `catMaybes`function from `Data.Maybe` takes a list of `Maybe a` values and returns 
+the list of `a` values from everything that isn't `Nothing`.
+
+```haskell
+import Data.Maybe (catMaybes)
+
+type PosTransform = Pos -> Pos
+
+incRow :: PosTransform
+incRow (r,c) = (r+1,c)
+
+incCol :: PosTransform
+incCol (r,c) = (r,c+1)
+
+startOfWord :: Board -> PosTransform -> Pos -> Pos
+startOfWord b f pos = let pos' = f pos in
+  if not (onBoard pos') || isNothing (getSquare b pos')
+  then pos
+  else startOfWord b f pos'
+
+wordFromSquare :: Board -> PosTransform -> Pos -> Maybe WordPut
+wordFromSquare b f pos =  maybe [] (\t -> (pos, t) 
+                                     : wordFromSquare b f (f pos)) (getSquare b pos)
+
+wordOnRow :: Board -> Pos -> Maybe WordPut
+wordOnRow b pos = wordFromSquare b incCol (startOfWord b decCol pos)
+
+wordOnCol :: Board -> Pos -> Maybe WordPut
+wordOnCol b pos = wordFromSquare b incRow (startOfWord b decRow pos)
+
+additionalWords :: Board -> WordPut -> [WordPut]
+additionalWords b w = 
+  let b'     = updateBoard b w
+      oppDir = if getDirection w == HZ then VT else HZ 
+      mWds   = if oppDir == HZ then map (wordOnRow b') w else map (wordOnCol b') w in
+   catMaybes mWds
+```
+To check that a word and all of its additional words are in the dictionary we first apply
+`dictContainsWord` every word in the list. That function has this type:
+
+```haskell
+dictContainsWord :: Dict -> Text -> Evaluator ()
+```
+So if we `map` `dictContainsWord d` over a list of `Text` values we will get a list of
+type `[Evaluator ()]`, a list of evaluations, whereas we want one evaluation with the list in 
+it. The `mapM` function does what we need, having the type 
+
+```haskell
+mapM :: (Traversable t, Monad m) => (a -> m b) -> t a -> m (t b)
+```
+If we use `mapM` to apply the function over the list of texts we get something with the type
+`Evaluator [()]` instead of `[Evaluator ()]`, pulling the monad type out of the list. 
+
+We then want to compress, or concatenate, the list of `()` values into
+a single value so we can return the type `Evaluator ()`, since all we
+want to know is that all the words are in the dictionary and if any of
+them weren't we'd be getting back a `Left` with an error message in
+it. The `mconcat` function works with all instances of the `Monoid`
+typeclass and has the type `mconcat :: Monoid a => [a] -> a`. `()` is
+a monoid so this function is the one we need.
+
+```haskell
+wordsInDictM :: Dict -> [Text] -> Evaluator ()
+wordsInDictM t ws = mconcat <$> mapM (dictContainsWord t) ws
+```
+
+## Putting it all together
+
+We have lots of ways in which we can validate moves and a nice neat way of combining them.
+Validating that a move follows the most basic rules (e.g. the tiles are actually on the board)
+is different from checking the words are in the dictionary, something we may or may not want to
+do every time. It could be handy to turn off dictionary checking during development, and if an
+AI player finds a word in the dictionary there's no point in checking it again.
+
+We can turn the idea of validation into an abstraction (a type) and
+combine the various smaller checks we have into coherent blocks.
+
+```haskell
+validateMove :: Board -> Player -> WordPut -> Bool -> Evaluator ()
+validateMove b p w fm =
+  connects w b fm
+  >> straight w
+  >> firstMoveTouchesCentre w fm
+  >> lettersAvailable w p b
+
+validateRack :: Board -> Rack -> WordPut -> Evaluator ()
+validateRack b r w = someNewTiles b w >>
+  all (\(pos,(t,_)) -> t `elem` r
+           || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
+  `evalBool` ("Not all tiles in rack or on board: " ++ formatWP w)
+
+type Validator = [WordPut] -> Game -> Evaluator ()
+
+valGameRules :: Validator
+valGameRules ws g = do
+  let b  = board g
+      p  = getPlayer g
+      w  = head ws
+      fm = firstMove g
+  validateRack b (rack p) w >> validateMove b p w fm
+  
+valGameRulesAndDict :: Validator
+valGameRulesAndDict ws g = do
+  let d  = dict g
+      ts = map (wordToText . map (fst .snd)) ws
+  valGameRules ws g >> wordsInDictM d ts 
+
+```
+
+In the next chapter we will use these validators when we start playing moves
+within the game.
 
 ## Tests
 
 TODO
+ 
+[Contents](../README.md) | [Chapter Three](Chapter3.md)
 
-[Contents](../README.md) | [Chapter Four](Chapter4.md)
