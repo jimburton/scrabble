@@ -1,10 +1,11 @@
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass, StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, StandaloneDeriving, TemplateHaskell #-}
 module ScrabbleWeb.Types
   ( Move(..)
   , MoveAck(..)
   , Msg(..)
   , Client
   , WebGame(..)
+  , p1, p2, theGame -- lenses for WebGame
   , Turn(..)
   , Evaluator(..)
   , Score(..)
@@ -16,6 +17,7 @@ import Data.Aeson
 import GHC.Generics
 import qualified Network.WebSockets as WS
 import Data.Text (Text)
+import Lens.Simple 
 import Scrabble.Types
   ( WordPut
   , Rack
@@ -48,13 +50,16 @@ type Client = (Text, WS.Connection)
 
 -- | A game of Scrabble and two clients.
 data WebGame = WebGame
-  { p1 :: Client
-  , p2 :: Client
-  , theGame :: Game
-  } 
+  { _p1 :: Client
+  , _p2 :: Client
+  , _theGame :: Game
+  }
+-- | Make lenses for WebGame
+$(makeLenses ''WebGame)
 
-instance Eq WebGame where 
-  g1 == g2 = fst (p1 g1) == fst (p1 g2) && fst (p2 g1) == fst (p2 g2)
+
+--instance Eq WebGame where 
+--  g1 == g2 = fst (p1 g1) == fst (p1 g2) && fst (p2 g1) == fst (p2 g2)
 
 -- | Acknowledging the player into a game
 data JoinAck = JoinAck { jaName :: Text

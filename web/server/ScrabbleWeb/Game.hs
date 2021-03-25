@@ -15,11 +15,14 @@ import Data.List (find)
 import qualified Network.WebSockets as WS
 import Control.Concurrent (forkIO)
 import Control.Concurrent.BoundedChan
-import Lens.Simple ((^.))
+import Lens.Simple ((^.),(.~),(&))
 import Data.Aeson
 import System.Random (getStdGen)
 import ScrabbleWeb.Types
   ( WebGame(..)
+  , p1
+  , p2
+  , theGame
   , Client
   , Msg(..)
   , Move(..)
@@ -106,7 +109,7 @@ takeTurn :: WebGame    -- ^ The game
 takeTurn wg = do
      msgTurn wg
      msgScores wg
-     let g = theGame wg
+     let g = wg ^. theGame
      if g ^. gameOver
        then doGameOver wg
        else if g ^. (G.getPlayer g) ^. isAI
@@ -116,11 +119,11 @@ takeTurn wg = do
 -- | Allow the computer to take a turn.
 takeTurnAI :: WebGame -> IO WebGame
 takeTurnAI wg = do
-  let g = theGame wg
+  let g = wg ^. theGame
   case moveAI g of
     Ev (Right (g',mv)) -> do
       msgMoveAck wg mv
-      let wg' = wg { theGame = g' }
+      let wg' = wg & theGame .~ g' 
       sendRackOpponent wg'
       takeTurn wg'
     Ev (Left e)       -> do
@@ -139,11 +142,11 @@ takeTurnManual wg = do
       MsgPass           -> doPass wg >>= takeTurn 
       MsgSwap w         -> doSwap wg w >>= takeTurn 
       MsgMove (Move wp bs) -> do
-        case G.move valGameRules (theGame wg) wp bs of
+        case G.move valGameRules (wg ^. theGame) wp bs of
           Ev (Left e)        -> do msgCurrent wg (MsgMoveAck (MoveAck (Left e)))
                                    takeTurn wg 
           Ev (Right (g',mv)) -> do msgMoveAck wg mv
-                                   let wg' = wg { theGame = g' }
+                                   let wg' = wg & theGame .~ g'
                                    sendRackOpponent wg'
                                    takeTurn wg'
       _                 -> takeTurn wg 
@@ -151,7 +154,7 @@ takeTurnManual wg = do
 -- | Handle the situation when the game ends.
 doGameOver :: WebGame -> IO WebGame
 doGameOver wg = do
-  let g      = theGame wg
+  let g      = wg ^. theGame
       pl1    = g ^. player1
       pl2    = g ^. player2
       draw   = pl1 ^. score == pl2 ^. score 
@@ -165,7 +168,7 @@ doGameOver wg = do
 -- | Send hints to a player.
 doHints :: WebGame -> IO ()
 doHints wg = do
-  let g  = theGame wg
+  let g  = wg ^. theGame
       w  = g ^. (G.getPlayer g) ^. rack
       hs = findPrefixes g w
   msgCurrent wg (MsgHint (Just hs))
@@ -173,19 +176,19 @@ doHints wg = do
 -- | Let the player take a move by passing.
 doPass :: WebGame -> IO WebGame
 doPass wg = do
-  let g = theGame wg
+  let g = wg ^. theGame
   msgOpponent wg (MsgAnnounce "Opponent passed.")
   case G.pass g of
-    Ev (Right g') -> pure wg { theGame = g' }
+    Ev (Right g') -> pure (wg & theGame .~ g')
     Ev (Left e)   -> do T.putStrLn e
                         pure wg
 
 -- | Let the player take a move by swapping some tiles.
 doSwap :: WebGame -> [Letter] -> IO WebGame
 doSwap wg ls = do
-  let g = theGame wg
+  let g = wg ^. theGame
   case G.swap ls g of
-    Ev (Right g') -> do let wg' = wg { theGame = g'}
+    Ev (Right g') -> do let wg' = wg & theGame .~ g'
                         sendRackOpponent wg'
                         announce wg' "Swapped tiles"
                         pure wg'
@@ -194,4 +197,4 @@ doSwap wg ls = do
 
 -- | Get client whose turn it is. 
 getClient :: WebGame -> Client
-getClient wg = if (theGame wg) ^. turn == P1 then p1 wg else p2 wg
+getClient wg = if wg ^. theGame ^. turn == P1 then wg ^. p1 else wg ^. p2
