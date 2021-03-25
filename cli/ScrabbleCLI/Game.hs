@@ -69,7 +69,7 @@ takeTurn g msc = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
-     liftIO $ printBoard True (board g) msc
+     liftIO $ printBoard False (board g) msc
      if gameOver g
        then liftIO $ doGameOver g
        else if isAI (getPlayer g)
