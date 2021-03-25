@@ -1,5 +1,5 @@
 
-# Scrabble
+# Scrabbλe
 
 A one- or two-player implementation of Scrabble for teaching functional programming at the 
 University of Brighton. It consists of a core library, and two clients (web and CLI) for playing
