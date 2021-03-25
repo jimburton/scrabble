@@ -68,8 +68,7 @@ import Scrabble.Game.Internal
   , setScore )
 import Scrabble.Lang.Search
   ( findPrefixes
-  , findPrefixesForLetter
-  , findSuffixesForLetter
+  , findSuffixes
   , wordsInDict )
 
 -- =========== AI functions ============ --
@@ -159,7 +158,7 @@ findPrefixOfSize :: Game             -- The dictionary.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut, [WordPut]) -- The word and the additional words.
-findPrefixOfSize g p l = findWordOfSize g (findPrefixesForLetter g l) p
+findPrefixOfSize g p l = findWordOfSize g (findPrefixes g l) p
 
 -- Find a word of at least a certain size that begins with a certain letter.
 findSuffixOfSize :: Game             -- The game.
@@ -168,7 +167,7 @@ findSuffixOfSize :: Game             -- The game.
                  -> Rack             -- The letters from the player's hand to make up the word
                  -> (FreedomDir,Int) -- The direction and max length of the word.
                  -> Maybe (WordPut,[WordPut]) -- The word and the additional words.
-findSuffixOfSize g p l = findWordOfSize g (findSuffixesForLetter g l) p
+findSuffixOfSize g p l = findWordOfSize g (findSuffixes g l) p
 
 -- Get the longest sublist in a list of lists. Not safe (list must have something in it).
 longest :: [[a]] -> [a]
@@ -186,7 +185,7 @@ findWordOfSize :: Game             -- The game.
                -> (FreedomDir,Int) -- The direction and max length of the word.
                -> Maybe (WordPut,[WordPut]) -- The word and its additional words.
 findWordOfSize g wf k r (fd,i) =
-  let r' = take 5 (filter (/=Blank) r)
+  let r' = filter (/=Blank) r
       ws = filter ((<=i) . length) $ wf r' in
     if null ws
     then Nothing

@@ -10,7 +10,7 @@ import Data.Char (toUpper)
 import Lens.Simple
 import System.Console.Haskeline
 import System.Random (getStdGen)
-import Scrabble.Lang.Search (findPrefixes)
+import Scrabble.Lang.Search (makeWords)
 import Scrabble.Lang.Word (stringToWord)
 import Scrabble.Lang.Dict (englishDictionary)
 import Scrabble.Board.Board (makeWordPut)
@@ -188,4 +188,4 @@ hints :: Game -> IO ()
 hints g = do
   let w = g ^. getPlayer g ^. rack
   T.putStrLn "HINTS:"
-  mapM_ print $ findPrefixes g w
+  mapM_ print $ makeWords g w

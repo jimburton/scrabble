@@ -19,10 +19,10 @@ module Scrabble.Types
   , Bonus(..)
   , Player(..)
   , name, rack, score, isAI -- lenses for Player
-  , Turn(..)
   , Game(..)
   , board, bag, player1, player2, turn, gen, firstMove, --lenses for Game
     dict, gameOver, playable, lastMovePass
+  , Turn(..)
   , Bag
   , Dict
   , Playable

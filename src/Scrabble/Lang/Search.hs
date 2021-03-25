@@ -10,9 +10,9 @@ Functions relating to searching the dictionary for the Scrabble game.
 -}
 module Scrabble.Lang.Search
   ( findWords
+  , makeWords
   , findPrefixes
-  , findPrefixesForLetter
-  , findSuffixesForLetter
+  , findSuffixes
   , wordPlaysT
   , wordsInDictM
   , wordsInDict
@@ -43,7 +43,7 @@ import Scrabble.Lang.Word
 
 {- ===== Dictionary Search ===== -}
 
--- | Find all the words in the dictionary that can be made with the given letters.
+-- | Find all the words in the dictionary that are in the given list of words.
 findWords :: Game -- ^ The dictionary to search
           -> [Text]    -- ^ The letters to build the words from.
           -> [Word]
@@ -72,25 +72,25 @@ uniquePowerSetPermutations = nub . powerSetPermutations
 perms :: Eq a => [a] -> [[a]]
 perms = filter ((>1) . length) . uniquePowerSetPermutations 
 
--- | Find all the prefixes in the dictionary that can be made with the given letters.
-findPrefixes :: Game    -- ^ The game.
-             -> Word   -- ^ The letters to build the words from.
-             -> [Word]
-findPrefixes g ls = findWords g (map wordToText (perms ls))
+-- | Find all words in the dictionary that can be made with any combination of the given letters.
+makeWords :: Game    -- ^ The game.
+          -> Word   -- ^ The letters to build the words from.
+          -> [Word]
+makeWords g ls = findWords g (map wordToText (perms ls))
 
 -- | Find all the prefixes in the dictionary that end with the given letter.
-findPrefixesForLetter :: Game    -- ^ The game.
+findPrefixes :: Game    -- ^ The game.
               -> Letter -- ^ The suffix.
               -> Word   -- ^ The letters to build the words from.
               -> [Word]
-findPrefixesForLetter g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
+findPrefixes g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
 
 -- | Find all the prefixes in the dictionary that begin with the given letter.
-findSuffixesForLetter :: Game    -- ^ The game.
+findSuffixes :: Game    -- ^ The game.
                       -> Letter -- ^ The suffix.
                       -> Word   -- ^ The letters to build the words from.
                       -> [Word]
-findSuffixesForLetter g l ls = findWords g (map (wordToText . (l:)) (perms ls))
+findSuffixes g l ls = findWords g (map (wordToText . (l:)) (perms ls))
 
 -- | Find all the words that can be made with the letters on the board
 --   Returned words are made up of PREFIX + L + SUFFIX, where

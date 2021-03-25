@@ -42,7 +42,7 @@ import Scrabble.Types
   , name
   , Letter)
 import Scrabble.Lang.Dict (englishDictionary)
-import Scrabble.Lang.Search (findPrefixes)
+import Scrabble.Lang.Search (makeWords)
 import qualified Scrabble.Game.Game as G
   ( move
   , getPlayer
@@ -170,7 +170,7 @@ doHints :: WebGame -> IO ()
 doHints wg = do
   let g  = wg ^. theGame
       w  = g ^. (G.getPlayer g) ^. rack
-      hs = findPrefixes g w
+      hs = makeWords g w
   msgCurrent wg (MsgHint (Just hs))
 
 -- | Let the player take a move by passing.

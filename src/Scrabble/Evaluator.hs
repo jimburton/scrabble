@@ -15,7 +15,7 @@ module Scrabble.Evaluator
   where
 
 import Data.Text (Text)
-import qualified Data.Text as T
+import qualified Data.Text as T (pack, unpack)
 import Scrabble.Types ( Evaluator(..) )
 
 instance Functor Evaluator where

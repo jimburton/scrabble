@@ -36,7 +36,6 @@ library
       Scrabble.Evaluator
       Scrabble.Game.Game
       Scrabble.Game.AI
-      Scrabble.Game.Internal
       Scrabble.Game.Validation
       Scrabble.Lang.Letter
       Scrabble.Lang.Word
@@ -47,7 +46,6 @@ library
       Scrabble.Board.Bonus
       Scrabble.Board.Pretty
       Scrabble.Board.Validation
-      Scrabble.Board.Internal
 
   default-extensions: OverloadedStrings
                     , TupleSections
