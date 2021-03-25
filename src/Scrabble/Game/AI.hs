@@ -18,25 +18,23 @@ module Scrabble.Game.AI
 
 import Debug.Trace
 import Prelude hiding ( Word )
-import qualified Data.Trie.Text as Trie
 import qualified Data.Map as Map
-import Data.Maybe
-  ( isJust
-  , fromJust
-  , mapMaybe
-  , catMaybes)
+import Data.Maybe (catMaybes)
 import Data.List (maximumBy)
 import Data.Functor ((<&>))
 import Data.Text (Text)
-import qualified Data.Text as T
 import System.Random (StdGen)
-import Control.Monad (msum)
+import Lens.Simple ((^.),(.~),(&))
 import Scrabble.Evaluator
   ( Evaluator(..) )
 import Scrabble.Types
   ( Dict
   , Game(..)
+  , dict
+  , playable
+  , firstMove
   , Player(..)
+  , rack
   , FreedomDir(..)
   , Freedom
   , Rack
@@ -57,8 +55,6 @@ import Scrabble.Board.Board
 import Scrabble.Board.Bag
   ( newBag
   , fillRack )
-import Scrabble.Lang.Letter
-  ( letterToText )
 import Scrabble.Lang.Word
   ( wordToText
   , wordPutToText )
@@ -85,26 +81,26 @@ newGame1P :: Text   -- ^ Name of Player
           -> Game
 newGame1P pName theGen d = 
   let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
-      p1 = Player { name  = pName
-                  , rack  = rack1
-                  , score = 0
-                  , isAI  = False }
+      p1 = Player { _name  = pName
+                  , _rack  = rack1
+                  , _score = 0
+                  , _isAI  = False }
       Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
-      p2 = Player { name  = "Haskell"
-                  , rack  = rack2
-                  , score = 0
-                  , isAI  = True }
-      g  = Game { board     = newBoard
-                , bag       = bag2
-                , player1   = p1
-                , player2   = p2
-                , turn      = P1
-                , gen       = gen''
-                , firstMove = True
-                , dict      = d
-                , gameOver  = False
-                , playable  = Map.empty
-                , lastMovePass = False } in
+      p2 = Player { _name  = "Haskell"
+                  , _rack  = rack2
+                  , _score = 0
+                  , _isAI  = True }
+      g  = Game { _board     = newBoard
+                , _bag       = bag2
+                , _player1   = p1
+                , _player2   = p2
+                , _turn      = P1
+                , _gen       = gen''
+                , _firstMove = True
+                , _dict      = d
+                , _gameOver  = False
+                , _playable  = Map.empty
+                , _lastMovePass = False } in
     g
 
 -- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
@@ -122,12 +118,12 @@ newGame1P pName theGen d =
 moveAI :: Game      -- ^ The game.
        -> Evaluator (Game, MoveResult)
 moveAI g = do
-  let r  = rack (getPlayer g)
+  let r  = g ^. getPlayer g ^. rack
       mw = findWord g (filter (/=Blank) r)  
   case mw of
     Nothing -> pass g >>= \g' -> pure (g', MoveResult [] [] [] 0)
     Just (w,aw)  -> scoreWords g w aw >>=
-                    \i -> setScore g { firstMove = False } i >>= updatePlayer w
+                    \i -> setScore (g & firstMove .~ False) i >>= updatePlayer w
                     >>= updatePlayables w >>= updateBoard w
                     >>= toggleTurn <&> (, MoveResult w (map wordPutToWord (w:aw)) [] i)
 
@@ -138,7 +134,7 @@ findWord :: Game     -- The game.
 findWord g r =
   let ws = Map.foldlWithKey (\acc k v -> case findWord' k v of
                                 Nothing  -> acc
-                                Just mws -> mws : acc) [] (playable g) in
+                                Just mws -> mws : acc) [] (g ^. playable) in
     maxWd ws
   where findWord' :: Pos -> (Letter,[Freedom]) -> Maybe (WordPut, [WordPut])
         findWord' k (l,fs) =
@@ -194,8 +190,7 @@ findWordOfSize g wf k r (fd,i) =
       ws = filter ((<=i) . length) $ wf r' in
     if null ws
     then Nothing
-    else let d   = dict g
-             w   = longest ws
+    else let w   = longest ws
              len = length w - 1
              dir = if fd == UpD || fd == DownD then VT else HZ
              -- where does this word begin?
@@ -207,7 +202,7 @@ findWordOfSize g wf k r (fd,i) =
              wp = makeWordPut (wordToText w) pos dir [] in           
            case additionalWords g wp of
              Ev (Left _)   -> Nothing
-             Ev (Right aw) -> if not $ wordsInDict d (map wordPutToText aw)
+             Ev (Right aw) -> if not $ wordsInDict (g ^. dict) (map wordPutToText aw)
                               then Nothing
                               else Just (wp,aw)
 

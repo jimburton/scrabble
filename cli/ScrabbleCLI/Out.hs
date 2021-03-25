@@ -7,9 +7,10 @@ module ScrabbleCLI.Out
 import Data.Text (Text)
 import qualified Data.Text.IO as T
 import Data.Foldable (forM_)
+import Lens.Simple ((^.))
 import Scrabble.Types
-  ( Game(..)
-  , Player(..)
+  ( Game
+  , Player
   , Board )
 import Scrabble.Game.Game (getPlayer)
 import Scrabble.Board.Pretty
@@ -29,6 +30,6 @@ printPlayer p = T.putStrLn $ showPlayer p
 
 -- | Textify the current turn.
 showTurn :: Game -> Text
-showTurn g = let p = getPlayer g in
+showTurn g = let p = g ^. getPlayer g in
   showPlayer p <> "Enter WORD ROW COL DIR[H/V]:\n"
 

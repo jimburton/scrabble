@@ -2,11 +2,48 @@
 
 [Contents](../README.md)
 
-Code corresponding to this chapter is in the branch `chapter1`.
+In this chapter we will set the scene, explaining the initial state of
+the project, creating some basic datatypes that allow us to model the
+game of Scrabble and some simple functions for placing words on
+boards.
 
-In this chapter we will explain the initial state of the project,
-create some basic datatypes that allow us to model the game, and some
-simple functions for placing words on boards and so on.
+## Who and what is this book for
+
+This book is primarily aimed at students on the Introduction to
+Functional Programming course at the University of Brighton, or anyone
+else at the same stage of learning. It is introduced after students
+have learned the basics of Haskell, written quite a few small
+functions, learned about recursion, folds, practised a little bit of
+IO and heard about typeclasses like `Functor` and `Monad`. They have
+also used `cabal` a little bit.
+
+There is a notoriously big gap between learning the basics of Haskell
+listed above, which mostly means a lot of fiddling about with lists,
+to making useful, nicely written and idiomatic software with
+Haskell. For beginners, the language can seem quite academic and
+removed from the tasks we normally want to achieve with programming
+languages. When they look at Haskell code in the wild, it bears very
+little resemblance to their exercises.
+
+This book is meant to go some way towards filling that gap. By the end
+you'll have been introduced to some major and widely used libraries,
+sophisticated data structures, functional design patterns, and structuring
+a software project so that you can keep on top of it as it grows.
+
+I'm reluctant to say it will take you from being a *Beginner* to an
+*Intermediate* Haskell programmer; Haskell is a deep language and if
+*Intermediate* is halfway between *Beginner* and *Expert* then that's
+a bit of a stretch. But you won't be a *Beginner* any more.
+
+## Reading this book
+
+Throughout this book the code in the **Scrabbλe** project will be
+developed incrementally. We will be adding to it, removing from it and
+improving it as we go. There is a branch in the repository for each chapter,
+named `chapter1`, `chapter2`, etc, up to `chapter6`. As you read each chapter 
+you should check out the corresponding branch and study the code. There are 
+exercises at the end of each chapter which expect you to be working on the
+code from the right branch.
 
 ## The project
 

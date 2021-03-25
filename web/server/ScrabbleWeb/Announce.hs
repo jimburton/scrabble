@@ -19,19 +19,26 @@ import qualified Network.WebSockets as WS
 import Data.Aeson
 import Data.Text (Text)
 import Scrabble.Types
-  ( Player(..)
+  ( Player
+  , rack
+  , Game
+  , player1
+  , player2
+  , turn
+  , score
+  , isAI
   , Word
   , WordPut
   , MoveResult(..))
 import ScrabbleWeb.Types
   ( WebGame(..)
-  , Game(..)
   , Turn(..)
   , Msg(..)
   , Score(..)
   , JoinAck(..)
   , MoveAck(..)
   , Client)
+import Lens.Simple((^.))
   
 -- ====== Sending messages to clients =========== --
 
@@ -39,27 +46,27 @@ import ScrabbleWeb.Types
 send :: Player -> Client -> Msg -> IO ()
 send p (_,conn) m =
   let o = encode m in
-    if not (isAI p) then WS.sendTextData conn o else pure ()
+    if not (p ^. isAI) then WS.sendTextData conn o else pure ()
 
 -- | Send a message to both players.
 msg :: WebGame -> Msg -> IO ()
 msg wg m = do
-  send (player1 (theGame wg)) (p1 wg) m
-  send (player2 (theGame wg)) (p2 wg) m
+  send (theGame wg ^. player1) (p1 wg) m
+  send (theGame wg ^. player2) (p2 wg) m
 
 -- | Send a message to one player, identified by the Turn parameter.
 msgOne :: WebGame -> Turn -> Msg -> IO ()
 msgOne wg t m = do
-  let (pl,cl) = if t == P1 then (player1 (theGame wg),p1 wg) else (player2 (theGame wg),p2 wg)
+  let (pl,cl) = if t == P1 then ((theGame wg) ^. player1,p1 wg) else ((theGame wg) ^. player2,p2 wg)
   send pl cl m
 
 -- | Send a message to the player whose turn it currently is.
 msgCurrent :: WebGame -> Msg -> IO ()
-msgCurrent wg = msgOne wg (turn (theGame wg)) 
+msgCurrent wg = msgOne wg ((theGame wg) ^. turn) 
 
 -- | Send a messsage to the player whose turn it currently is not.
 msgOpponent :: WebGame -> Msg -> IO ()
-msgOpponent wg = msgOne wg (other (turn (theGame wg)))
+msgOpponent wg = msgOne wg (other (theGame wg ^. turn))
 
 -- | Get the other player to the one identified by the Turn parameter.
 other :: Turn -> Turn
@@ -76,7 +83,7 @@ maybeAnnounce wg (Just txt) = announce wg txt
 
 -- | Tell both players whose turn it is.
 msgTurn :: WebGame -> IO ()
-msgTurn wg = msg wg (MsgTurn $ turn (theGame wg))
+msgTurn wg = msg wg (MsgTurn $ theGame wg ^. turn)
 
 -- | Acknowledge to a legal move, sending the move to both players.
 msgMoveAck :: WebGame    -- ^ The webgame.
@@ -99,36 +106,36 @@ msgEog wg = do
 -- Get the scores of both players.
 getScores :: WebGame -> (Score,Score)
 getScores wg =
-  let pl1 = player1 (theGame wg)
-      pl2 = player2 (theGame wg)
-      s1  = Score { theTurn = P1, theScore = score pl1 }
-      s2  = Score { theTurn = P2, theScore = score pl2 } in
+  let pl1 = theGame wg ^. player1
+      pl2 = theGame wg ^. player2
+      s1  = Score { theTurn = P1, theScore = pl1 ^. score }
+      s2  = Score { theTurn = P2, theScore = pl2 ^. score } in
   (s1,s2)
 
 -- | Send the rack to the player identified by the Turn parameter.
 sendRack :: WebGame -> Turn -> IO ()
 sendRack wg t = do
   let pf = if t == P1 then player1 else player2
-      r  = rack (pf (theGame wg))
+      r  = theGame wg ^. (pf . rack)
   msgOne wg t (MsgRack r)
 
 -- | Send the rack to the player identified by the Turn parameter.
 sendRackOpponent :: WebGame -> IO ()
 sendRackOpponent wg = do
-  let t = if turn (theGame wg) == P1 then P2 else P1
+  let t = if theGame wg ^. turn == P1 then P2 else P1
   sendRack wg t
 
 -- | Send name and rack to both players in a new game.
 sendJoinAcks :: WebGame -> IO ()
 sendJoinAcks wg = do
-  let pl1 = player1 (theGame wg)
-      pl2 = player2 (theGame wg)
+  let pl1 = theGame wg ^. player1
+      pl2 = theGame wg ^. player2
       ja1 = MsgJoinAck (JoinAck { jaName = fst (p1 wg)
-                                , jaRack = rack pl1
+                                , jaRack = pl1 ^. rack
                                 , jaTurn = P1
                                 , jaOppName = fst (p2 wg)})
       ja2 = MsgJoinAck (JoinAck { jaName = fst (p2 wg)
-                                , jaRack = rack pl2
+                                , jaRack = pl2 ^. rack
                                 , jaTurn = P2
                                 , jaOppName = fst (p1 wg)})
   msgCurrent wg ja1

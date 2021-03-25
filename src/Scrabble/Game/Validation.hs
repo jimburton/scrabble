@@ -13,10 +13,15 @@ module Scrabble.Game.Validation
   where
 
 import Debug.Trace
+import Lens.Simple ((^.),(&))
 import Scrabble.Types
   ( Validator
-  , Game(..)
-  , Player(..) )
+  , Game
+  , dict
+  , board
+  , firstMove
+  , Player
+  , rack)
 import Scrabble.Game.Internal
   ( getPlayer )
 import Scrabble.Lang.Word
@@ -32,9 +37,8 @@ import Scrabble.Board.Validation
 -- | Validate a set of words against the rules of the game and the dictionary. 
 valGameRulesAndDict :: Validator
 valGameRulesAndDict ws g = do
-  let d  = dict g
-      ts = map (wordToText . map (fst .snd)) ws
-  valGameRules ws g >> wordsInDictM d ts 
+  let ts = map (wordToText . map (fst .snd)) ws
+  valGameRules ws g >> wordsInDictM (g ^. dict) ts 
 
 -- | Validate a set of words against the rack (are all tiles in the current
 --   player's rack or on the board?) and that the move is in the rules of the
@@ -42,8 +46,8 @@ valGameRulesAndDict ws g = do
 --   first one to be played must touch the centre square)
 valGameRules :: Validator
 valGameRules ws g = do
-  let b  = board g
-      p  = getPlayer g
+  let b  = g ^. board
+      p  = g ^. getPlayer g
       w  = head ws
-      fm = firstMove g
-  validateRack b (rack p) w >> validateMove b p w fm
+      fm = g ^. firstMove 
+  validateRack b (p ^. rack) w >> validateMove b p w fm

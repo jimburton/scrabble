@@ -135,3 +135,40 @@ And make sure the game is played to a conclusion, hopefully not ending by two pa
 ** Chapter Seven
 
    Logging.
+
+* Lenses
+
+Examples of removing nasty record updates
+
+Scrabble.Game.Internal.setScore
+if turn g == P1
+then let s' = score (player1 g) in
+       pure g { player1 = (player1 g) {score = s' + s} }
+else let s' = score (player2 g) in
+       pure g { player2 = (player2 g) {score = s' + s} }
+
+becomes
+
+pure $ g & getPlayer g . score %~ (+s)
+
+in updatePlayer
+
+>>= \g' -> pure (g' { bag = theBag', gen = theGen'})
+
+becomes
+
+>>= \g' -> pure (g' & bag .~ theBag' & gen .~ theGen')
+
+endGame :: Game -> Evaluator Game
+endGame g = do
+  let r1v = rackValue (rack (player1 g))
+      r2v = rackValue (rack (player2 g))
+      p1s = (score (player1 g) - r1v) + r2v
+      p2s = (score (player2 g) - r2v) + r1v
+  pure g { player1 = (player1 g) { score = p1s }
+         , player2 = (player2 g) { score = p2s }
+         , gameOver = True }
+
+
+becomes
+

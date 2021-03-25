@@ -18,11 +18,15 @@ import Data.Array
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Data.Text ( Text )
-import Data.List.Split (chunksOf) 
+import Data.List.Split (chunksOf)
+import Lens.Simple ((^.))
 import Scrabble.Board.Bonus (bonusMap)
 import Scrabble.Types
   ( Board
   , Player(..)
+  , score
+  , rack
+  , name
   , Letter
   , Tile )
 import Scrabble.Lang.Letter
@@ -73,9 +77,9 @@ showPlayer p = top <> playerLine <> rackLine <> bottom where
   line       :: Char -> Text
   line     c = T.pack (replicate 46 c) <> "\n"
   top        = "\n" <> line '*'
-  playerLine = name p <> " (" <> T.pack (show (score p)) <> ")\n"
-  rackLine   = let strs   = map (T.pack . (:"") . letterToChar) (rack p)
-                   scores = map (T.pack . show . scoreLetter) (rack p) in
+  playerLine = p ^. name <> " (" <> T.pack (show (p ^. score)) <> ")\n"
+  rackLine   = let strs   = map (T.pack . (:"") . letterToChar) (p ^. rack)
+                   scores = map (T.pack . show . scoreLetter) (p ^. rack) in
                  T.intercalate ", " strs <> "\n"
                  <> T.intercalate ", " scores <> "\n"
   bottom     = line '*'

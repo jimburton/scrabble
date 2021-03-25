@@ -9,8 +9,7 @@ Portability : POSIX
 Functions for playing a game of scrabble (for a human player).
 -}
 module Scrabble.Game.Game
-  ( Game(..)
-  , Turn(..)
+  ( Turn(..)
   , newGame
   , newBoard
   , newBag
@@ -29,6 +28,7 @@ import Prelude hiding
 import Data.Functor ( (<&>) )
 import qualified Data.Map as Map
 import Data.Text ( Text )
+import Lens.Simple ((.~),(%~),(^.),(&))
 import Scrabble.Game.Internal
   ( getPlayer
   , setPlayer 
@@ -42,9 +42,13 @@ import Scrabble.Game.Internal
   , endNonPassMove )  
 import Scrabble.Types
   ( Game(..)
+  , lastMovePass
+  , gen
+  , bag
   , Turn(..)
   , WordPut
   , Player(..)
+  , rack
   , Dict
   , Word
   , Validator
@@ -72,26 +76,26 @@ newGame :: Text   -- ^ Name of Player 1
         -> Game
 newGame p1Name p2Name theGen d = 
   let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
-      p1 = Player { name  = p1Name
-                  , rack  = rack1
-                  , score = 0
-                  , isAI = False }
+      p1 = Player { _name  = p1Name
+                  , _rack  = rack1
+                  , _score = 0
+                  , _isAI = False }
       Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
-      p2 = Player { name  = p2Name
-                  , rack  = rack2
-                  , score = 0
-                  , isAI  = False }
-      g  = Game { board     = newBoard
-                , bag       = bag2
-                , player1   = p1
-                , player2   = p2
-                , turn      = P1
-                , gen       = gen''
-                , firstMove = True
-                , dict      = d
-                , gameOver  = False
-                , playable  = Map.empty
-                , lastMovePass = False } in
+      p2 = Player { _name  = p2Name
+                  , _rack  = rack2
+                  , _score = 0
+                  , _isAI  = False }
+      g  = Game { _board     = newBoard
+                , _bag       = bag2
+                , _player1   = p1
+                , _player2   = p2
+                , _turn      = P1
+                , _gen       = gen''
+                , _firstMove = True
+                , _dict      = d
+                , _gameOver  = False
+                , _playable  = Map.empty
+                , _lastMovePass = False } in
     g
 
 -- | Play a word onto a board, updating the score of the current player
@@ -116,21 +120,21 @@ swap :: Word -- ^ The tiles to swap.
      -> Game -- ^ The game.
      -> Evaluator Game
 swap ls g = do
-  let p      = getPlayer g
-      r      = rack p
-      theBag = bag g
-      theGen = gen g
+  let p      = g ^. getPlayer g
+      r      = p ^. rack
+      theBag = g ^. bag
+      theGen = g ^. gen
   takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
-    >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
+    >>= \(r'', theBag', theGen') -> setPlayer g (p & rack .~ r'')
     >>= endNonPassMove >>= checkEndOfGame
-    >>= \g' -> pure g' { bag = ls++theBag'
-                       , gen = theGen'
-                       , lastMovePass = False }
+    >>= \g' -> pure (g' & bag %~ (ls++)
+                      & gen .~ theGen'
+                      & lastMovePass .~ False )
 
 -- | Take a move by passing.
 pass :: Game -> Evaluator Game
-pass g = if lastMovePass g
+pass g = if g ^. lastMovePass
          then endGame g
-         else toggleTurn g { lastMovePass = True } >>= checkEndOfGame
+         else toggleTurn (g & lastMovePass .~ True ) >>= checkEndOfGame
 
   

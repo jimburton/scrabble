@@ -7,6 +7,7 @@ import qualified Data.Text.IO as T
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromJust)
 import Data.Char (toUpper)
+import Lens.Simple
 import System.Console.Haskeline
 import System.Random (getStdGen)
 import Scrabble.Lang.Search (findPrefixes)
@@ -22,8 +23,15 @@ import Scrabble.Game.Game
 import Scrabble.Game.AI (moveAI, newGame1P)
 import Scrabble.Game.Validation (valGameRules)
 import Scrabble.Types
-  ( Game(..)
-  , Player(..)
+  ( Game
+  , player1
+  , player2
+  , isAI
+  , gameOver
+  , board
+  , rack
+  , name
+  , score
   , Evaluator(..)
   , Dir(..)
   , MoveResult(..))
@@ -57,8 +65,8 @@ startGameAI p1Name = do
 -- | Play the game.
 playGame :: Game -> IO Game
 playGame g = do
-  printPlayer $ player1 g
-  printPlayer $ player2 g
+  printPlayer $ g ^. player1
+  printPlayer $ g ^. player2
   takeTurn g Nothing
 
 -- | Take a turn.
@@ -69,10 +77,10 @@ takeTurn g msc = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
-     liftIO $ printBoard False (board g) msc
-     if gameOver g
+     liftIO $ printBoard False (g ^. board) msc
+     if g ^. gameOver
        then liftIO $ doGameOver g
-       else if isAI (getPlayer g)
+       else if g ^. (getPlayer g) ^. isAI
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
 
@@ -119,17 +127,17 @@ takeTurnManual g = runInputT defaultSettings loop
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game
 doGameOver g = do
-  let p1     = player1 g
-      p2     = player2 g
-      draw   = score p1 == score p2
-      winner = if score p1 > score p2
+  let p1     = g ^. player1
+      p2     = g ^. player2
+      draw   = p1 ^. score == p2 ^. score
+      winner = if p1 ^. score > p2 ^. score
                then p1 else p2
   T.putStrLn "Game over!"
-  T.putStrLn $ name p1 <> ": " <> T.pack (show (score p1))
-  T.putStrLn $ name p2 <> ": " <> T.pack (show (score p2))
+  T.putStrLn $ p1 ^. name <> ": " <> T.pack (show (p1 ^. score))
+  T.putStrLn $ p2 ^. name <> ": " <> T.pack (show (p2 ^. score))
   if draw
     then T.putStrLn "It's a draw!" >> pure g
-    else T.putStrLn ("Congratulations " <> name winner) >> pure g
+    else T.putStrLn ("Congratulations " <> winner ^. name) >> pure g
 
 -- | Datatype for commands entered by the user.
 data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
@@ -178,6 +186,6 @@ help = T.putStrLn "HELP: TODO"
 -- | Print some word suggestions based ont hte current player's rack.
 hints :: Game -> IO ()
 hints g = do
-  let w = rack (getPlayer g) 
+  let w = g ^. getPlayer g ^. rack
   T.putStrLn "HINTS:"
   mapM_ print $ findPrefixes g w

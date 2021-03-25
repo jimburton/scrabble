@@ -16,10 +16,12 @@ module Scrabble.Board.Validation
   where
 
 import Data.Maybe (fromJust)
-import qualified Data.Text as T  
+import qualified Data.Text as T
+import Lens.Simple ((^.))
 import Scrabble.Types
   ( Board
   , Player(..)
+  , rack
   , WordPut
   , Pos
   , Rack
@@ -55,7 +57,7 @@ validateMove b p w fm =
 lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
 lettersAvailable w p b = all available w
                          `evalBool` ("Letters not in rack or not on board: " <> formatWP w)
-  where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
+  where available (pos,(t,_)) = maybe (t `elem` (p ^. rack)) ((==t) . fst) (getSquare b pos) 
   
 -- | Check that a word to be played is made of tiles that are either in the player's
 --   rack or are already on the board.

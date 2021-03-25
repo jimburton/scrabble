@@ -15,6 +15,7 @@ import Data.List (find)
 import qualified Network.WebSockets as WS
 import Control.Concurrent (forkIO)
 import Control.Concurrent.BoundedChan
+import Lens.Simple ((^.))
 import Data.Aeson
 import System.Random (getStdGen)
 import ScrabbleWeb.Types
@@ -26,9 +27,16 @@ import ScrabbleWeb.Types
   , Move(..))
 import Scrabble.Types
   ( Evaluator(..)
-  , Game(..)
+  , Game
+  , turn
+  , score
+  , player1
+  , player2
+  , isAI
+  , gameOver
   , Turn(..)
-  , Player(..)
+  , rack
+  , name
   , Letter)
 import Scrabble.Lang.Dict (englishDictionary)
 import Scrabble.Lang.Search (findPrefixes)
@@ -99,9 +107,9 @@ takeTurn wg = do
      msgTurn wg
      msgScores wg
      let g = theGame wg
-     if gameOver g
+     if g ^. gameOver
        then doGameOver wg
-       else if isAI (G.getPlayer g)
+       else if g ^. (G.getPlayer g) ^. isAI
             then takeTurnAI wg
             else takeTurnManual wg
 
@@ -144,21 +152,21 @@ takeTurnManual wg = do
 doGameOver :: WebGame -> IO WebGame
 doGameOver wg = do
   let g      = theGame wg
-      pl1    = player1 g
-      pl2    = player2 g
-      draw   = score pl1 == score pl2
-      winner = if score pl1 > score pl2
+      pl1    = g ^. player1
+      pl2    = g ^. player2
+      draw   = pl1 ^. score == pl2 ^. score 
+      winner = if pl1 ^. score > pl2 ^. score
                then pl1 else pl2
   msgEog wg
   if draw
     then announce wg "It's a draw!" >> pure wg
-    else announce wg ("Congratulations " <> name winner) >> pure wg
+    else announce wg ("Congratulations " <> winner ^. name) >> pure wg
 
 -- | Send hints to a player.
 doHints :: WebGame -> IO ()
 doHints wg = do
   let g  = theGame wg
-      w  = rack (G.getPlayer g) 
+      w  = g ^. (G.getPlayer g) ^. rack
       hs = findPrefixes g w
   msgCurrent wg (MsgHint (Just hs))
 
@@ -186,4 +194,4 @@ doSwap wg ls = do
 
 -- | Get client whose turn it is. 
 getClient :: WebGame -> Client
-getClient wg = if turn (theGame wg) == P1 then p1 wg else p2 wg
+getClient wg = if (theGame wg) ^. turn == P1 then p1 wg else p2 wg

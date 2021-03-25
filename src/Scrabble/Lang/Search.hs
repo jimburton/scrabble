@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
 Module      : Scrabble.Lang.Search
 Description : Functions relating to searching the dictionary for the Scrabble game.
@@ -19,6 +20,15 @@ module Scrabble.Lang.Search
   , dictContainsPrefix )
   where
 
+import Scrabble.Types
+  ( Dict
+  , Word
+  , Letter
+  , Word
+  , Game
+  , dict
+  , Evaluator)
+import Lens.Simple ((^.))
 import Data.List
   ( nub
   , permutations )
@@ -26,13 +36,6 @@ import Prelude hiding       ( Word )
 import Data.Text            ( Text )
 import Control.Monad        (filterM)
 import qualified Data.Trie.Text as Trie
-import Scrabble.Types
-  ( Dict
-  , Word
-  , Letter
-  , Word
-  , Game(..)
-  , Evaluator)
 import Scrabble.Evaluator (evalBool)
 import Scrabble.Lang.Word
   ( textToWord
@@ -44,7 +47,7 @@ import Scrabble.Lang.Word
 findWords :: Game -- ^ The dictionary to search
           -> [Text]    -- ^ The letters to build the words from.
           -> [Word]
-findWords g ws = map textToWord $ filter (`Trie.member` dict g) ws
+findWords g ws = map textToWord $ filter (`Trie.member` (g ^. dict)) ws
 
 -- Ordered list of values in a bounded enumeration.
 domain :: (Bounded a, Enum a) => [a]

@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
 Module      : Scrabble.Types
 Description : Types for the scrabble library.
@@ -17,8 +18,11 @@ module Scrabble.Types
   , Rack
   , Bonus(..)
   , Player(..)
+  , name, rack, score, isAI -- lenses for Player
   , Turn(..)
   , Game(..)
+  , board, bag, player1, player2, turn, gen, firstMove, --lenses for Game
+    dict, gameOver, playable, lastMovePass
   , Bag
   , Dict
   , Playable
@@ -38,6 +42,7 @@ import Data.Trie.Text ( Trie )
 import Data.Text ( Text )
 import qualified Data.Map as Map
 import System.Random ( StdGen )
+import Lens.Simple 
 
 -- ============ Types for the application ================ --
 
@@ -81,11 +86,13 @@ data Bonus = W2 -- ^ Double word bonus.
   deriving Show
 
 -- | A player has a name, a rack and a score, and is either an interactive or an AI player.
-data Player = Player { name  :: Text -- ^ The name of the player.
-                     , rack  :: Rack -- ^ The rack.
-                     , score :: Int  -- ^ The score.
-                     , isAI  :: Bool -- ^ True if this player is the AI player.
+data Player = Player { _name  :: Text -- ^ The name of the player.
+                     , _rack  :: Rack -- ^ The rack.
+                     , _score :: Int  -- ^ The score.
+                     , _isAI  :: Bool -- ^ True if this player is the AI player.
                      } deriving (Show, Eq)
+-- | Make lenses for Player
+$(makeLenses ''Player)
 
 -- | Which player's turn it is within the game. 
 data Turn = P1 -- ^ Player 1.
@@ -97,20 +104,6 @@ type Bag = [Letter]
 
 -- | The dictionary is stored in a trie.
 type Dict = Trie ()
-
--- | A game is comprised of all the state that is needed to play a game. 
-data Game = Game { board     :: Board    -- ^ The board
-                 , bag       :: Bag      -- ^ The bag.
-                 , player1   :: Player   -- ^ Player 1.
-                 , player2   :: Player   -- ^ Player 2.
-                 , turn      :: Turn     -- ^ Which player's turn it is.
-                 , gen       :: StdGen   -- ^ The StdGen for all things random.
-                 , firstMove :: Bool     -- ^ Is it the first move?
-                 , dict      :: Dict     -- ^ The dictionary.
-                 , gameOver  :: Bool     -- ^ Is the game over?
-                 , playable  :: Playable -- ^ The map of playable positions.
-                 , lastMovePass :: Bool  -- ^ Was the last move a pass?
-                 }
 
 -- | A direction on the board (up, down, left or right)
 data FreedomDir = UpD     -- ^ The Up direction.
@@ -124,6 +117,22 @@ type Freedom = (FreedomDir, Int)
 
 -- | The map of all playable positions on the board, used by the AI player.
 type Playable = Map.Map Pos (Letter, [Freedom])
+
+-- | A game is comprised of all the state that is needed to play a game. 
+data Game = Game { _board     :: Board    -- ^ The board
+                 , _bag       :: Bag      -- ^ The bag.
+                 , _player1   :: Player   -- ^ Player 1.
+                 , _player2   :: Player   -- ^ Player 2.
+                 , _turn      :: Turn     -- ^ Which player's turn it is.
+                 , _gen       :: StdGen   -- ^ The StdGen for all things random.
+                 , _firstMove :: Bool     -- ^ Is it the first move?
+                 , _dict      :: Dict     -- ^ The dictionary.
+                 , _gameOver  :: Bool     -- ^ Is the game over?
+                 , _playable  :: Playable -- ^ The map of playable positions.
+                 , _lastMovePass :: Bool  -- ^ Was the last move a pass?
+                 }
+-- | Make lenses for Game.
+$(makeLenses ''Game)
 
 -- | The evaluator of scrabble computations. Wraps up an @Either@ value
 --   for error reporting.

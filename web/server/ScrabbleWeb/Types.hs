@@ -5,7 +5,6 @@ module ScrabbleWeb.Types
   , Msg(..)
   , Client
   , WebGame(..)
-  , Game(..)
   , Turn(..)
   , Evaluator(..)
   , Score(..)
@@ -22,7 +21,7 @@ import Scrabble.Types
   , Rack
   , Letter(..)
   , Turn(..)
-  , Game(..) 
+  , Game
   , Evaluator(..)
   , Word
   , MoveResult(..)) 
