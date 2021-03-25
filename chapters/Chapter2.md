@@ -96,9 +96,9 @@ to increase the score of Player 1 by 10:
 > let g' = g { player1 = (player1 g) { score = score (player1 g) + 10 } }
 ```
 
-Ouch! Considering that in an OO language we could probably do
-something like `p.player1.score += 10`, this is very cumbersome. This
-is the problem that *lenses* overcome.
+Oof! Haskell is meant to be elegant...considering that in an OO
+language we could probably do something like `p.player1.score += 10`,
+this is very cumbersome. This is the problem that *lenses* overcome.
 
 Lenses are first class getters and setters for records (and tuples,
 and many other types, but we're only using them for records). They can
