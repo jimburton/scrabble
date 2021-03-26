@@ -1,5 +1,7 @@
 # Chapter Six: The web server and client
 
+[Contents](../README.md)
+
 We can write any number of clients in the style of the last chapter, but they all need to 
 import the library so they must be written in Haskell. In this chapter we develop a simple
 webservice that accepts JSON requests for games, moves and so on, and send the results back to

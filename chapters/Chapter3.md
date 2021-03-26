@@ -1,5 +1,7 @@
 # Chapter Three: Validating moves
 
+[Contents](../README.md)
+
 In this chapter we introduce monadic error checking, leading to a
 design for the entire application. It will allow us to thread the
 state of the game through a long and growing series of computations
@@ -429,5 +431,5 @@ within the game.
 
 TODO
  
-[Contents](../README.md) | [Chapter Three](Chapter3.md)
+[Contents](../README.md) | [Chapter Two](Chapter2.md)
 

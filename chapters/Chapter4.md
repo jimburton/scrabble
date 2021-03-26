@@ -1,5 +1,7 @@
 # Chapter Three: Playing the game
 
+[Contents](../README.md)
+
 The code corresponding to this version of the project is in the branch 
 `chapter3`.
 
@@ -462,4 +464,4 @@ In the next chapter we'll make it possible to play against the computer.
 
 TODO
 
-[Contents](../README.md) | [Chapter Four](Chapter4.md)
+[Contents](../README.md) | [Chapter Five](Chapter5.md)

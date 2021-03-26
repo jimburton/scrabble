@@ -1,4 +1,6 @@
-# Chapter Four: Playing against the computer
+# Chapter Five: Playing against the computer
+
+[Contents](../README.md)
 
 In this chapter a basic AI is added so games can be played against
 the computer. 
@@ -541,4 +543,4 @@ The Ai played the word ALEPH. At least that's a beginning :-)
 
 TODO
  
-[Contents](../README.md) | [Chapter Five](Chapter5.md)
+[Contents](../README.md) | [Chapter Six](Chapter6.md)

@@ -9,7 +9,8 @@ module ScrabbleWeb.Types
   , Turn(..)
   , Evaluator(..)
   , Score(..)
-  , JoinAck(..))
+  , JoinAck(..)
+  , Conf(..))
   where
 
 import Prelude hiding (Word)
@@ -17,7 +18,7 @@ import Data.Aeson
 import GHC.Generics
 import qualified Network.WebSockets as WS
 import Data.Text (Text)
-import Lens.Simple 
+import Lens.Simple
 import Scrabble.Types
   ( WordPut
   , Rack
@@ -44,6 +45,14 @@ deriving instance ToJSON   Letter
 deriving instance Generic  Turn
 deriving instance FromJSON Turn
 deriving instance ToJSON   Turn
+
+-- | Container for the config.
+data Conf = Conf
+  { hostname     :: Text
+  , port         :: Int
+  , log_file     :: Text
+  , log_priority :: Text
+  } deriving Show
 
 -- | The name of the player and the WebSocket connection.
 type Client = (Text, WS.Connection)

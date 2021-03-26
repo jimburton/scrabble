@@ -1,5 +1,7 @@
 # Chapter Six: The CLI client
 
+[Contents](../README.md)
+
 TODO including logging
 
 The first client is a terminal-based CLI (command line interface). It's probably
@@ -554,4 +556,4 @@ in any language, and we'll write one in Javascript.
 ## Tests
 
 
-[Contents](../README.md) | [Chapter Six](Chapter6.md)
+[Contents](../README.md) | [Chapter Seven](Chapter7.md)
