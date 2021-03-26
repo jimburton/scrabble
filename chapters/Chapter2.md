@@ -202,8 +202,43 @@ name of each field, minus the underscores. We need to export these
 from the `Scrabble.Types` module and import them wherever they are
 needed.
 
+Each of these lenses has a type similar to this one for the `_name` field of `Player`:
+
+```haskell
+name  :: Lens' Player Text
+```
+
+The first type parameter to `Lens'` is the type of the record, the send is the name of the field.
+The `Lens'` type is a very crafty type synonym that allows us to use different functors depending
+on whether we want to get or set fields. It speaks to the power of Haskell's type system that this
+is even possible (in most languages, it isn't).
+
+```haskell
+type Lens' s a = forall f. Functor f => (a -> f a) -> s -> f s
+           │ │
+           │ └──── the type of the value inside of the structure
+           │
+           └───── the type of the whole structure
+```
+
+To write the `name` lens ourselves we could have written a getter and
+a setter then used the built-in `lens` function to combine them.
+
+```haskell
+getName :: Player -> Text
+getName (Player { _name = n }) = n
+
+setName :: Player -> Text -> Player
+setName p n = p { _name = n }
+
+player :: Lens' Player Text
+player = lens getName setName
+```
+But that's boilerplate code, which is why we use Template Haskell to write it 
+for us.
+
 Lens libraries define a lot (a *lot*!) of operators like the `(%~)`
-one used above, and when you get them wrong the type errors are hard
+one used earlier, and when you get them wrong the type errors are hard
 to figure out, at least at first. We are going to stick to a small number
 of the most basic operators though:
 

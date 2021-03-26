@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Debug.Trace
 import Data.Aeson (decode)
 import Control.Concurrent (forkIO, threadDelay)
 import qualified Network.WebSockets as WS
@@ -41,9 +40,6 @@ enqueue state pending = do
 --   start games, then listens for connections.
 main :: IO ()
 main = do
-  -- Copy everything to syslog from here on out.
-  --s <- openlog "SyslogStuff" [PID] USER DEBUG
-  --updateGlobalLogger rootLoggerName (addHandler s)
   updateGlobalLogger "Scrabble" (setLevel DEBUG)
   h <- fileHandler "scrabble.log" DEBUG >>= \lh -> return $
     setFormatter lh (simpleLogFormatter "[$time : $loggername : $prio] $msg")
