@@ -2,8 +2,6 @@
 
 [Contents](../README.md)
 
-TODO including logging
-
 The first client is a terminal-based CLI (command line interface). It's probably
 true that nobody would want to play a multi-player game of Scrabble this way. You
 can see each other's tiles. But it does work well enough for a one-player game and

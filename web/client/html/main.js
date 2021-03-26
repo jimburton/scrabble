@@ -452,7 +452,7 @@ function createBag() {
     ];
 }
 
-// COnnect to the websocket server.
+// Connect to the websocket server.
 $(function(){
     socket = new WebSocket("ws://localhost:9160/")
     client = new Client(socket);

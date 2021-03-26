@@ -431,5 +431,5 @@ within the game.
 
 TODO
  
-[Contents](../README.md) | [Chapter Two](Chapter2.md)
+[Contents](../README.md) | [Chapter Four](Chapter4.md)
 

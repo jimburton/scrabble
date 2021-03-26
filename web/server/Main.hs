@@ -66,10 +66,11 @@ enqueue state pending = do
             where loop = threadDelay (10000*5) >> loop
       Just _ -> WS.sendTextData conn ("Not expecting: " <> msg)
  
--- | Entry point for the server. It begins by setting up the logger and
---   reading the config file. It then creates the Chan which will hold
---   incoming clients, starts the thread that will watch the Chan and
---   start games, then listens for connections.
+-- | Entry point for the server. It begins by reading the command-line
+--   options, setting up the logger and reading the config file. It then
+--   creates the Chan which will hold incoming clients, starts the thread
+--   that will watch the Chan and start games, and continues to listen for
+--   connections.
 main :: IO ()
 main = do
   args <- getArgs

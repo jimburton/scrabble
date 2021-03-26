@@ -117,7 +117,7 @@ scrabble-server`. Then start the first client by opening
 game, or leave it unchecked and open the page again in another 
 tab for a two player game.
 
-<img src="/images/webgame.png" alt="Playing Scrabble on the web" width="500px" />
+<img src="/chapters/images/webgame.png" alt="Playing Scrabble on the web" width="500px" />
 
 If you want to run clients on a network, start the client server with
 `cabal run scrabble-client`. This serves the web client on 

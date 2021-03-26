@@ -1,43 +1,203 @@
-# Chapter Six: The web server and client
+# Chapter Six: The scrabble server
 
 [Contents](../README.md)
 
-We can write any number of clients in the style of the last chapter, but they all need to 
-import the library so they must be written in Haskell. In this chapter we develop a simple
-webservice that accepts JSON requests for games, moves and so on, and send the results back to
-clients as JSON objects. In this way the library is fully decoupled from clients, and we
-demonstrate this by writing a web-based client using HTML, CSS and Javascript.
+Going a step beyond writing clients in Haskell that import the library
+directly, in this chapter we develop a server for remote
+clients. These can be written in any language so long as they can
+reach the server, send JSON objects representing requests to join a
+game, moves and so on. In this way the library is fully decoupled from
+clients, and we demonstrate this by writing a web-based client using
+HTML, CSS and Javascript.
 
-## A (much) nicer UI that allows proper remote multiplayer functionality
+**SOURCE TREE**
 
-### The server
-  + The `aeson` library is a
-    powerful and neat way of converting Haskell values into JSON
-    representations and back again, and this is how we will send data
-    over the network. Datatypes that need to be sent over the network
-    are made into instances of `ToJSON` and `FromJSON`. Fortunately, since we don't
-	want to do anything special these instances can be derived. For instance,
-    the definition of the `Player` datatype is now:
-	
-	```
-	-- | A player has a name, a rack and a score, and is either an interactive or an AI player.
-    data Player = Player {
-      name  :: Text
-    , rack  :: Rack
-    , score :: Int
-    , isAI  :: Bool
-    } deriving (Show, Eq, Generic, FromJSON, ToJSON)
+## Serving websockets
 
-	```
-	To make this work we need to turn on some GHC extensions: `DeriveGeneric` and `DeriveAnyClass`. That
-	means adding a language pragma to the top of any file with this kind of definition in it:
-	
-	```
-	{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
-	```
-	
-	and adding the extensions to the `cabal` config file. Now we can turn a `Player` into JSON and 
-	read some JSON into a `Player` object:
+We will write the server using *websockets*. This is a modern protocol
+that allows full duplex communications (either side can send a
+message) over TCP between clients and servers on a network such as the
+web. It is designed with web browsers in mind and it's easy to
+communicate over websockets with Javascript, but any language that has
+a library for the protocol can make a connection. Messages are
+normally sent back and forth over the standard HTTP or HTTPS ports,
+meaning that there aren't likely to be firewall issues (we'll run our
+server on a higher port during development, as you need admin
+privileges to attach to ports below 1024). The handshake between
+client and server starts with a HTTP request/response. After that,
+communication switches to a much more efficient binary protocol.
+
+To demonstrate how easy it is to get started, here is a self-contained
+"echo" websocket server.
+
+```haskell
+{-# Language OverloadedStrings #-}
+module Main
+  where
+
+import Control.Monad (forever)
+import qualified Network.WebSockets as WS
+import Data.Text (Text) 
+
+main :: IO ()
+main = do
+  putStrLn "starting echo on port 9160"
+  WS.runServer "127.0.0.1" 9160 wsapp
+
+wsapp :: WS.ServerApp
+wsapp pending = WS.acceptRequest pending >>= echo
+
+echo :: WS.Connection -> IO ()
+echo conn = forever $ do
+  msg <- WS.receiveData conn
+  WS.sendTextData conn $ doEcho msg
+
+doEcho :: Text -> Text
+doEcho msg = "echo: " <> msg
+```
+
+The `main` function starts the websocket server `wsapp` running on the
+loopback address 127.0.0.1 and the port 9160. This continually accepts
+connections and passes them in their own thread to the `echo`
+action. Each of these threads loops forever, waiting to receive a
+message from the client then sending one back.
+
+Here is a client that runs in a browser.
+
+```html
+<!DOCTYPE html>
+<html>
+    <head>
+    <script type="text/javascript">
+    function Client(socket) {
+	socket.onopen = function () {
+	}
+	socket.onclose = function () {
+	    alert("closed web socket");
+	}
+	socket.onerror = function (event) {
+	    alert(event);
+	}
+	socket.onmessage = function (event) {
+	    alert(event.data);
+	}
+    }
+    var client;
+    var socket;
+    // Connect to the websocket server.
+    function connect() {
+	socket = new WebSocket("ws://localhost:9160/")
+	client = new Client(socket);
+    }
+    </script>
+    </head>
+    <body onload="connect()">
+      <label for="echoText">Text to echo:</label><br>
+      <input type="text" id="echoText" name="echoText"><br>
+      <button onclick="socket.send(document.getElementById('echoText').value)">Echo</button> 
+    </body>
+</html>
+```
+When the page is loaded the `connect` function runs. This creates a `WebSocket`
+object connected to the server. It uses the socket to create a `Client` object
+that defines event handlers for the lifecycle of the socket. The `onmessage`
+handler is called whenever a message comes in from the server. The form in the 
+body of the page allows us to send messages to the server using `socket.send`.
+
+To write a server that allows users to play Scrabble, we can start with code like
+this. On the server side we need to replace `echo` with code that parses messages
+from the user and acts accordingly. Similarly, on the client side we need to add
+code to the `onmessage` handler that parses input from the server and uses it to 
+present the game.
+
+The format we will use for the communication is JSON (Javascript
+Object Notation), which is nice and simple, human-readable and well
+supported in Javascript and Haskell. In fact, JSON is a subset of
+Javascript, so there's very little parsing to do on the client side. The
+parts of Javascript that are allowed in JSON are *numbers*, *strings*,
+*booleans*, *objects* (braces containing
+comma-separated key:value pairs, like `{"name":"James", "score": 42}`
+and *arrays* (comma-separated values within square brackets).
+
+We do have to turn Javascript objects into strings and back again
+though. We do this with `JSON.stringify` and `JSON.parse`.
+
+```javascript
+// send a JSON object (an array of numbers) to the server
+socket.send(JSON.stringify([1, 2, 3, 4]));
+
+socket.onmessage = function (event) {
+   // parse the message as JSON
+   var d = JSON.parse(event.data);
+	....
+}
+```
+
+Thanks to the `aeson` library, it isn't that much more difficult on
+the Haskell side. `aeson` is a powerful and neat way of converting
+Haskell values into JSON representations and back again. 
+
+Datatypes that need to be sent over the network are made into
+instances of the `ToJSON` and `FromJSON` typeclasses. We can do this
+ourselves by defining `encode` and `decode` functions for each type,
+but as we don't want to do anything special the instances can be
+derived. In order to make this work we have to turn on two language
+extensions `DeriveGeneric` and `DeriveAnyClass`. For each type we want
+to derive the `aeson` instances for, we also need to derive an instance
+of `Generic`, which is a typeclass the compiler uses internally. 
+
+We will keep the data sent back and forth to an absolute
+minimum. There's no need to send entire boards, for instance. Clients
+can start with an empty board and add words to it one by one. The
+`MoveResult` datatype will serve that purpose:
+
+```haskell
+-- | The Record returned by move functions.
+data MoveResult = MoveResult
+                  { mrWord            :: WordPut -- ^ The word that was played.
+                  , mrAdditionalWords :: [Word]  -- ^ The additional words.
+                  , mrBlanks          :: [Int]   -- ^ The positions in the word that were blank.
+                  , mrScore           :: Int     -- ^ The score.
+                  }
+                deriving (Show, Read, Eq)
+```
+To make instances of `FromJSON` and `ToJSON` for `MoveResult`, there must 
+already be instances for every type contained in it. Instances exist for
+all basic datatypes such as `Int` and so on, but not for our type `Letter`, 
+which is part of `Word`, so we need to know how to serialise that too. We will
+also want to let clients know whose turn it is, so we will derive instances for
+`Turn`.
+
+The normal place to say that we want the compiler to derive typeclass
+instances for our types is immediately after their definition, so that
+would be in `src/Scrabble/Types.hs`. However, we don't want to add the
+`aeson` dependency to the library. It doesn't know anything about how
+clients might be implemented and we want to to keep it that way.
+
+There is a language extension that does what we need, `StandaloneDeriving`. By 
+turning this on we can add the deriving clauses to `ScrabbleWeb.Types`, where
+it does make sense to have the `aeson` dependency.
+
+```
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, StandaloneDeriving #-}
+
+-- ==== Make types from Scrabble.Types serialisable in JSON ========== --
+
+deriving instance Generic  MoveResult
+deriving instance FromJSON MoveResult
+deriving instance ToJSON   MoveResult
+
+deriving instance Generic  Letter
+deriving instance FromJSON Letter
+deriving instance ToJSON   Letter
+
+deriving instance Generic  Turn
+deriving instance FromJSON Turn
+deriving instance ToJSON   Turn
+```
+
+Now we can turn a `Turn`, a `Letter` or a `MoveResult` into JSON with `encode`.
+We can read text into `Maybe`s of those type with `decode`.
 	
 ```
 $ cabal repl scrabble-server
@@ -94,14 +254,28 @@ Just
         , mrScore = 42
         }
     )
-> encode (MsgMoveAck (MoveAck (Right (MoveResult w bs [] 9))))
-"{"contents":{"Right":{"mrScore":9,"mrWord":[[[0,0],["C",3]],[[0,1],["A",1]],[[0,2],["T",1]]],"mrAdditionalWords":[["C","O","W"]],"mrBlanks":[]}},"tag":"MsgMoveAck"}"
-
 ``` 
 
-`Aeson` is great -- for the full detail on how it works, [read the
+As you can see, a record is encoded into a JSON object with key:value
+pairs for the fields.  Algebraic datatypes (i.e. non-records) are
+encoded as an object with a key called "tag" with the name of the type
+in it and a key called "contents" with the data. For example, here is
+a serialised value of the `Msg` type, one we'll come to later in the
+chapter.
+
+```haskell
+> encode (MsgTurn P1)
+"{"contents":"P1","tag":"MsgTurn"}"
+```
+`aeson` is a great library.  -- for the full detail on how it works, [read the
 tutorial](https://artyom.me/aeson).
-	
+
+
+
+## A (much) nicer UI that allows proper remote multiplayer functionality
+
+### The server
+  + 	
   + We need to write a server that webclients can connect to, and that
 	can interact with the `Scrabble` library.  It consists of a
 	`WebSocket` server, allowing duplex communication (either side can
@@ -186,4 +360,4 @@ tutorial](https://artyom.me/aeson).
     See `web/client`.
 
 
-[Contents](../README.md) | [Chapter Seven](Chapter7.md)
+[Contents](../README.md) | [Chapter Eight](Chapter8.md)

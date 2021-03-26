@@ -1,4 +1,4 @@
-# Chapter One: Getting started
+s# Chapter One: Getting started
 
 [Contents](../README.md)
 
@@ -122,7 +122,7 @@ the problem in hand. When the problem is a board game, this is quite
 easy to begin with, because the first things we need to model in the
 software correspond to real world objects.
 
-<img src="/images/scrabble.jpeg" alt="Scrabble board" width="500px" />
+<img src="/chapters/images/scrabble.jpeg" alt="Scrabble board" width="500px" />
 
 In the image above we can see many of the most basic objects we will
 need to handle:
@@ -141,7 +141,7 @@ also need to model the **rules** of the game and a **dictionary**.
 
 ## Letters and tiles
 
-<img src="/images/tile.jpg" alt="Scrabble tile" width="100px" />
+<img src="/chapters/images/tile.jpg" alt="Scrabble tile" width="100px" />
 
 A tile consists of a **letter** and a **value**. We could create a type alias such
 as
@@ -391,15 +391,18 @@ updateSquare b (pos,t) = b // [(pos, Just t)]
 
 ```
 
-But we can't print it out nicely yet. Let's look at that next. We want a function that
-turns a board into nicely formatted text. To do that we will need to deal with a row at
-a time from the array, which is what the `rows` function below is for. It gets the contents
-of the array as a list then uses `chunksOf` to split it into 15-element sublists. The
-`intercalate` function from `Data.Text` intersperses a lists of texts with its
-argument. The `(<>)` operator concatenates text. Note that the `showBoard` function takes
-a boolean parameter which determines whether to show the bonus squares on the board. If this
-parameter is `True` then each position is looked up in the map of bonus squares to see if
-there is a bonus value to display.
+But we can't print it out nicely yet. Let's look at that next. We want
+a function that turns a board into nicely formatted text. To do that
+we will need to deal with a row at a time from the array, which is
+what the `rows` function below is for. It gets the contents of the
+array as a list then uses `chunksOf` to split it into 15-element
+sublists. The `intercalate` function from `Data.Text` intersperses a
+lists of texts with its argument. The `(<>)` operator concatenates
+things, including text. Note that the `showBoard` function takes a
+boolean parameter which determines whether to show the bonus squares
+on the board. If this parameter is `True` then each position is looked
+up in the map of bonus squares to see if there is a bonus value to
+display.
 
 ```haskell
 import qualified Data.Text as T
