@@ -60,11 +60,11 @@ numbers. We need this because we want to supply players with tiles
 taken at "random" from the bag, something that we'll come to in the
 next chapter.
 
-## Records, their clumsiness, and *lenses*
+## Records, their clumsiness, and lenses
 
 As the `Player` and `Game` datatypes are records we can create them with
 named fields and update them by assigning those fields inside braces. The
-compiler screates an accessor function for each field with the same name
+compiler creates an accessor function for each field with the same name
 as the field.
 
 ```
@@ -103,7 +103,7 @@ this is very cumbersome. This is the problem that *lenses* overcome.
 Lenses are first class getters and setters for records (and tuples,
 and many other types, but we're only using them for records). They can
 be composed, so they allow us to access and modify values that are
-*deeply nested* in data, like the `score` field above. 
+deeply nested in data, like the `score` field above. 
 
 This isn't the place for an in-depth lens tutorial, and I'm aiming to
 tell you just enough about them to understand the way they're used in
@@ -122,23 +122,24 @@ the code above like this:
 > let g' = g & player1 . score %~ (+10)
 ```
 
-It's a lot cleaner, even if it is gobbledegook for now. Let's break it
+It's a lot cleaner, even if it might be gobbledegook for now. Let's break it
 down. 
 
 The point is to produce a new `Game` based on `g` but in which the
 partially applied function `(+10)` has been applied to the `score`
 field nested inside `player1`. 
 
-In this context, `score` is *not* the accessor function we saw before,
-it's a lens. The `(&)` operator is like `($)` but it takes its
-arguments in reverse order, so this is the same as writing `(player1
-. score %~ (+10)) g`. So `g` is applied to a function which is made of
-up two lenses, `player1` and `score`, composed with the usual
-composition operator, `(.)`.  Then comes the `(%~)` operator, which
-takes a lens as its first argument and a function as its second, and
-supplies the value from the lens to the function. Haskell is still a
-purely functional language of course, so no change is made to `g`, but
-a new `Game` record is produced which we assign to `g'`.
+In this context, `score` and `player1` are *not* the accessor
+functions we saw before, they are lenses. The `(&)` operator is like `($)`
+but it takes its arguments in reverse order, so this is the same as
+writing `(player1 . score %~ (+10)) g`. So `g` is applied to a
+function which is made of up two lenses, `player1` and `score`,
+composed with the usual composition operator, `(.)`.  Then comes the
+`(%~)` operator, which takes a lens as its first argument and a
+function as its second, and supplies the value from the lens to the
+function. Haskell is still a purely functional language of course, so
+no change is made to `g`, but a new `Game` record is produced which we
+assign to `g'`.
 
 Lenses can be used to access the value of the field or to change
 it. Which purpose the lens serves depends on the context, which is set
