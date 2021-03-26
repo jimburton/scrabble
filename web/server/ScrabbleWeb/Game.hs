@@ -16,7 +16,7 @@ import qualified Network.WebSockets as WS
 import Control.Concurrent (forkIO)
 import Control.Concurrent.BoundedChan
 import Lens.Simple ((^.),(.~),(&))
-import System.Log.Logger (infoM)
+import System.Log.Logger (infoM, errorM)
 import Data.Aeson
 import System.Random (getStdGen)
 import ScrabbleWeb.Types
@@ -77,7 +77,6 @@ gameStarter state = loop
           let (n1',n2') = distinctNames (n1,n2)
           infoM "Scrabble.Game" ("Starting game for "<>T.unpack n1'
                                   <> " and " <> T.unpack n2')
-          --T.putStrLn (n1' <> " vs " <> n2')
           d <- englishDictionary
           theGen <- getStdGen
           let ig = G.newGame n1' n2' theGen d
@@ -131,6 +130,7 @@ takeTurnAI wg = do
       sendRackOpponent wg'
       takeTurn wg'
     Ev (Left e)       -> do
+      errorM "Scrabble.Game.takeTurnAI" (T.unpack e)
       announce wg e
       pure wg
 
@@ -138,7 +138,7 @@ takeTurnAI wg = do
 takeTurnManual :: WebGame -> IO WebGame
 takeTurnManual wg = do
   o <- decode <$> WS.receiveData (snd $ getClient wg)
-  infoM "Scrabble.Game" ("[MSG] " <> show o)
+  infoM "Scrabble.Game.takeTurnManual" ("[MSG] " <> show o)
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
@@ -186,7 +186,7 @@ doPass wg = do
   msgOpponent wg (MsgAnnounce "Opponent passed.")
   case G.pass g of
     Ev (Right g') -> pure (wg & theGame .~ g')
-    Ev (Left e)   -> do T.putStrLn e
+    Ev (Left e)   -> do errorM "Scrabble.Game.doPass" (T.unpack e)
                         pure wg
 
 -- | Let the player take a move by swapping some tiles.
@@ -198,7 +198,7 @@ doSwap wg ls = do
                         sendRackOpponent wg'
                         announce wg' "Swapped tiles"
                         pure wg'
-    Ev (Left e)   -> do T.putStrLn e
+    Ev (Left e)   -> do errorM "Scrabble.Game.doSwap" (T.unpack e)
                         pure wg
 
 -- | Get client whose turn it is. 
