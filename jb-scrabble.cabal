@@ -128,6 +128,7 @@ executable scrabble-server
                     , websockets
                     , BoundedChan
                     , lens-simple
+                    , hslogger
   hs-source-dirs:     web/server
                     , src
   ghc-options: -Wall -fno-warn-orphans

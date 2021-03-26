@@ -103,7 +103,7 @@ this is very cumbersome. This is the problem that *lenses* overcome.
 Lenses are first class getters and setters for records (and tuples,
 and many other types, but we're only using them for records). They can
 be composed, so they allow us to access and modify values that are
-*deeply nested* values in data, like the `score` field above. 
+*deeply nested* in data, like the `score` field above. 
 
 This isn't the place for an in-depth lens tutorial, and I'm aiming to
 tell you just enough about them to understand the way they're used in
@@ -114,8 +114,9 @@ one](http://hackage.haskell.org/package/lens-tutorial-1.0.4/docs/Control-Lens-Tu
 Each lens comes with two main functions: `view`, which gives the value
 of the field, and `over`, which modifies its value. Rather than using
 these functions by name we normally use one of the lens operators. If
-we define lenses for `Player` and `Game` and use one of the standard
-lens librarys, we can rewrite the the code above like this:
+we define lenses for `Player` and `Game` with the same names as the
+fields and use one of the standard lens librarys, we can rewrite the
+the code above like this:
 
 ```
 > let g' = g & player1 . score %~ (+10)
@@ -135,19 +136,18 @@ arguments in reverse order, so this is the same as writing `(player1
 up two lenses, `player1` and `score`, composed with the usual
 composition operator, `(.)`.  Then comes the `(%~)` operator, which
 takes a lens as its first argument and a function as its second, and
-supplies the value from the lens to the function. The modifier
-function is `(+10)`.  Haskell is still a purely functional language of
-course, so no change is made to `g`, but a new `Game` record is
-produced which we assign to `g'`.
+supplies the value from the lens to the function. Haskell is still a
+purely functional language of course, so no change is made to `g`, but
+a new `Game` record is produced which we assign to `g'`.
 
 Lenses can be used to access the value of the field or to change
 it. Which purpose the lens serves depends on the context, which is set
-by the lens operators involved. For example, the lens `player1` acts
+by the lens operators involved. For example, `player1` acts
 like a getter in `g ^. player1`. It acts like a setter in `g & player1
 .~  p` (setting `player1` in `g` to some new value `p`).
 
 The `(&)` operator has a very simple type, `(&) :: a -> (a -> b) -> b`, 
-but is icredibly useful. We use it to supply the object at the top
+but is incredibly useful. We use it to supply the object at the top
 of the chain (`g` in the example above) but because a record update
 returns a new record we can also use it to chain updates. In the code
 below (taken from the library) we start with a game called `g`,
@@ -186,8 +186,6 @@ data Game = Game { _board     :: Board    -- ^ The board
                  , _firstMove :: Bool     -- ^ Is it the first move?
                  , _dict      :: Dict     -- ^ The dictionary.
                  , _gameOver  :: Bool     -- ^ Is the game over?
-                 , _playable  :: Playable -- ^ The map of playable positions.
-                 , _lastMovePass :: Bool  -- ^ Was the last move a pass?
                  }
 -- | Make lenses for Game.
 $(makeLenses ''Game)
@@ -218,12 +216,12 @@ of the most basic operators though:
 | `(&)`    | apply  | Reverse application, used for supplying the first record to a composed lens, and for chaining operations |
 
 If you aren't using nested records in your code, or you only do so in
-one or two places, then the complexity lenses add may not be worth
-it. We are going to make enough use of nested records for our codebase
-to benefit from them though. Also, if you carry on using Haskell you
-will need to read other people's code that uses lenses as they are
-very widely used, so you need to understand how they work at some
-point.
+one or two places, then whilst they are new to you the cognitive load
+lenses add may not seem to be worth it. We are going to make enough use of
+nested records for our codebase to benefit greatly from them though. Also, if
+you carry on using Haskell you will need to read other people's code
+that uses lenses as they are very widely used, so you need to
+understand how they work at some point.
 
 The best way to get started with them is to use them, and you don't
 need to understand them inside out to do that (but you do need to read

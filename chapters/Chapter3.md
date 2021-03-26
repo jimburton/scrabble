@@ -1,7 +1,4 @@
-# Chapter Two: Validating moves
-
-The code corresponding to this version of the project is in the branch 
-`chapter2`.
+# Chapter Three: Validating moves
 
 In this chapter we introduce monadic error checking, leading to a
 design for the entire application. It will allow us to thread the
@@ -9,9 +6,13 @@ state of the game through a long and growing series of computations
 without having to worry at each stage about whether anything went
 wrong.
 
-We are going to introduce a lot of functions that relate specifically to
-boards, so we create a new module for that, and refactor the dictionary code 
-into new modules too. 
+We are going to introduce a lot of functions that relate to games and
+boards. Rather than putting all of this code into `Scrabble.Game` and
+`Scrabble.Board`, we will break it out into separate cohesive modules.
+So we create directories `src/Scrabble/Game/` and `src/Scrabble/Board`
+and create the relevant modules within them. While we're at it we
+refactor the dictionary code into a new locaion too,
+`src/Scrabble/Lang/`.
 
 **TODO source tree**
 

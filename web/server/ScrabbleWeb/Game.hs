@@ -16,6 +16,7 @@ import qualified Network.WebSockets as WS
 import Control.Concurrent (forkIO)
 import Control.Concurrent.BoundedChan
 import Lens.Simple ((^.),(.~),(&))
+import System.Log.Logger (infoM)
 import Data.Aeson
 import System.Random (getStdGen)
 import ScrabbleWeb.Types
@@ -74,7 +75,9 @@ gameStarter state = loop
           (n1,c1) <- readChan state
           (n2,c2) <- readChan state
           let (n1',n2') = distinctNames (n1,n2)
-          T.putStrLn (n1' <> " vs " <> n2')
+          infoM "Scrabble.Game" ("Starting game for "<>T.unpack n1'
+                                  <> " and " <> T.unpack n2')
+          --T.putStrLn (n1' <> " vs " <> n2')
           d <- englishDictionary
           theGen <- getStdGen
           let ig = G.newGame n1' n2' theGen d
@@ -97,6 +100,7 @@ playGame wg = do
 -- | Start a new game against the computer.
 aiGame :: Client -> IO ()
 aiGame (n,conn) = do
+  infoM "Scrabble.Game" ("AI game for "<>T.unpack n)
   theGen <- getStdGen
   d      <- englishDictionary
   let ig = newGame1P n theGen d
@@ -134,7 +138,7 @@ takeTurnAI wg = do
 takeTurnManual :: WebGame -> IO WebGame
 takeTurnManual wg = do
   o <- decode <$> WS.receiveData (snd $ getClient wg)
-  T.putStrLn ("Received: \n" <> T.pack (show o))
+  infoM "Scrabble.Game" ("[MSG] " <> show o)
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
@@ -160,6 +164,8 @@ doGameOver wg = do
       draw   = pl1 ^. score == pl2 ^. score 
       winner = if pl1 ^. score > pl2 ^. score
                then pl1 else pl2
+  infoM "Scrabble.Game" ("[End game] "<>(T.unpack $ pl1 ^. name)
+                          <>" : "<>(T.unpack $ pl2 ^. name))
   msgEog wg
   if draw
     then announce wg "It's a draw!" >> pure wg

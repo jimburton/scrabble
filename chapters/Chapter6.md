@@ -1,4 +1,6 @@
-# Chapter Five: The CLI client
+# Chapter Six: The CLI client
+
+TODO including logging
 
 The first client is a terminal-based CLI (command line interface). It's probably
 true that nobody would want to play a multi-player game of Scrabble this way. You
