@@ -82,7 +82,7 @@ firstMoveTouchesCentre :: WordPut -- ^ The word.
 firstMoveTouchesCentre w fm = (not fm || touches (7,7) w) `evalBool`
   "First move must touch centre square"
 
--- | New words must touch another (apart from the first one to be played)
+-- | New words must touch another (apart from the first one to be played).
 connects :: WordPut -- ^ The word to play
          -> Board    -- ^ The board
          -> Bool     -- ^ Is first move
@@ -94,7 +94,7 @@ connects ws b fm =
                            else acc) end ws
 
 
--- | Words must contain at least two tiles and must be in a straight line on the board
+-- | Words must contain at least two tiles and must be in a straight line on the board.
 straight :: WordPut -> Evaluator ()
 straight wp | length wp > 2 =
                 let ps      = map fst wp

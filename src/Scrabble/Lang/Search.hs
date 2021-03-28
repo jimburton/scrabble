@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-|
 Module      : Scrabble.Lang.Search
 Description : Functions relating to searching the dictionary for the Scrabble game.
@@ -20,6 +19,12 @@ module Scrabble.Lang.Search
   , dictContainsPrefix )
   where
 
+import Lens.Simple ((^.))
+import Data.List (nub, permutations)
+import Prelude hiding (Word)
+import Data.Text (Text)
+import Control.Monad (filterM)
+import qualified Data.Trie.Text as Trie
 import Scrabble.Types
   ( Dict
   , Word
@@ -28,14 +33,6 @@ import Scrabble.Types
   , Game
   , dict
   , Evaluator)
-import Lens.Simple ((^.))
-import Data.List
-  ( nub
-  , permutations )
-import Prelude hiding       ( Word )
-import Data.Text            ( Text )
-import Control.Monad        (filterM)
-import qualified Data.Trie.Text as Trie
 import Scrabble.Evaluator (evalBool)
 import Scrabble.Lang.Word
   ( textToWord
@@ -43,15 +40,15 @@ import Scrabble.Lang.Word
 
 {- ===== Dictionary Search ===== -}
 
--- | Find all the words in the dictionary that are in the given list of words.
-findWords :: Game -- ^ The dictionary to search
-          -> [Text]    -- ^ The letters to build the words from.
-          -> [Word]
+-- | Find all the words in the given list of words that are in the dictionary.
+findWords :: Game   -- ^ The dictionary to search
+          -> [Text] -- ^ The letters to build the words from.
+          -> [Word] -- ^ The words from the dictionary.
 findWords g ws = map textToWord $ filter (`Trie.member` (g ^. dict)) ws
 
 -- Ordered list of values in a bounded enumeration.
 domain :: (Bounded a, Enum a) => [a]
-domain = [minBound..maxBound]
+domain = [minBound..maxBound] 
 
 
 -- Generate a power set.  The algorithm used here is from
@@ -72,24 +69,25 @@ uniquePowerSetPermutations = nub . powerSetPermutations
 perms :: Eq a => [a] -> [[a]]
 perms = filter ((>1) . length) . uniquePowerSetPermutations 
 
--- | Find all words in the dictionary that can be made with any combination of the given letters.
-makeWords :: Game    -- ^ The game.
+-- | Find all words in the dictionary that can be made with any combination of
+--   the given letters.
+makeWords :: Game   -- ^ The game.
           -> Word   -- ^ The letters to build the words from.
-          -> [Word]
+          -> [Word] -- ^ The words from the dictionary.
 makeWords g ls = findWords g (map wordToText (perms ls))
 
 -- | Find all the prefixes in the dictionary that end with the given letter.
 findPrefixes :: Game    -- ^ The game.
               -> Letter -- ^ The suffix.
               -> Word   -- ^ The letters to build the words from.
-              -> [Word]
+              -> [Word] -- ^ The prefixes.
 findPrefixes g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
 
 -- | Find all the prefixes in the dictionary that begin with the given letter.
 findSuffixes :: Game    -- ^ The game.
                       -> Letter -- ^ The suffix.
                       -> Word   -- ^ The letters to build the words from.
-                      -> [Word]
+                      -> [Word] -- ^ The suffixes.
 findSuffixes g l ls = findWords g (map (wordToText . (l:)) (perms ls))
 
 -- | Find all the words that can be made with the letters on the board
@@ -97,22 +95,22 @@ findSuffixes g l ls = findWords g (map (wordToText . (l:)) (perms ls))
 --   PREFIX + SUFFIX is a partition of the letters in the hand
 --   and L is a letter on the board.
 --   TODO: get this working! 
-wordPlaysT :: Dict    -- ^ Dictionary to search
+wordPlaysT :: Dict   -- ^ Dictionary to search
          -> [Letter] -- ^ Letters in hand
          -> [Letter] -- ^ Letters on board
-         -> [Word]
+         -> [Word]   -- ^ The list of words. 
 wordPlaysT = undefined -- map (\(i,t) -> i ++ 'L':t) $ zip (inits str) (tails str)
 
 -- | Check whether a list of words are all in the dictionary.
-wordsInDictM :: Dict
-            -> [Text]
-            -> Evaluator ()
+wordsInDictM :: Dict        -- ^ The dictionary.
+            -> [Text]       -- ^ The list of words.
+            -> Evaluator () 
 wordsInDictM t ws = mconcat <$> mapM (dictContainsWord t) ws
 
 -- | Check whether a list of words are all in the dictionary
 --   outside of the Evaluator monad.
-wordsInDict :: Dict
-            -> [Text]
+wordsInDict :: Dict   -- ^ The dictionary.
+            -> [Text] -- ^ The list of words.
             -> Bool
 wordsInDict d = all (`Trie.member` d) 
 

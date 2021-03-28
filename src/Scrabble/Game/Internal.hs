@@ -67,7 +67,7 @@ setBlanks w bs g = pure (getPlayer g)
                    >>= \p -> pure (g ^. p & rack %~ setBlanks' bs)
                    >>= setPlayer g 
   where setBlanks' :: [Int] -> Rack -> Rack
-        setBlanks' bs r = foldl (\acc i -> replaceBlank acc (fst (snd (w !! i)))) r bs
+        setBlanks' bs' r = foldl (\acc i -> replaceBlank acc (fst (snd (w !! i)))) r bs'
         replaceBlank :: Rack -> Letter -> Rack
         replaceBlank [] _         = []
         replaceBlank (Blank:rs) l = l : rs
@@ -116,6 +116,7 @@ setPlayer :: Game -> Player -> Evaluator Game
 setPlayer g p = pure $ g & getPlayer g .~ p 
 
 -- | Get the lens for the current player in the game.
+getPlayer :: Functor f => Game -> (Player -> f Player) -> Game -> f Game
 getPlayer g = if g ^. turn == P1 then player1 else player2
 
 -- | Toggle the turn in the game (between P1 and P2)

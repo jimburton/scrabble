@@ -12,7 +12,6 @@ module ScrabbleWeb.Announce
   , sendJoinAcks )
   where
 
-import Debug.Trace
 import Prelude hiding (Word)
 import qualified Network.WebSockets as WS
 import Data.Aeson

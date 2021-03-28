@@ -23,7 +23,6 @@ module Scrabble.Board.Board
   , wordPutToWord )
   where
 
-import Debug.Trace
 import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -45,8 +44,7 @@ import Scrabble.Types
   , Dir(..)
   , Rack
   , Tile ) 
-import Scrabble.Evaluator
-  ( Evaluator(..) )
+import Scrabble.Evaluator (Evaluator(..))
 import Scrabble.Board.Internal
   ( incCol
   , incRow
@@ -61,8 +59,7 @@ import Scrabble.Board.Internal
   , freedomsFromWord
   , freeness
   , wordPutToWord )
-import Scrabble.Board.Bonus
-  ( bonusMap )
+import Scrabble.Board.Bonus (bonusMap)
 
 -- =============== Boards ================== --
 
@@ -125,10 +122,6 @@ makeWordPut w pos dir is =
                                              (l, scoreLetter l)) $ T.unpack w) in
     foldl zeroScore wp is 
 
--- Replace an element at a certain index in a list.
---replace :: [a] -> Int -> a -> [a]
---replace xs i e = replaceBy xs i (const e)
-
 -- Replace an element at a certain index in a list using a function.
 replaceBy :: [a] -> Int -> (a -> a) -> [a]
 replaceBy xs i f = case splitAt i xs of
@@ -141,7 +134,7 @@ zeroScore xs i = replaceBy xs i (\(p,(l,_)) -> (p,(l,0)))
 
 -- | Place a word onto the board.
 updateBoard :: WordPut -> Game -> Evaluator Game
-updateBoard w g = pure (g & board .~ (foldl updateSquare (g ^. board) w))
+updateBoard w g = pure (g & board .~ foldl updateSquare (g ^. board) w)
 
 -- | Get the value of the tiles in the rack.
 rackValue :: Rack -> Int

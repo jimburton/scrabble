@@ -9,18 +9,15 @@ Functions relating to the dictionary for the Scrabble game. The dictionary is st
 a @Data.Text.Trie@. Currently hardcoded for the English Scrabble dictionary provided
 in the repository.
 -}
-module Scrabble.Lang.Dict
-  ( englishDictionary )
+module Scrabble.Lang.Dict (englishDictionary)
   where
 
-import Data.Char        ( toUpper )
+import Data.Char (toUpper)
 import qualified Data.Text as T
 import qualified Data.Trie.Text as Trie
+import Scrabble.Types (Dict)
 
-import Scrabble.Types
-  ( Dict )
-
-{- ===== Dictionary ===== -}
+-- ===== Dictionary ===== --
 
 -- Reads in a dictionary of Scrabble words from the given file.
 readDictionary :: FilePath -> IO Dict
@@ -28,7 +25,7 @@ readDictionary dict = do
   ls <- lines <$> readFile dict
   pure (Trie.fromList [(T.pack (map toUpper l), ()) | l <- ls])
 
-{- ===== English Dictionary ===== -}
+-- ===== English Dictionary ===== --
 
 -- English dictionary file path
 englishDictionaryPath :: FilePath

@@ -6,10 +6,8 @@ module ScrabbleWeb.Game
   , aiGame )
   where
 
-import Debug.Trace
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Data.Maybe (fromJust)
 import Data.List (find)
 import qualified Network.WebSockets as WS

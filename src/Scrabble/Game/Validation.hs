@@ -12,22 +12,16 @@ module Scrabble.Game.Validation
   , valGameRules )
   where
 
-import Debug.Trace
-import Lens.Simple ((^.),(&))
+import Lens.Simple ((^.))
 import Scrabble.Types
   ( Validator
-  , Game
   , dict
   , board
   , firstMove
-  , Player
   , rack)
-import Scrabble.Game.Internal
-  ( getPlayer )
-import Scrabble.Lang.Word
-  ( wordToText )
-import Scrabble.Lang.Search
-  ( wordsInDictM )
+import Scrabble.Game.Internal (getPlayer)
+import Scrabble.Lang.Word (wordToText)
+import Scrabble.Lang.Search (wordsInDictM)
 import Scrabble.Board.Validation
   ( validateRack
   , validateMove )

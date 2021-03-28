@@ -26,12 +26,12 @@ Testing is a continuous topic, so new tests are added in each chapter.
 
 + [Chapter One](chapters/Chapter1.md): Getting started.
 + [Chapter Two](chapters/Chapter2.md): Players and the game.
-+ [Chapter Three](chapters/Chapter2.md): Validating moves.
-+ [Chapter Four](chapters/Chapter3.md): Playing the game.
-+ [Chapter Five](chapters/Chapter4.md): Playing against the computer.
-+ [Chapter Six](chapters/Chapter5.md): The CLI client.
-+ [Chapter Seven](chapters/Chapter6.md): The web client.
-+ [Chapter Eight](chapters/Chapter7.md): Conclusion.
++ [Chapter Three](chapters/Chapter3.md): Validating moves.
++ [Chapter Four](chapters/Chapter4.md): Playing the game.
++ [Chapter Five](chapters/Chapter5.md): Playing against the computer.
++ [Chapter Six](chapters/Chapter6.md): The CLI client.
++ [Chapter Seven](chapters/Chapter7.md): The web server and client.
++ [Chapter Eight](chapters/Chapter8.md): Configuration and conclusion.
 
 ## Having a quick game
 

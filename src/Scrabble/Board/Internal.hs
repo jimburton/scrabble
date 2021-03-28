@@ -28,16 +28,11 @@ module Scrabble.Board.Internal
   , wordPutToWord )
   where
 
-import Debug.Trace
 import Prelude hiding (Word)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Maybe
-  ( isNothing
-  , isJust )
-import Data.Array
-  ( (!)
-  , (//) )
+import Data.Maybe (isNothing, isJust)
+import Data.Array ((!),(//))
 import Scrabble.Types
   ( Board
   , Pos
@@ -49,8 +44,7 @@ import Scrabble.Types
   , Tile
   , FreedomDir(..)
   , Freedom) 
-import Scrabble.Lang.Word
-  ( wordToText )
+import Scrabble.Lang.Word (wordToText)
   
 -- ======== Internal for Board ========== --
 
@@ -63,7 +57,7 @@ neighbours (r,c) = filter onBoard [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
 -- | Find neighbouring squares to a position on the board that are occupied.
 occupiedNeighbours :: Board -- ^ The board
                    -> Pos   -- ^ The position on the board.
-                   -> [Pos]
+                   -> [Pos] -- ^ The occupied neighbours of the pos.
 occupiedNeighbours b = filter (isJust . getSquare b) . neighbours 
 
 -- | Are two positions adjacent vertically, horizontally or diagonally? 

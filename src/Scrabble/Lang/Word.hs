@@ -15,9 +15,9 @@ module Scrabble.Lang.Word
   , wordPutToText )
   where
 
-import Prelude hiding  ( Word )
-import Data.Text       ( Text )
-import Data.Maybe      ( fromJust )
+import Prelude hiding (Word)
+import Data.Text (Text)
+import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Scrabble.Lang.Letter
   ( letterFromChar

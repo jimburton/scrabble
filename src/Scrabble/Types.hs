@@ -6,7 +6,7 @@ Maintainer  : j.burton@brighton.ac.uk
 Stability   : experimental
 Portability : POSIX
 
-Types used by most modules in the scrabble library.
+Types used across the scrabble library.
 -}
 module Scrabble.Types
   ( Letter(..)
@@ -18,10 +18,10 @@ module Scrabble.Types
   , Rack
   , Bonus(..)
   , Player(..)
-  , name, rack, score, isAI -- lenses for Player
+  , name, rack, score, isAI -- lenses for Player.
   , Game(..)
   , board, bag, player1, player2, turn, gen, firstMove, --lenses for Game
-    dict, gameOver, playable, lastMovePass
+    dict, gameOver, playable, lastMovePass -- lenses for Game.
   , Turn(..)
   , Bag
   , Dict
@@ -36,12 +36,12 @@ module Scrabble.Types
 
 where
 
-import Prelude hiding ( Word )
+import Prelude hiding (Word)
 import Data.Array
-import Data.Trie.Text ( Trie )
-import Data.Text ( Text )
+import Data.Trie.Text (Trie)
+import Data.Text (Text)
 import qualified Data.Map as Map
-import System.Random ( StdGen )
+import System.Random (StdGen)
 import Lens.Simple 
 
 -- ============ Types for the application ================ --

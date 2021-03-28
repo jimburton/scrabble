@@ -10,8 +10,9 @@ Contains the @bonusMap@ mapping positions to bonuses.
 module Scrabble.Board.Bonus
   ( bonusMap )
   where
-import Prelude hiding ( Word )
-import Data.Map ( Map )
+
+import Prelude hiding (Word)
+import Data.Map (Map)
 import qualified Data.Map as Map
 import Scrabble.Types
   ( Pos

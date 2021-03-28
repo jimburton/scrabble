@@ -2,6 +2,7 @@
 module ScrabbleWeb.Conf (parseConf, defaultConf)
   where
 
+import System.Log (Priority(..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Maybe (fromMaybe)
@@ -11,13 +12,31 @@ import ScrabbleWeb.Types (Conf(..))
 
 -- ======== Config parser =========== --
 
+-- | The ValueSpec for Priority specifies how to
+--   parse a Priority value.
+prioritySpec :: ValueSpec Priority
+prioritySpec = DEBUG     <$  atomSpec "DEBUG"
+           <!> INFO      <$  atomSpec "INFO"
+           <!> NOTICE    <$  atomSpec "NOTICE"
+           <!> WARNING   <$  atomSpec "WARNING"
+           <!> ERROR     <$  atomSpec "ERROR"
+           <!> CRITICAL  <$  atomSpec "CRITICAL"
+           <!> ALERT     <$  atomSpec "ALERT"
+           <!> EMERGENCY <$  atomSpec "EMERGENCY"
+
+-- | Make Priority an instance of HasSpec.
+instance HasSpec Priority where
+  anySpec = prioritySpec
+
 -- | The default config for the server. Hostname = "127.0.0.1", port = 9160, log_file
---   = "./log/scrabble.log". To alter these values edit the config file ./etc/scrabble.conf.
+--   = "./log/scrabble.log", log_priority = WARNING.
+--   To alter these values edit the config file ./etc/scrabble.conf or write a new config
+--   file and supply its location as a command-line option to the server.
 defaultConf :: Conf
 defaultConf = Conf { hostname = "127.0.0.1"
                    , port = 9160
                    , log_file = "./log/scrabble.log"
-                   , log_priority = "WARNING" }
+                   , log_priority = WARNING }
 
 -- The spec for the config file.
 spec :: Conf -> ValueSpec Conf
@@ -28,7 +47,7 @@ spec def = sectionsSpec "scrabble-server conf" $
            "Supply the port as a number."
      lf <- fromMaybe (log_file def) <$> optSection "log_file"
            "Supply the path to the log file."
-     pr <- fromMaybe (log_priority def) <$> optSection "log_priority"
+     pr <- fromMaybe (log_priority def) <$>  optSection "log_priority"
                  "Supply the logging priority, a string representing a value of System.Log.Priority."
      return (Conf hn pt lf pr)
 
@@ -36,7 +55,7 @@ spec def = sectionsSpec "scrabble-server conf" $
 printDoc :: IO ()
 printDoc = print (generateDocs (spec defaultConf))
 
--- | Parse the config file with default.
+-- Parse the config file with default.
 parseConf :: FilePath -> Conf -> IO Conf
 parseConf path def = do
   conf <- T.readFile path

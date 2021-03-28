@@ -25,8 +25,7 @@ import Data.Functor ((<&>))
 import Data.Text (Text)
 import System.Random (StdGen)
 import Lens.Simple ((^.),(.~),(&))
-import Scrabble.Evaluator
-  ( Evaluator(..) )
+import Scrabble.Evaluator (Evaluator(..))
 import Scrabble.Types
   ( Dict
   , Game(..)
@@ -58,8 +57,7 @@ import Scrabble.Board.Bag
 import Scrabble.Lang.Word
   ( wordToText
   , wordPutToText )
-import Scrabble.Game.Game
-  ( pass )
+import Scrabble.Game.Game (pass)
 import Scrabble.Game.Internal
   ( toggleTurn
   , getPlayer
@@ -117,7 +115,7 @@ newGame1P pName theGen d =
 moveAI :: Game      -- ^ The game.
        -> Evaluator (Game, MoveResult)
 moveAI g = do
-  let r  = g ^. getPlayer g ^. rack
+  let r  = g ^. (getPlayer g . rack)
       mw = findWord g (filter (/=Blank) r)  
   case mw of
     Nothing -> pass g >>= \g' -> pure (g', MoveResult [] [] [] 0)

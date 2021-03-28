@@ -22,7 +22,7 @@ import ScrabbleWeb.Types (Msg(MsgJoin), Client, Conf(..))
 -- =========== Entry point for the web server ========= --
 
 -- | Command-line options for the server
-data Options = Options {
+newtype Options = Options {
     optConf :: String
   } deriving Show
 
@@ -43,7 +43,7 @@ options =
             (\_ -> do
                 prg <- getProgName
                 hPutStrLn stderr (usageInfo prg options)
-                exitWith ExitSuccess))
+                exitSuccess))
         "Show help"
   ]
      
@@ -80,7 +80,7 @@ main = do
   opts <- foldl (>>=) (return defaultOptions) actions
   let Options { optConf = path } = opts
   conf <- parseConf path defaultConf
-  let pr = read (T.unpack $ log_priority conf) :: Priority
+  let pr = log_priority conf
   updateGlobalLogger "Scrabble" (setLevel pr)
   h <- fileHandler (T.unpack $ log_file conf) pr >>= \lh -> return $
     setFormatter lh (simpleLogFormatter "[$time : $loggername : $prio] $msg")

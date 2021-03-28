@@ -20,14 +20,13 @@ module Scrabble.Game.Game
   , updateBoard )
   where
 
-import Debug.Trace
 import System.Random
 import Prelude hiding
   ( Word
   , words )
-import Data.Functor ( (<&>) )
+import Data.Functor ((<&>))
 import qualified Data.Map as Map
-import Data.Text ( Text )
+import Data.Text (Text)
 import Lens.Simple ((.~),(^.),(&))
 import Scrabble.Game.Internal
   ( getPlayer
@@ -63,8 +62,7 @@ import Scrabble.Board.Bag
   ( newBag
   , fillRack
   , takeFromRack )
-import Scrabble.Evaluator
-  ( Evaluator(..) )
+import Scrabble.Evaluator (Evaluator(..))
 
 -- ============= Functions for playing the game =============== --
 

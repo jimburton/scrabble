@@ -16,13 +16,12 @@ module Scrabble.Lang.Letter
   where
 
 import qualified Data.Map as Map
-import           Data.Map    ( Map )
-import           Data.Maybe  ( fromJust )
-import           Data.Tuple  ( swap )
-import Data.Text ( Text )
+import Data.Map (Map)
+import Data.Maybe (fromJust)
+import Data.Tuple (swap)
+import Data.Text (Text)
 import qualified Data.Text as T
-import Scrabble.Types 
-  ( Letter(..) )
+import Scrabble.Types (Letter(..))
 -- ===== Letters ===== --
 
 -- | Convert a @Char@ to a @Letter@, if the @Char@ is a valid @Letter@ (A-Blank).

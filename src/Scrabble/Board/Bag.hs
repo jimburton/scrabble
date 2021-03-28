@@ -13,9 +13,8 @@ module Scrabble.Board.Bag
   , takeFromRack )
   where
 
-import Debug.Trace
-import Data.List ( delete )
-import Prelude hiding ( Word )
+import Data.List (delete)
+import Prelude hiding (Word)
 import System.Random
   ( StdGen
   , randomR )
@@ -24,8 +23,7 @@ import Scrabble.Types
   , Rack
   , Word
   , Letter(..) )
-import Scrabble.Evaluator
-  ( Evaluator )
+import Scrabble.Evaluator (Evaluator)
 
 -- ============ Functions relating to a bag of tiles ============= --
 
@@ -36,7 +34,6 @@ numTilesList = [
   (H, 2), (I, 9), (J, 1), (K, 1), (L, 4), (M, 2), (N, 6),
   (O, 8), (P, 2), (Q, 1), (R, 6), (S, 4), (T, 6), (U, 4),
   (V, 2), (W, 2), (X, 1), (Y, 2), (Z, 1), (Blank, 2) ]
-
 
 -- | A new bag containing a full set of tiles.
 newBag :: Bag

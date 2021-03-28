@@ -17,7 +17,7 @@ module Scrabble.Board.Pretty
 import Data.Array
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import Data.Text ( Text )
+import Data.Text (Text)
 import Data.List.Split (chunksOf)
 import Lens.Simple ((^.))
 import Scrabble.Board.Bonus (bonusMap)
@@ -42,7 +42,7 @@ rows b = chunksOf 15 (elems b)
 -- | Textify a board.
 showBoard :: Bool  -- ^ Whether to show bonus squares.
           -> Board -- ^ The board.
-          -> Text
+          -> Text  -- ^ The text representation of the board.
 showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
   showRows      = T.intercalate "\n" (zipWith showRow [0..14] (rows b)) <> "\n"
   showRow     i r = showI i <> "|" <>
@@ -67,12 +67,12 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
 showGame :: Bool   -- ^ Whether to show bonus squares.
          -> Board  -- ^ The board.
          -> Player -- ^ The player.
-         -> Text
+         -> Text   -- ^ The text representation of the game.
 showGame printBonuses b p = showBoard printBonuses b <> showPlayer p
 
 -- | Textify a player.
 showPlayer :: Player -- ^ The player.
-           -> Text
+           -> Text   -- ^ The text representation of the player.
 showPlayer p = top <> playerLine <> rackLine <> bottom where
   line       :: Char -> Text
   line     c = T.pack (replicate 46 c) <> "\n"

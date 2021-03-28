@@ -14,6 +14,7 @@ module ScrabbleWeb.Types
   where
 
 import Prelude hiding (Word)
+import System.Log (Priority)
 import Data.Aeson
 import GHC.Generics
 import qualified Network.WebSockets as WS
@@ -51,7 +52,7 @@ data Conf = Conf
   { hostname     :: Text
   , port         :: Int
   , log_file     :: Text
-  , log_priority :: Text
+  , log_priority :: Priority
   } deriving Show
 
 -- | The name of the player and the WebSocket connection.
