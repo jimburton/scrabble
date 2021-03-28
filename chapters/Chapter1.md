@@ -67,7 +67,6 @@ library
   exposed-modules:
       Scrabble
       Scrabble.Types
-      Scrabble.Game
 	  Scrabble.Board
 	  Scrabble.Dict
 
@@ -78,11 +77,17 @@ library
 
 The `hs-source-dirs` property tells `cabal` where to find the
 code. Take a look at the `exposed-modules` property. These are the
-modules in our library. These are defined in the files
-`src/Scrabble.hs`, `src/Scrabble/Types.hs`, `src/Scrabble.Game.hs`,
-`src/Scrabble.Board.hs` and `src/Scrabble.Dict.hs`.
+modules in our library. 
 
-**TODO: source tree**
+```
+src/
+├── Scrabble
+│   ├── Board.hs
+│   ├── Dict.hs
+│   └── Types.hs
+└── Scrabble.hs
+
+```
 
 The `Scrabble` module just imports and re-exports the entire
 library. The `Scrabble.Types` module contains all of our datatypes and

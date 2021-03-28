@@ -6,8 +6,8 @@ import Test.QuickCheck
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
 
-import Scrabble.Board.Board (newBoard, updateBoard)
-import Scrabble.Types (Letter(..))
+import Scrabble.Board (newBoard, updateBoard)
+import Scrabble.Types
 {-
 samplesPath :: FilePath
 samplesPath = "etc/samples"
@@ -39,6 +39,9 @@ prop_codecAny msg inPath tmp = monadicIO test
                     run $ removeFile tmp
                     assert $ msg == fromJust readMsg
 -}
+
+genLetter :: Gen Letter
+genLetter = elements [A .. Z]
 
 prop_newBoardSize :: Bool
 prop_newBoardSize = bounds newBoard == ((0,0),(14,14))
