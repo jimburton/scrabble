@@ -494,6 +494,12 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
 "
 ```
 
+There are number of other useful utility functions defined in
+`Scrabble.Board` that I won't describe in detail but that you should
+read and make sure you understand. They relate to transfoming booard
+positions, calculating the beginning of a `WordPut` on the board and
+that sort of thing.
+
 ## Testing
 
 Before we move on, let's make some tests. We need to think about what

@@ -13,12 +13,13 @@ module Scrabble.Types
   , Board
   , Pos
   , WordPut
-  , Dir(..)
   , Rack
   , Bonus(..)
   , Bag
   , Dict
-  , Tile)
+  , Tile
+  , Dir(..)
+  , PosTransform)
 
 where
 
@@ -48,6 +49,14 @@ type Pos = (Int, Int)
 
 -- | A word placed on the board (tiles plus positions).
 type WordPut = [(Pos, Tile)]
+
+-- | A direction on the board (row or column).
+data Dir = HZ -- ^ The horizontal direction.
+         | VT -- ^ The vertical direction.
+         deriving (Show, Read, Eq)
+
+-- | Transform a position on the board
+type PosTransform = Pos -> Pos
 
 -- | A rack is a list of letters.
 type Rack = [Letter]

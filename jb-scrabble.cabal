@@ -22,7 +22,6 @@ library
       src
   ghc-options: -Wall
   build-depends: base >=4.12 && <4.13
-               , random
                , array
                , containers
                , text
@@ -31,7 +30,6 @@ library
   
   exposed-modules:
       Scrabble
-      Scrabble.Game
       Scrabble.Types
       Scrabble.Board
       Scrabble.Dict
@@ -44,23 +42,22 @@ library
 test-suite test-scrabble
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
-  other-modules:       Scrabble
+  other-modules:       Test.Gen
+                     , Test.Chapter1
+                     , Scrabble
                      , Scrabble.Types
-                     , Scrabble.Game
                      , Scrabble.Board
                      , Scrabble.Dict
   hs-source-dirs:      tests
                      , src
   ghc-options:         -Wall
   default-extensions: OverloadedStrings
-                    , TemplateHaskell
   build-depends:       base
-                     , random
-                     , aeson
                      , text
                      , array
                      , text-trie
                      , containers
+                     , split
                      , QuickCheck
                      , test-framework
                      , test-framework-quickcheck2
