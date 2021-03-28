@@ -105,9 +105,9 @@ data Msg =
   | MsgHint (Maybe [Word])  -- ^ CLIENT <-> SERV   Ask for/receive hints.
   | MsgPass                 -- ^ CLIENT  -> SERV   Client passes move.
   | MsgSwap [Letter]        -- ^ CLIENT  -> SERV   Letters to swap.
-  | MsgAnnounce Text        -- ^ CLIENT <-  SERV   An announcement.
+  | MsgAnnounce Text        -- ^ CLIENT <-  SERV   A general purpose announcement.
   | MsgRack Rack            -- ^ CLIENT <-  SERV   Send rack to client.
   | MsgMoveAck MoveAck      -- ^ CLIENT <-  SERV   Was the move acceptable? If so, score and word. 
-  | MsgScore (Score, Score) -- ^ CLIENT <-  SERV   The scores of both players.
+ -- | MsgScore (Score, Score) -- ^ CLIENT <-  SERV   The scores of both players.
   | MsgEog (Score,Score)    -- ^ CLIENT <-  SERV   End of game.
          deriving ( Show, Read, Generic, FromJSON, ToJSON )

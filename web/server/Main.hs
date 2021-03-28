@@ -78,7 +78,6 @@ main = do
   let (actions, _, _) = getOpt RequireOrder options args
   -- Here we thread startOptions through all supplied option actions
   opts <- foldl (>>=) (return defaultOptions) actions
-  putStrLn (show opts)
   let Options { optConf = path } = opts
   conf <- parseConf path defaultConf
   let pr = read (T.unpack $ log_priority conf) :: Priority

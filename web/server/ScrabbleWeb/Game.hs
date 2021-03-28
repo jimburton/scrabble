@@ -56,7 +56,6 @@ import Scrabble.Game.Validation
   , valGameRulesAndDict )
 import ScrabbleWeb.Announce
   ( announce
-  , msgScores
   , msgTurn
   , sendRackOpponent
   , sendJoinAcks
@@ -85,7 +84,7 @@ gameStarter state = loop
 
 distinctNames :: (Text,Text) -> (Text,Text)
 distinctNames (n1,n2) =
-  (n1, fromJust $ find (/=n1) (n2 : map ((\n i -> n <> T.pack (show i)) n2) [1..]))
+  (n1, fromJust $ find (/=n1) (n2 : map ((\n i -> n <> T.pack (show (i :: Int))) n2) [1..]))
   
 newGame :: Client -> Client -> Game -> WebGame
 newGame = WebGame
@@ -111,11 +110,11 @@ takeTurn :: WebGame    -- ^ The game
          -> IO WebGame
 takeTurn wg = do
      msgTurn wg
-     msgScores wg
+     -- msgScores wg
      let g = wg ^. theGame
      if g ^. gameOver
        then doGameOver wg
-       else if g ^. (G.getPlayer g) ^. isAI
+       else if g ^. (G.getPlayer g . isAI)
             then takeTurnAI wg
             else takeTurnManual wg
 
@@ -164,8 +163,8 @@ doGameOver wg = do
       draw   = pl1 ^. score == pl2 ^. score 
       winner = if pl1 ^. score > pl2 ^. score
                then pl1 else pl2
-  infoM "Scrabble.Game" ("[End game] "<>(T.unpack $ pl1 ^. name)
-                          <>" : "<>(T.unpack $ pl2 ^. name))
+  infoM "Scrabble.Game" ("[End game] "<>T.unpack (pl1 ^. name)
+                          <>" : "<> T.unpack (pl2 ^. name))
   msgEog wg
   if draw
     then announce wg "It's a draw!" >> pure wg
@@ -175,7 +174,7 @@ doGameOver wg = do
 doHints :: WebGame -> IO ()
 doHints wg = do
   let g  = wg ^. theGame
-      w  = g ^. (G.getPlayer g) ^. rack
+      w  = g ^. (G.getPlayer g . rack)
       hs = makeWords g w
   msgCurrent wg (MsgHint (Just hs))
 
@@ -203,4 +202,4 @@ doSwap wg ls = do
 
 -- | Get client whose turn it is. 
 getClient :: WebGame -> Client
-getClient wg = if wg ^. theGame ^. turn == P1 then wg ^. p1 else wg ^. p2
+getClient wg = if wg ^. (theGame . turn) == P1 then wg ^. p1 else wg ^. p2

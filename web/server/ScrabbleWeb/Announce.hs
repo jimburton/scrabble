@@ -1,6 +1,5 @@
 module ScrabbleWeb.Announce
   ( announce
-  , msgScores
   , msgOpponent
   , msgCurrent
   , msgMoveAck
@@ -21,14 +20,12 @@ import Data.Text (Text)
 import Scrabble.Types
   ( Player
   , rack
-  , Game
   , player1
   , player2
   , turn
   , score
   , isAI
   , Word
-  , WordPut
   , MoveResult(..))
 import ScrabbleWeb.Types
   ( WebGame
@@ -54,24 +51,24 @@ send p (_,conn) m =
 -- | Send a message to both players.
 msg :: WebGame -> Msg -> IO ()
 msg wg m = do
-  send (wg ^. theGame ^. player1) (wg ^. p1) m
-  send (wg ^. theGame ^. player2) (wg ^. p2) m
+  send (wg ^. (theGame . player1)) (wg ^. p1) m
+  send (wg ^. (theGame . player2)) (wg ^. p2) m
 
 -- | Send a message to one player, identified by the Turn parameter.
 msgOne :: WebGame -> Turn -> Msg -> IO ()
 msgOne wg t m = do
   let (pl,cl) = if t == P1
-                then (wg ^. theGame ^. player1, wg ^. p1)
-                else (wg ^. theGame ^. player2, wg ^. p2)
+                then (wg ^. (theGame . player1), wg ^. p1)
+                else (wg ^. (theGame . player2), wg ^. p2)
   send pl cl m
 
 -- | Send a message to the player whose turn it currently is.
 msgCurrent :: WebGame -> Msg -> IO ()
-msgCurrent wg = msgOne wg (wg ^. theGame ^. turn) 
+msgCurrent wg = msgOne wg (wg ^. (theGame . turn)) 
 
 -- | Send a messsage to the player whose turn it currently is not.
 msgOpponent :: WebGame -> Msg -> IO ()
-msgOpponent wg = msgOne wg (other (wg ^. theGame ^. turn))
+msgOpponent wg = msgOne wg (other (wg ^. (theGame . turn)))
 
 -- | Get the other player to the one identified by the Turn parameter.
 other :: Turn -> Turn
@@ -88,7 +85,7 @@ maybeAnnounce wg (Just txt) = announce wg txt
 
 -- | Tell both players whose turn it is.
 msgTurn :: WebGame -> IO ()
-msgTurn wg = msg wg (MsgTurn $ wg ^. theGame ^. turn)
+msgTurn wg = msg wg (MsgTurn $ wg ^. (theGame . turn))
 
 -- | Acknowledge to a legal move, sending the move to both players.
 msgMoveAck :: WebGame    -- ^ The webgame.
@@ -97,11 +94,11 @@ msgMoveAck :: WebGame    -- ^ The webgame.
 msgMoveAck wg mv = msg wg (MsgMoveAck (MoveAck (Right mv)))
 
 -- | Send the scores to both players.
-msgScores :: WebGame -> IO ()
+{-msgScores :: WebGame -> IO ()
 msgScores wg = do
   let ss = getScores wg
   msg wg (MsgScore ss)
-
+-}
 -- | Send the End of Game message to both players
 msgEog :: WebGame -> IO ()
 msgEog wg = do
@@ -111,8 +108,8 @@ msgEog wg = do
 -- Get the scores of both players.
 getScores :: WebGame -> (Score,Score)
 getScores wg =
-  let pl1 = wg ^. theGame ^. player1
-      pl2 = wg ^. theGame ^. player2
+  let pl1 = wg ^. (theGame . player1)
+      pl2 = wg ^. (theGame . player2)
       s1  = Score { theTurn = P1, theScore = pl1 ^. score }
       s2  = Score { theTurn = P2, theScore = pl2 ^. score } in
   (s1,s2)
@@ -121,20 +118,20 @@ getScores wg =
 sendRack :: WebGame -> Turn -> IO ()
 sendRack wg t = do
   let pf = if t == P1 then player1 else player2
-      r  = wg ^. theGame ^. (pf . rack)
+      r  = wg ^. (theGame . pf . rack)
   msgOne wg t (MsgRack r)
 
 -- | Send the rack to the player identified by the Turn parameter.
 sendRackOpponent :: WebGame -> IO ()
 sendRackOpponent wg = do
-  let t = if wg ^. theGame ^. turn == P1 then P2 else P1
+  let t = if wg ^. (theGame . turn) == P1 then P2 else P1
   sendRack wg t
 
 -- | Send name and rack to both players in a new game.
 sendJoinAcks :: WebGame -> IO ()
 sendJoinAcks wg = do
-  let pl1 = wg ^. theGame ^. player1
-      pl2 = wg ^. theGame ^. player2
+  let pl1 = wg ^. (theGame . player1)
+      pl2 = wg ^. (theGame . player2)
       ja1 = MsgJoinAck (JoinAck { jaName = fst (wg ^. p1)
                                 , jaRack = pl1 ^. rack
                                 , jaTurn = P1
