@@ -113,8 +113,8 @@ hone 7 7 v
 To start a web-based game you need to start the server then start one
 or two clients. Start the server with `cabal run
 scrabble-server`. Then start the first client by opening
-`web/client/html/index.html` in a browser. Select the checkbox for a one-player
-game, or leave it unchecked and open the page again in another 
+`web/client/html/index.html` in a browser. Select the checkbox 
+for a one-player game or leave it unchecked and open the page again in another 
 tab for a two player game.
 
 <img src="/chapters/images/webgame.png" alt="Playing Scrabble on the web" width="500px" />
