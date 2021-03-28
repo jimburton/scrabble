@@ -2,10 +2,10 @@ s# Chapter One: Getting started
 
 [Contents](../README.md)
 
-## Who this book is for and what it is for
+## Who this book is for, and what it is for
 
-This book is primarily aimed at students on the Introduction to
-Functional Programming course at the University of Brighton, or anyone
+This book was written for students on the *Introduction to
+Functional Programming* course at the University of Brighton, or anyone
 else at the same stage of learning. The contents are introduced after
 students have learned the basics of Haskell, written quite a few small
 functions, learned about recursion, folds, practised a little bit of
@@ -14,11 +14,11 @@ used `cabal` a little bit.
 
 There is a notoriously big gap between learning the basics of Haskell
 listed above, which mostly means a lot of fiddling about with lists,
-to making useful, nicely written and idiomatic software with
-Haskell. For beginners, the language can seem quite academic and
-removed from the tasks we normally want to achieve with programming
-languages. When they look at Haskell code in the wild, it bears very
-little resemblance to their exercises.
+and finding yourself making useful, nicely written and idiomatic
+software with Haskell. For beginners the language can seem academic
+and removed from the tasks we normally want to achieve with
+programming languages. When they look at Haskell code in the wild it
+bears very little resemblance to their exercises.
 
 This book is meant to go some way towards filling that gap. By the end
 you'll have been introduced to some major and widely used libraries,
@@ -26,28 +26,29 @@ sophisticated data structures, functional design patterns, and means
 for structuring a Haskell project so that you can keep on top of it
 as it grows.
 
-I'm reluctant to say it will take you from being a *Beginner* to an
-*Intermediate* Haskell programmer; Haskell is a deep language and if
+I'm reluctant to say it will take you from being a beginner-level to an
+intermediate-level Haskell programmer; Haskell is a deep language and if
 *Intermediate* is halfway between *Beginner* and *Expert* then that's
-a bit of a stretch. But you won't be a *Beginner* any more.
+a bit of a stretch. But you won't be a beginner any more.
 
 ## Reading this book
 
 Throughout this book the code in the **Scrabbλe** project will be
 developed incrementally. We will be adding to it, removing from it and
-improving it as we go. There is a branch in the repository for each chapter,
-named `chapter1`, `chapter2`, etc, up to `chapter7`. As you read each chapter 
-you should check out the corresponding branch and study the code. There are 
-exercises at the end of each chapter which expect you to be working on the
-code from the right branch.
+improving it as we go. There is a branch in the repository for each
+chapter, named `chapter1`, `chapter2`, etc, up to `chapter7` (the code
+for Chapter 8 is the same as that in the `main` branch). As you read
+each chapter you should check out the corresponding branch and study
+the code. There are exercises at the end of each chapter which expect
+you to be working on the code from the right branch.
 
 ## The project
 
 We're using `cabal` to manage the project. `cabal` deals in
-*libraries* and *executables*. We will evantually be making several
+*libraries* and *executables*. We will eventually be making several
 executables but the core code for playing the game is contained in a
 library. As such, there isn't an entry point or any way for users to
-run the code. It is intended for ourselves and others to import into
+run the code. It is there for ourselves and others to import into
 code that *does* provide an interface for users.
 
 The library is defined in this stanza in the config file:
@@ -56,7 +57,7 @@ The library is defined in this stanza in the config file:
 library
   hs-source-dirs: src
   ghc-options: -Wall
-  build-depends: base >=4.12 && <4.13
+  build-depends: base >=4.12 && <4.17
                , random
                , array
                , containers
@@ -96,7 +97,12 @@ where to look for the definition of a type.
 
 To experiment with the code, use the command `cabal repl`. You still
 need to load the modules containing types and functions. As all of these 
-are re-exported by the `Scrabble` module, just import that.:
+are re-exported by the `Scrabble` module, just import that.
+
+```
+$ cabal repl
+> :m + Scrabble
+```
 
 The code includes `haddock` style comments, so one way to browse the code would 
 be to build the docs and view them in your browser. When you run `cabal haddock`
@@ -119,7 +125,7 @@ to creating software that is nice to work on.
 
 When you start writing any software you need to think about modelling
 the problem in hand. When the problem is a board game, this is quite
-easy to begin with, because the first things we need to model in the
+easy to begin with because the first things we need to model in the
 software correspond to real world objects.
 
 <img src="/chapters/images/scrabble.jpeg" alt="Scrabble board" width="500px" />
@@ -167,7 +173,7 @@ type Tile = (Letter,Int)
 We will need to know a number of things about letters:
 
 + the score of each letter,
-+ how many of them should be in a full bag, and
++ how many of each letter should be in a full bag, and
 + the `Char` value for printing.
 
 We will store this data in *maps*, using the `Data.Map` API. We could
@@ -188,7 +194,7 @@ the `build-depends` section of the `cabal` file. We will do that,
 and you should bear in mind that this is done whenever importing 
 non-`Prelude` types in future. Often `cabal` will be able to tell us 
 the name of the package to add but if not, use google to find the type 
-you need on hackage and check which package it is in.
+you need on hackage and check which package it is part of.
 
 ```haskell
 import qualified Data.Map as Map
@@ -215,10 +221,10 @@ Note the use of `fromJust` in `scoreLetter`. The `fromJust` function
 is *unsafe*, meaning that it can fail at runtime causing the program
 to crash. This happens when it is called on a value that isn't `Just x`, 
 i.e. which is `Nothing`. In this case, we know we won't get any
-errors because we know that there is an entry in the map for every
-letter, so the `scoreLatter` function is safe. But whenever you use an
-unsafe function such as `fromJust` or `head`, ask yourself whether
-this is definitely safe to do.
+errors because there is an entry in the map for every letter, so the
+`scoreLatter` function is safe. But whenever you use an unsafe
+function such as `fromJust` or `head`, ask yourself whether this is
+definitely safe to do.
 
 ## The board
 
@@ -232,7 +238,7 @@ In many languages we would create an array of arrays to achieve this,
 where each element of the 15-element outer array is a 15-element array
 representing a row. However, Haskell supports true multi-dimensional
 arrays, so we can create one where the type of indices is `(Int,Int)`
-(for our purpose, `(row,column)`. The `Array` type constructor takes
+(for our purpose, `(row,column)`). The `Array` type constructor takes
 two arguments, the type of indices and the type of elements.
 
 ```haskell
@@ -353,7 +359,7 @@ Now we can create the dictionary and check whether a word exists as
 follows:
 
 ```haskell
-import Data.Char        ( toUpper )
+import Data.Char (toUpper)
 import qualified Data.Text as T
 import qualified Data.Trie.Text as Trie
 
