@@ -512,8 +512,24 @@ holds.
 The `test-suite` stanza in the config file deptermines what tests should
 be run and how. It points to the file `tests/Main.hs` as the entry point.
 
-TODO write some tests and explain them.
+```
+tests/
+├── Main.hs
+└── Test
+    ├── Chapter1.hs
+    └── Gen.hs
+```
+
+To test functions realing to boards we need to be able to generate abitrary
+values of `Pos`, `Letter`, `WordPut` and so on. We write generators that use the
+`QuickCheck` library to do that in `tests/Test/Gen.hs`. Tests that use these
+generators are in `tests/Test/Chapter1.hs`.
+
+There isn't that much that we can usefully test yet, but tests are written 
+for `updateSquare` and `updateBoard`.
 
 ## Exercises
+
+TODO
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)
