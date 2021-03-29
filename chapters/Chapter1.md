@@ -67,7 +67,6 @@ library
   exposed-modules:
       Scrabble
       Scrabble.Types
-      Scrabble.Game
 	  Scrabble.Board
 	  Scrabble.Dict
 
@@ -78,11 +77,17 @@ library
 
 The `hs-source-dirs` property tells `cabal` where to find the
 code. Take a look at the `exposed-modules` property. These are the
-modules in our library. These are defined in the files
-`src/Scrabble.hs`, `src/Scrabble/Types.hs`, `src/Scrabble.Game.hs`,
-`src/Scrabble.Board.hs` and `src/Scrabble.Dict.hs`.
+modules in our library. 
 
-**TODO: source tree**
+```
+src/
+├── Scrabble
+│   ├── Board.hs
+│   ├── Dict.hs
+│   └── Types.hs
+└── Scrabble.hs
+
+```
 
 The `Scrabble` module just imports and re-exports the entire
 library. The `Scrabble.Types` module contains all of our datatypes and
@@ -489,6 +494,12 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
 "
 ```
 
+There are number of other useful utility functions defined in
+`Scrabble.Board` that I won't describe in detail but that you should
+read and make sure you understand. They relate to transfoming booard
+positions, calculating the beginning of a `WordPut` on the board and
+that sort of thing.
+
 ## Testing
 
 Before we move on, let's make some tests. We need to think about what
@@ -501,8 +512,24 @@ holds.
 The `test-suite` stanza in the config file deptermines what tests should
 be run and how. It points to the file `tests/Main.hs` as the entry point.
 
-TODO write some tests and explain them.
+```
+tests/
+├── Main.hs
+└── Test
+    ├── Chapter1.hs
+    └── Gen.hs
+```
+
+To test functions realing to boards we need to be able to generate abitrary
+values of `Pos`, `Letter`, `WordPut` and so on. We write generators that use the
+`QuickCheck` library to do that in `tests/Test/Gen.hs`. Tests that use these
+generators are in `tests/Test/Chapter1.hs`.
+
+There isn't that much that we can usefully test yet, but tests are written 
+for `updateSquare` and `updateBoard`.
 
 ## Exercises
+
+TODO
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)
