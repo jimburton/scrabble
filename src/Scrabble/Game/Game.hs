@@ -9,15 +9,13 @@ Portability : POSIX
 Functions for playing a game of scrabble (for a human player).
 -}
 module Scrabble.Game.Game
-  ( Turn(..)
-  , newGame
+  ( newGame
   , newBoard
   , newBag
   , getPlayer
   , move
   , swap
-  , pass
-  , updateBoard )
+  , pass )
   where
 
 import System.Random

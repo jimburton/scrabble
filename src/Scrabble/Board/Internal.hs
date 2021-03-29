@@ -25,7 +25,8 @@ module Scrabble.Board.Internal
   , freedomsFromWord
   , getDirection
   , adjacent
-  , wordPutToWord )
+  , wordPutToWord
+  , onBoard )
   where
 
 import Prelude hiding (Word)
@@ -210,7 +211,6 @@ wordFromSquare b f pos = reverse $ wordFromSquare' pos []
   where wordFromSquare' p wp = case getSquare b p of
           Nothing -> wp
           Just t  -> wordFromSquare' (f p) ((p,t):wp)
---getSquare b pos >>= \t -> ((pos,t) :) <$> wordFromSquare b f (f pos)
 
 -- Find the starting position of a word that crosses a position on the board.
 startOfWord :: Board        -- ^ The board.

@@ -6,7 +6,7 @@ cabal-version:       >=1.10
 name:                jb-scrabble
 version:             0.1.0.0
 -- synopsis:
-description:         Code accompanying Chapter 4.
+description:         Code accompanying Chapter 5.
 -- bug-reports:
 -- license:
 license-file:        LICENSE
@@ -40,6 +40,7 @@ library
       Scrabble.Board.Validation
       Scrabble.Board.Pretty
       Scrabble.Game.Game
+      Scrabble.Game.AI
       Scrabble.Game.Validation
       Scrabble.Lang.Dict
       Scrabble.Lang.Search
@@ -66,8 +67,10 @@ test-suite test-scrabble
                      , Scrabble.Board.Bag
                      , Scrabble.Board.Validation
                      , Scrabble.Board.Pretty
+                     , Scrabble.Board.Internal
                      , Scrabble.Game.Game
                      , Scrabble.Game.Validation
+                     , Scrabble.Game.Internal
                      , Scrabble.Lang.Dict
                      , Scrabble.Lang.Search
                      , Scrabble.Lang.Letter
