@@ -712,6 +712,9 @@ Tests that use these generators are in `Test.Chapter1`.
 
 ## Exercises
 
-TODO
+1. Write a test for `Scrabble.Board.startOfWord`. Your test should put a 
+   `WordPut`, `wp`, onto a board then call `startOfWord` on the last position
+   in `wp`, checking that the result is the same as the first position in `wp`.
+   Study the other tests to work out how to do it.
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)

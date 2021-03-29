@@ -56,6 +56,7 @@ test-suite test-scrabble
   other-modules:       Test.Gen
                      , Test.Chapter1
                      , Test.Chapter2
+                     , Test.Chapter3
                      , Scrabble
                      , Scrabble.Types
                      , Scrabble.Evaluator

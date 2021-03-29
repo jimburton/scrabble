@@ -22,15 +22,19 @@ module Scrabble.Board.Board
   , occupiedNeighbours
   , formatWP
   , additionalWords
-  , wordPutToWord )
+  , wordPutToWord
+  , makeWordPut )
   where
 
 import Prelude hiding (Word)
 import Data.Maybe
   ( isNothing
-  , isJust )
+  , isJust
+  , fromJust )
+import Data.Char (toUpper)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Map as Map
 import Data.Array
 import Lens.Simple ((^.),(.~),(&))
 import Scrabble.Types
@@ -45,6 +49,9 @@ import Scrabble.Types
   , board
   , Evaluator )
 import Scrabble.Lang.Word (wordToText)
+import Scrabble.Lang.Letter
+  ( scoreLetter
+  , charToLetterMap )
 import Scrabble.Evaluator() -- for the instances.
 
 -- * Creating and querying boards
@@ -165,4 +172,25 @@ newTiles b = filter (\(p,_) -> isNothing (getSquare b p))
 wordPutToWord :: WordPut -> Word
 wordPutToWord = map (fst . snd)
 
+-- | Make a @WordPut@ from a @Text@.
+makeWordPut :: Text -- ^ The @Text@.
+            -> Pos    -- ^ The starting position on the board.
+            -> Dir    -- ^ The direction in which the word is to be placed.
+            -> [Int]  -- ^ Indices of the letters which were blanks
+            -> WordPut -- ^ The @WordPut@.
+makeWordPut w pos dir is =
+  let f  = if dir == HZ then incCol else incRow 
+      wp = zip (iterate f pos)
+           (map (\c -> let l = fromJust (Map.lookup (toUpper c) charToLetterMap) in 
+                                             (l, scoreLetter l)) $ T.unpack w) in
+    foldl zeroScore wp is 
 
+-- Set the score of a letter in a word to zero.
+zeroScore :: WordPut -> Int -> WordPut
+zeroScore xs i = replaceBy xs i (\(p,(l,_)) -> (p,(l,0)))
+
+-- Replace an element at a certain index in a list using a function.
+replaceBy :: [a] -> Int -> (a -> a) -> [a]
+replaceBy xs i f = case splitAt i xs of
+   (before, x:after) -> before ++ f x : after
+   _ -> xs
