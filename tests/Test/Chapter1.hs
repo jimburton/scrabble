@@ -1,10 +1,8 @@
 module Test.Chapter1
   where
 
-import Test.QuickCheck.Gen
 import Test.QuickCheck (Property)
 import Test.QuickCheck.Monadic (assert, monadicIO, pick)
-import Data.Bifunctor (first)
 import Test.Gen
 import Data.Array
 import Lens.Simple ((^.))

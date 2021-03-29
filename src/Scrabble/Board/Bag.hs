@@ -9,10 +9,12 @@ A bag of tiles used in a game of scrabble.
 -}
 module Scrabble.Board.Bag
   ( newBag
-  , fillRack )
+  , fillRack
+  , takeFromRack )
   where
 
 import Prelude hiding (Word)
+import Data.List (delete)
 import System.Random
   ( StdGen
   , randomR )
@@ -59,3 +61,14 @@ getTile b g = let (i, g') = randomR (0, length b -1) g
                   t = b !! i
                   b' = take i b ++ drop (i+1) b in
               (t, b', g')
+
+-- | Take some letters from a rack.
+takeFromRack :: Rack -- ^ The rack to take from
+             -> Word -- ^ The letters to take from the rack
+             -> Evaluator Rack -- ^ The updated rack.
+takeFromRack r = pure . deleteAll r
+
+-- Delete the first occurence of each element in the second list from the first list.
+deleteAll :: Eq a => [a] -> [a] -> [a]
+deleteAll = foldl (flip delete)
+

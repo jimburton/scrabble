@@ -1,11 +1,8 @@
 module Test.Chapter2
   where
 
-import Test.QuickCheck.Gen
 import Test.QuickCheck (Property)
-import Test.QuickCheck.Monadic (assert, monadicIO, pick)
-import Data.Bifunctor (first)
-import Lens.Simple ((^.))
+import Test.QuickCheck.Monadic (assert, monadicIO)
 import System.Random (getStdGen)
 import Control.Monad.IO.Class (liftIO)
 import Scrabble.Types
@@ -14,10 +11,7 @@ import Scrabble.Types
 import Scrabble.Board.Bag
   ( newBag
   , fillRack )
-import Scrabble.Lang.Dict (englishDictionary)
 import Scrabble.Board.Pretty() -- for the Show instance of Game
-
-import Test.Gen
 
 -- ============= Tests for Chapter 2 =========== --
 
@@ -27,7 +21,7 @@ prop_fillRack1 :: Property
 prop_fillRack1 = monadicIO $ do
   g <- liftIO getStdGen
   let b = newBag
-      Ev (Right (r',b',g')) = fillRack [] b g
+      Ev (Right (r',b',_)) = fillRack [] b g
   assert $ (length r' == 7) && (length b' == length b - 7)
 
 -- | Test that using @fillRack@ to fill a full rack

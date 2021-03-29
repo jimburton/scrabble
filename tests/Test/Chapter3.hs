@@ -30,7 +30,7 @@ import Scrabble.Board.Validation
 import Scrabble.Lang.Dict (englishDictionary)
 import Test.Gen (genGame)
 
--- ========= Test for Chapter 3 ========== --
+-- ========= Tests for Chapter 3 ========== --
 
 -- | Make a @WordPut@ from Player 1's rack.
 p1Word :: Game -> WordPut
