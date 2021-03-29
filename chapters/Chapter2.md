@@ -14,6 +14,14 @@ is usual practice to import `Data.Text` with a qualified name, apart
 from the name of the type itself which is imported directly for
 convenience.
 
+The name is stored as `Data.Text` rather than `String`. Wherever
+possible, when we need to store some text we will use the `Text`
+datatype instead of `String`. This is because `String`, being a simple
+linked list, is very inefficient. Like `Data.Map`, it is usual practice to
+import `Data.Text` with a qualified name, apart from the name of the
+type itself which is imported directly for convenience.
+>>>>>>> chapter1
+
 ```haskell
 -- in Scrabble.Types
 
@@ -134,7 +142,7 @@ The point is to produce a new `Game` based on `g` but in which the
 partially applied function `(+10)` has been applied to the `_score`
 field nested inside `player1`. 
 
-As we can see from the difference in their name, `score` and `player1`
+As we can see from the differences in their names, `score` and `player1`
 are not the accessor functions we saw before. They are lenses. The
 `(&)` operator is like `($)` but it takes its arguments in reverse
 order, so this is the same as writing `(player1 . score %~ (+10)) g`. 
