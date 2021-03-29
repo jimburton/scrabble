@@ -8,7 +8,8 @@ Portability : POSIX
 Functions for the Scrabble board.
 -}
 module Scrabble.Board.Board
-  ( updateBoard 
+  ( updateBoard
+  , updateSquare
   , newBoard
   , scoreWords
   , additionalWords
@@ -22,7 +23,9 @@ module Scrabble.Board.Board
   , freeness
   , wordPutToWord
   , incCol
-  , incRow )
+  , incRow
+  , wordOnRow
+  , wordOnCol )
   where
 
 import qualified Data.Map as Map
