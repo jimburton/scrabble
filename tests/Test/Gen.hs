@@ -21,10 +21,10 @@ import Scrabble.Types
   , Letter(..)
   , Dir(..)
   , Dict )
-import Scrabble.Dict
-  ( scoreLetter
-  , englishDictionary )
-import Scrabble.Game (newGame)
+import Scrabble.Lang.Dict (englishDictionary)
+import Scrabble.Lang.Letter (scoreLetter)
+import Scrabble.Game.Game (newGame)
+
 -- ======== Generators and instances for tests ============ --
 
 instance Arbitrary Letter where

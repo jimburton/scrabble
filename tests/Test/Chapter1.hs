@@ -14,16 +14,17 @@ import Control.Monad.IO.Class (liftIO)
 
 import Scrabble.Types
   ( Dir(..)
-  , board )
-import Scrabble.Board
+  , board
+  , Evaluator(..) )
+import Scrabble.Board.Board
   ( updateSquare
   , incCol
   , incRow
   , updateBoard
   , wordOnRow
   , wordOnCol )
-import Scrabble.Dict (englishDictionary)
-import Scrabble.Pretty() -- for the Show instance of Game
+import Scrabble.Lang.Dict (englishDictionary)
+import Scrabble.Board.Pretty() -- for the Show instance of Game
 
 -- ============= Tests for Chapter 1 =========== --
 
@@ -50,6 +51,6 @@ prop_updateBoard = monadicIO $ do
   d     <- liftIO $ englishDictionary
   g     <- pick $ genGame gen d
   let wp = take size (iterate (first inc) (p,t))
-      g' = updateBoard wp g
+      Ev (Right g') = updateBoard wp g
       f = if dir == HZ then wordOnRow else wordOnCol 
   assert $ wp == f (g' ^. board) p

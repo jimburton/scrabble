@@ -7,7 +7,7 @@ Portability : POSIX
 
 A bag of tiles used in a game of scrabble.
 -}
-module Scrabble.Bag
+module Scrabble.Board.Bag
   ( newBag
   , fillRack )
   where
@@ -20,7 +20,9 @@ import Scrabble.Types
   ( Bag
   , Rack
   , Word
-  , Letter(..) )
+  , Letter(..) 
+  , Evaluator )
+import Scrabble.Evaluator() -- for the instances.
 
 -- ============ Functions relating to a bag of tiles ============= --
 
@@ -41,8 +43,8 @@ newBag = concatMap (\(l,n) -> replicate n l) numTilesList
 fillRack :: Rack   -- ^ The rack to fill 
          -> Bag    -- ^ The bag to pick from.
          -> StdGen -- ^ The random generator.
-         -> (Rack, Bag, StdGen) -- ^ The filled rack, the updated bag and the updated StdGen.
-fillRack r = fillRack' (7 - length r) r
+         -> Evaluator (Rack, Bag, StdGen) -- ^ The filled rack, the updated bag and the updated StdGen.
+fillRack r b g = pure $ fillRack' (7 - length r) r b g
   where fillRack' 0 r' b' g' = (r', b', g')
         fillRack' _ r' [] g' = (r', [], g')
         fillRack' n r' b' g' =

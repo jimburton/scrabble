@@ -6,7 +6,7 @@ cabal-version:       >=1.10
 name:                jb-scrabble
 version:             0.1.0.0
 -- synopsis:
-description:         Code accompanying Chapter 2.
+description:         Code accompanying Chapter 3.
 -- bug-reports:
 -- license:
 license-file:        LICENSE
@@ -33,13 +33,18 @@ library
   exposed-modules:
       Scrabble
       Scrabble.Types
-      Scrabble.Board
-      Scrabble.Dict
-      Scrabble.Bonus
-      Scrabble.Pretty
-      Scrabble.Game
-      Scrabble.Bag
-      
+      Scrabble.Evaluator
+      Scrabble.Board.Board
+      Scrabble.Board.Bonus
+      Scrabble.Board.Bag
+      Scrabble.Board.Validation
+      Scrabble.Board.Pretty
+      Scrabble.Game.Game
+      Scrabble.Game.Validation
+      Scrabble.Lang.Dict
+      Scrabble.Lang.Search
+      Scrabble.Lang.Letter
+      Scrabble.Lang.Word
 
   default-extensions: OverloadedStrings
   
@@ -53,12 +58,18 @@ test-suite test-scrabble
                      , Test.Chapter2
                      , Scrabble
                      , Scrabble.Types
-                     , Scrabble.Board
-                     , Scrabble.Bonus
-                     , Scrabble.Pretty
-                     , Scrabble.Dict
-                     , Scrabble.Game
-                     , Scrabble.Bag
+                     , Scrabble.Evaluator
+                     , Scrabble.Board.Board
+                     , Scrabble.Board.Bonus
+                     , Scrabble.Board.Bag
+                     , Scrabble.Board.Validation
+                     , Scrabble.Board.Pretty
+                     , Scrabble.Game.Game
+                     , Scrabble.Game.Validation
+                     , Scrabble.Lang.Dict
+                     , Scrabble.Lang.Search
+                     , Scrabble.Lang.Letter
+                     , Scrabble.Lang.Word
   hs-source-dirs:      tests
                      , src
   ghc-options:         -Wall

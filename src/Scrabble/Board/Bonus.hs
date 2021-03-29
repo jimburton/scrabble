@@ -7,7 +7,7 @@ Portability : POSIX
 
 Contains the @bonusMap@ mapping positions to bonuses.
 -}
-module Scrabble.Bonus (bonusMap)
+module Scrabble.Board.Bonus (bonusMap)
   where
 
 import qualified Data.Map as Map

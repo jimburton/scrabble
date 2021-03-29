@@ -27,6 +27,8 @@ module Scrabble.Types
   , board, bag, player1, player2, turn, gen, firstMove, --lenses for Game
     dict, gameOver, lastMovePass -- lenses for Game.
   , Turn(..)
+  , Evaluator(..)
+  , Validator
   )
 
 where
@@ -113,3 +115,12 @@ data Game = Game { _board     :: Board    -- ^ The board
                  }
 -- | Make lenses for Game.
 $(makeLenses ''Game)
+
+-- | The evaluator of scrabble computations. Wraps up an @Either@ value
+--   for error reporting.
+newtype Evaluator a = Ev (Either Text a)
+
+-- | Validator is the type of functions that validate words to be played.
+--   It returns unit or fails with an error message.
+type Validator = [WordPut] -> Game -> Evaluator ()
+

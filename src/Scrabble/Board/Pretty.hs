@@ -8,7 +8,7 @@ Portability : POSIX
 
 Functions for pretty-printing a Scrabble board.
 -}
-module Scrabble.Pretty (showBoard)
+module Scrabble.Board.Pretty (showBoard)
   where
 
 import Data.Text (Text)
@@ -17,8 +17,8 @@ import qualified Data.Map as Map
 import Data.Array
 import Data.List.Split (chunksOf)
 import Lens.Simple ((^.))
-import Scrabble.Dict (letterToChar)
-import Scrabble.Bonus (bonusMap)
+import Scrabble.Lang.Letter (letterToChar)
+import Scrabble.Board.Bonus (bonusMap)
 import Scrabble.Types
   ( Board
   , Tile
@@ -29,7 +29,7 @@ import Scrabble.Types
 -- ========== Show instances for Player and Game ======== --
 
 instance Show Game where
-  show g = (T.unpack $ showBoard False (g ^. board)) ++ "\n"
+  show g = T.unpack (showBoard False (g ^. board)) ++ "\n"
            ++ show (g ^. player1) ++ "\n" ++ show (g ^. player2)
            
 -- ========== Printing the board ========== --

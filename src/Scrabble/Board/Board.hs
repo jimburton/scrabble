@@ -7,30 +7,45 @@ Portability : POSIX
 
 Functions for the Scrabble board.
 -}
-module Scrabble.Board
+module Scrabble.Board.Board
   ( updateBoard
   , updateSquare
   , getSquare
+  , empty
+  , onBoard
   , newBoard
   , getDirection
   , wordOnRow
   , wordOnCol
   , incRow
-  , incCol )
+  , incCol
+  , occupiedNeighbours
+  , formatWP
+  , additionalWords
+  , wordPutToWord )
   where
 
-import Data.Maybe (isNothing)
+import Prelude hiding (Word)
+import Data.Maybe
+  ( isNothing
+  , isJust )
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Array
 import Lens.Simple ((^.),(.~),(&))
 import Scrabble.Types
   ( Board
   , Pos
+  , Word
   , WordPut
   , Tile
   , Dir(..)
   , PosTransform
   , Game
-  , board) 
+  , board
+  , Evaluator )
+import Scrabble.Lang.Word (wordToText)
+import Scrabble.Evaluator() -- for the instances.
 
 -- * Creating and querying boards
 
@@ -39,8 +54,8 @@ newBoard :: Board
 newBoard = array ((0,0),(14,14)) [((i,j), Nothing) | i <- [0..14], j <- [0..14]]
 
 -- | Place a word onto the board.
-updateBoard :: WordPut -> Game -> Game
-updateBoard w g = g & board .~ foldl updateSquare (g ^. board) w
+updateBoard :: WordPut -> Game -> Evaluator Game
+updateBoard w g = pure (g & board .~ foldl updateSquare (g ^. board) w) 
 
 -- | Place a tile onto the board.
 updateSquare :: Board -> (Pos, Tile) -> Board
@@ -55,6 +70,9 @@ getSquare :: Board -> Pos -> Maybe Tile
 getSquare b pos = if onBoard pos
                     then b ! pos
                     else Nothing
+-- | Is a square empty?
+empty :: Board -> Pos -> Bool
+empty b pos = isNothing (getSquare b pos)
 
 -- | Get direction of a word on the board. WordPuts must be at least two tiles
 --   long.
@@ -111,4 +129,40 @@ wordOnCol :: Board -- ^ The board.
           -> Pos   -- ^ The position on the board.
           -> WordPut
 wordOnCol b pos = wordFromSquare b incRow (startOfWord b decRow pos)
+
+-- Find neighbouring squares to a position on the board.
+neighbours :: Pos -> [Pos]
+neighbours (r,c) = filter onBoard [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
+
+-- | Find neighbouring squares to a position on the board that are occupied.
+occupiedNeighbours :: Board -- ^ The board
+                   -> Pos   -- ^ The position on the board.
+                   -> [Pos] -- ^ The occupied neighbours of the pos.
+occupiedNeighbours b = filter (isJust . getSquare b) . neighbours
+
+-- | Format a WordPut as Text.
+formatWP :: WordPut -> Text
+formatWP w = wordToText (map (fst . snd) w) <> ": " <> T.pack (show (fst (head w)))
+             <> " " <> T.pack (show (getDirection w))
+
+-- | Find the additional words that are created by placing a word on the board.
+additionalWords :: Game    -- ^ The game.
+                -> WordPut -- ^ The new word.
+                -> Evaluator [WordPut] -- ^ The list of additional words.
+additionalWords g w = updateBoard w g >>= \g' -> do
+  let oldb   = g  ^. board
+      newb   = g' ^. board
+      oppDir = if getDirection w == HZ then VT else HZ
+      nt     = map fst (newTiles oldb w) 
+      mWds   = if oppDir == HZ then map (wordOnRow newb) nt else  map (wordOnCol newb) nt
+  pure $ filter ((>1) . length) mWds
+             
+-- | The new tiles that are being played in a move.
+newTiles :: Board -> WordPut -> [(Pos, Tile)]
+newTiles b = filter (\(p,_) -> isNothing (getSquare b p))
+
+-- | Convert a WordPut to Word.
+wordPutToWord :: WordPut -> Word
+wordPutToWord = map (fst . snd)
+
 
