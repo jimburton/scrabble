@@ -20,7 +20,9 @@ module Scrabble.Board.Board
   , newTiles
   , freedomsFromWord
   , freeness
-  , wordPutToWord )
+  , wordPutToWord
+  , incCol
+  , incRow )
   where
 
 import qualified Data.Map as Map
