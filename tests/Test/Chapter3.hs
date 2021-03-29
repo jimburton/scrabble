@@ -16,9 +16,7 @@ import Scrabble.Types
   ( Evaluator(..)
   , Letter(..)
   , Dir(..)
-  , board, player1, player2, rack
-  , WordPut
-  , Game )
+  , board, player1, player2, rack )
 import Scrabble.Board.Board
   ( updateBoard
   , incRow
@@ -28,13 +26,9 @@ import Scrabble.Board.Pretty()
 import Scrabble.Board.Validation
   ( validateMove )  
 import Scrabble.Lang.Dict (englishDictionary)
-import Test.Gen (genGame)
+import Test.Gen (genGame, p1Word)
 
--- ========= Test for Chapter 3 ========== --
-
--- | Make a @WordPut@ from Player 1's rack.
-p1Word :: Game -> WordPut
-p1Word g = makeWordPut (wordToText $ filter (/= Blank) (g ^. (player1 . rack))) (7,7) HZ []
+-- ========= Tests for Chapter 3 ========== --
 
 -- | Test the @wordOnBoard@ validation.
 prop_wordOnBoard :: Property 
