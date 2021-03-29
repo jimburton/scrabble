@@ -1,8 +1,14 @@
 module Test.Gen
+  ( genTile
+  , genDir
+  , genPos
+  , genWordPutElement
+  , genWordPutStart
+  , genWordPut )
   where
 
 import Test.QuickCheck
-import Test.QuickCheck.Gen
+import Test.QuickCheck.Gen (Gen)
 
 import Scrabble.Types
 import Scrabble.Dict (scoreLetter)

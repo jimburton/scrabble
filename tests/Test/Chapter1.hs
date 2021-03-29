@@ -6,8 +6,15 @@ import Data.Bifunctor (first)
 import Test.Gen
 import Data.Array
 
-import Scrabble.Types
+import Scrabble.Types (Dir(..))
 import Scrabble.Board
+  ( updateSquare
+  , newBoard
+  , incCol
+  , incRow
+  , updateBoard
+  , wordOnRow
+  , wordOnCol )
 
 -- ============= Tests for Chapter 1 =========== --
 

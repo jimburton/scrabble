@@ -2,6 +2,19 @@
 
 [Contents](../README.md)
 
+We are going to be writing code realting to games in this chapter so
+we'll add a new module, `Scrabble.Game`. This is the state of the
+`src` directory in the `chapter2` branch:
+
+```
+src/
+├── Scrabble
+│   ├── Board.hs
+│   ├── Dict.hs
+│   ├── Game.hs
+│   └── Types.hs
+└── Scrabble.hs
+```
 Now we can move on to think about **players** and the **game** itself. A
 player has a **name**, a **rack** and a **score**. 
 
@@ -130,7 +143,7 @@ The point is to produce a new `Game` based on `g` but in which the
 partially applied function `(+10)` has been applied to the `_score`
 field nested inside `player1`. 
 
-As we can see from the difference in their name, `score` and `player1`
+As we can see from the differences in their names, `score` and `player1`
 are not the accessor functions we saw before. They are lenses. The
 `(&)` operator is like `($)` but it takes its arguments in reverse
 order, so this is the same as writing `(player1 . score %~ (+10)) g`. 
