@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables  #-}
 module Test.Chapter1
   where
 
@@ -14,16 +13,17 @@ import Control.Monad.IO.Class (liftIO)
 
 import Scrabble.Types
   ( Dir(..)
-  , board )
-import Scrabble.Board
+  , board
+  , Evaluator(..)
+  , Dir(..))
+import Scrabble.Board.Board
   ( updateSquare
-  , incCol
-  , incRow
   , updateBoard
   , wordOnRow
-  , wordOnCol )
-import Scrabble.Dict (englishDictionary)
-import Scrabble.Pretty() -- for the Show instance of Game
+  , wordOnCol
+  , getDirection )
+import Scrabble.Lang.Dict (englishDictionary)
+import Scrabble.Board.Pretty() -- for the Show instance of Game
 
 -- ============= Tests for Chapter 1 =========== --
 
@@ -31,25 +31,21 @@ import Scrabble.Pretty() -- for the Show instance of Game
 --   element on the board in the right place,
 prop_updateSquare :: Property 
 prop_updateSquare = monadicIO $ do
-  (p,t) <- pick $ genWordPutElement
-  gen   <- liftIO $ getStdGen
-  d     <- liftIO $ englishDictionary
-  g     <- pick $ genGame gen d
-  let b = updateSquare (g ^. board) (p,t) 
-  assert $ Just t == b ! p
+  wpe <- pick genWordPutElement
+  gen <- liftIO getStdGen
+  d   <- liftIO englishDictionary
+  g   <- pick $ genGame gen d
+  let b = updateSquare (g ^. board) wpe
+  assert $ Just (snd wpe) == b ! (fst wpe)
 
 -- | Test that using @updateBoard@ puts a @WordPut@ on the
 --   board in the right place.
 prop_updateBoard :: Property
 prop_updateBoard = monadicIO $ do
-  (p,t) <- pick $ genWordPutStart
-  dir   <- pick $ genDir
-  let inc = if dir == HZ then incCol else incRow
-  (size :: Int)  <- pick $ choose (3,9)
-  gen   <- liftIO $ getStdGen
-  d     <- liftIO $ englishDictionary
-  g     <- pick $ genGame gen d
-  let wp = take size (iterate (first inc) (p,t))
-      g' = updateBoard wp g
-      f = if dir == HZ then wordOnRow else wordOnCol 
-  assert $ wp == f (g' ^. board) p
+  wp  <- pick genWordPut
+  gen <- liftIO getStdGen
+  d   <- liftIO englishDictionary
+  g   <- pick $ genGame gen d
+  let Ev (Right g') = updateBoard wp g
+      f = if getDirection wp == HZ then wordOnRow else wordOnCol 
+  assert $ wp == f (g' ^. board) (fst $ head wp)

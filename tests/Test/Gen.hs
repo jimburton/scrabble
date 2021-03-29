@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables  #-}
 module Test.Gen
   ( genTile
   , genDir
@@ -13,18 +14,22 @@ import Test.QuickCheck.Gen (Gen)
 import qualified Data.Text as T
 import Data.Text (Text)
 import System.Random (getStdGen, StdGen)
-
+import Data.Bifunctor (first)
 import Scrabble.Types
   ( Game
   , Tile
   , Pos
   , Letter(..)
   , Dir(..)
-  , Dict )
-import Scrabble.Dict
-  ( scoreLetter
-  , englishDictionary )
-import Scrabble.Game (newGame)
+  , Dict
+  , WordPut )
+import Scrabble.Lang.Dict (englishDictionary)
+import Scrabble.Lang.Letter (scoreLetter)
+import Scrabble.Game.Game (newGame)
+import Scrabble.Board.Board
+  ( incCol
+  , incRow )
+
 -- ======== Generators and instances for tests ============ --
 
 instance Arbitrary Letter where
@@ -63,11 +68,14 @@ genWordPutStart = do
   pure (p,t)                         
 
 -- | Generate an arbitrary WordPut.
-genWordPut :: Gen (Pos, Tile)
+genWordPut :: Gen WordPut
 genWordPut = do
-  t <- genTile
-  p <- genPos (5,5)
-  pure (p,t)
+  dir <- genDir
+  let inc = if dir == HZ then incCol else incRow
+  wps <- genWordPutStart
+  (size :: Int)  <- choose (3,9)
+  let wp = take size (iterate (first inc) wps)
+  pure wp
 
 -- | Generate an arbitrary printable Text
 arbitraryPrintableText :: Gen Text

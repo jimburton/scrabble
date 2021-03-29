@@ -1,22 +1,8 @@
 module Main
     where
 
--- import Debug.Trace
-import Data.Array
-import Test.QuickCheck
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
-
-import Scrabble.Board
-  ( newBoard
-  , updateBoard
-  , updateSquare
-  , wordOnRow
-  , wordOnCol
-  , incCol
-  , incRow )
-import Scrabble.Dict (scoreLetter)
-import Scrabble.Types
 
 import Test.Chapter1
   ( prop_updateSquare
@@ -24,6 +10,12 @@ import Test.Chapter1
 import Test.Chapter2
   ( prop_fillRack1
   , prop_fillRack2 )
+import Test.Chapter3
+  ( prop_straight
+  , prop_wordOnBoard
+  , prop_fMCentre
+  , prop_connects
+  , prop_lettersAvailable)
   
 -- ============= Tests ================ --
 
@@ -36,5 +28,10 @@ tests = [ testProperty "updateSquare places a (pos,tile) on the board" prop_upda
         , testProperty "updateBoard places a word on the board" prop_updateBoard
         , testProperty "fillRack moves tiles from the bag to the rack" prop_fillRack1
         , testProperty "fillRack does nothing if the rack is already full" prop_fillRack2
+        , testProperty "Words played must be in a straight line" prop_straight
+        , testProperty "Words played must be on the board" prop_wordOnBoard
+        , testProperty "The first move must touch the centre square" prop_fMCentre
+        , testProperty "Words played must connect to others" prop_connects
+        , testProperty "Words played must come from available tiles" prop_lettersAvailable
         ]
 
