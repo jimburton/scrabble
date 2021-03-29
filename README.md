@@ -16,7 +16,8 @@ project with several parts, aimed at students who have already learned
 Haskell syntax and functional problem solving. Commonly used data
 structures and libraries like `Data.Text`, maps, arrays and `aeson`
 are explained, as well as monadic error checking and building a
-WebSocket client to the game.
+WebSocket client to the game that shows how to use threads and other
+concurrency abstractions safely.
 
 Each chapter refines the initial solution, ending up with something
 that is (hopefully) a clean, functional design that can easily be

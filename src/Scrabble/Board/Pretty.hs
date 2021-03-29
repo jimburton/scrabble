@@ -24,15 +24,21 @@ import Scrabble.Board.Bonus (bonusMap)
 import Scrabble.Types
   ( Board
   , Player(..)
-  , score
-  , rack
-  , name
+  , score, rack, name
+  , Game
+  , board, player1, player2
   , Letter
   , Tile )
 import Scrabble.Lang.Letter
   ( scoreLetter
   , letterToChar ) 
 
+-- ========== Show instances for Player and Game ======== --
+
+instance Show Game where
+  show g = T.unpack (showBoard False (g ^. board)) ++ "\n"
+           ++ show (g ^. player1) ++ "\n" ++ show (g ^. player2)
+           
 -- =============== Functions for turning boards into text =========== --
 
 -- Get all rows from the board
