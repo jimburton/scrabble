@@ -1,40 +1,55 @@
+{-# LANGUAGE ScopedTypeVariables  #-}
 module Test.Chapter1
   where
 
 import Test.QuickCheck.Gen
+import Test.QuickCheck (Property)
+import Test.QuickCheck.Monadic (assert, monadicIO, pick)
 import Data.Bifunctor (first)
 import Test.Gen
 import Data.Array
+import Lens.Simple ((^.))
+import System.Random (getStdGen)
+import Control.Monad.IO.Class (liftIO)
 
-import Scrabble.Types (Dir(..))
+import Scrabble.Types
+  ( Dir(..)
+  , board )
 import Scrabble.Board
   ( updateSquare
-  , newBoard
   , incCol
   , incRow
   , updateBoard
   , wordOnRow
   , wordOnCol )
+import Scrabble.Dict (englishDictionary)
+import Scrabble.Pretty() -- for the Show instance of Game
 
 -- ============= Tests for Chapter 1 =========== --
 
 -- | Test that using @updateSquare@ places one @WordPut@
 --   element on the board in the right place,
-prop_updateSquare :: Gen Bool 
-prop_updateSquare = do
-  (p,t) <- genWordPutElement
-  let b = updateSquare newBoard (p,t) 
-  pure $ Just t == b ! p
+prop_updateSquare :: Property 
+prop_updateSquare = monadicIO $ do
+  (p,t) <- pick $ genWordPutElement
+  gen   <- liftIO $ getStdGen
+  d     <- liftIO $ englishDictionary
+  g     <- pick $ genGame gen d
+  let b = updateSquare (g ^. board) (p,t) 
+  assert $ Just t == b ! p
 
 -- | Test that using @updateBoard@ puts a @WordPut@ on the
 --   board in the right place.
-prop_updateBoard :: Gen Bool 
-prop_updateBoard = do
-  (p,t) <- genWordPutStart
-  dir <- genDir
+prop_updateBoard :: Property
+prop_updateBoard = monadicIO $ do
+  (p,t) <- pick $ genWordPutStart
+  dir   <- pick $ genDir
   let inc = if dir == HZ then incCol else incRow
-  size <- choose (3,9) :: Gen Int
+  (size :: Int)  <- pick $ choose (3,9)
+  gen   <- liftIO $ getStdGen
+  d     <- liftIO $ englishDictionary
+  g     <- pick $ genGame gen d
   let wp = take size (iterate (first inc) (p,t))
-      b = updateBoard wp newBoard
+      g' = updateBoard wp g
       f = if dir == HZ then wordOnRow else wordOnCol 
-  pure $ wp == f b p
+  assert $ wp == f (g' ^. board) p

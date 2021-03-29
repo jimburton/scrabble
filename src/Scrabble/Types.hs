@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
 Module      : Scrabble.Types
 Description : Types for the scrabble library.
@@ -19,13 +20,23 @@ module Scrabble.Types
   , Dict
   , Tile
   , Dir(..)
-  , PosTransform)
+  , PosTransform
+  , Player(..)
+  , name, rack, score, isAI -- lenses for Player.
+  , Game(..)
+  , board, bag, player1, player2, turn, gen, firstMove, --lenses for Game
+    dict, gameOver, lastMovePass -- lenses for Game.
+  , Turn(..)
+  )
 
 where
 
 import Prelude hiding (Word)
 import Data.Array
 import Data.Trie.Text (Trie)
+import Data.Text (Text)
+import System.Random (StdGen)
+import Lens.Simple 
 
 -- ============ Types for the application ================ --
 
@@ -73,3 +84,32 @@ type Bag = [Letter]
 
 -- | The dictionary is stored in a trie.
 type Dict = Trie ()
+
+-- | A player has a name, a rack and a score, and is either an interactive or an AI player.
+data Player = Player { _name  :: Text -- ^ The name of the player.
+                     , _rack  :: Rack -- ^ The rack.
+                     , _score :: Int  -- ^ The score.
+                     , _isAI  :: Bool -- ^ True if this player is the AI player.
+                     } deriving (Show, Eq)
+-- | Make lenses for Player
+$(makeLenses ''Player)
+
+-- | Which player's turn it is within the game. 
+data Turn = P1 -- ^ Player 1.
+          | P2 -- ^ Player 2.
+          deriving (Show, Read, Eq)
+
+-- | A game is comprised of all the state that is needed to play a game. 
+data Game = Game { _board     :: Board    -- ^ The board
+                 , _bag       :: Bag      -- ^ The bag.
+                 , _player1   :: Player   -- ^ Player 1.
+                 , _player2   :: Player   -- ^ Player 2.
+                 , _turn      :: Turn     -- ^ Which player's turn it is.
+                 , _gen       :: StdGen   -- ^ The StdGen for all things random.
+                 , _firstMove :: Bool     -- ^ Is it the first move?
+                 , _dict      :: Dict     -- ^ The dictionary.
+                 , _gameOver  :: Bool     -- ^ Is the game over?
+                 , _lastMovePass :: Bool  -- ^ Was the last move a pass?
+                 }
+-- | Make lenses for Game.
+$(makeLenses ''Game)

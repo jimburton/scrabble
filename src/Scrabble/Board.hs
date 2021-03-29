@@ -21,13 +21,16 @@ module Scrabble.Board
 
 import Data.Maybe (isNothing)
 import Data.Array
+import Lens.Simple ((^.),(.~),(&))
 import Scrabble.Types
   ( Board
   , Pos
   , WordPut
   , Tile
   , Dir(..)
-  , PosTransform ) 
+  , PosTransform
+  , Game
+  , board) 
 
 -- * Creating and querying boards
 
@@ -36,8 +39,8 @@ newBoard :: Board
 newBoard = array ((0,0),(14,14)) [((i,j), Nothing) | i <- [0..14], j <- [0..14]]
 
 -- | Place a word onto the board.
-updateBoard :: WordPut -> Board -> Board
-updateBoard w b = foldl updateSquare b w
+updateBoard :: WordPut -> Game -> Game
+updateBoard w g = g & board .~ foldl updateSquare (g ^. board) w
 
 -- | Place a tile onto the board.
 updateSquare :: Board -> (Pos, Tile) -> Board

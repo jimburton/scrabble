@@ -6,7 +6,7 @@ cabal-version:       >=1.10
 name:                jb-scrabble
 version:             0.1.0.0
 -- synopsis:
-description:         Code accompanying Chapter 1.
+description:         Code accompanying Chapter 2.
 -- bug-reports:
 -- license:
 license-file:        LICENSE
@@ -27,6 +27,8 @@ library
                , text
                , split
                , text-trie
+               , random
+               , lens-simple
   
   exposed-modules:
       Scrabble
@@ -35,6 +37,8 @@ library
       Scrabble.Dict
       Scrabble.Bonus
       Scrabble.Pretty
+      Scrabble.Game
+      Scrabble.Bag
       
 
   default-extensions: OverloadedStrings
@@ -46,12 +50,15 @@ test-suite test-scrabble
   main-is:             Main.hs
   other-modules:       Test.Gen
                      , Test.Chapter1
+                     , Test.Chapter2
                      , Scrabble
                      , Scrabble.Types
                      , Scrabble.Board
                      , Scrabble.Bonus
                      , Scrabble.Pretty
                      , Scrabble.Dict
+                     , Scrabble.Game
+                     , Scrabble.Bag
   hs-source-dirs:      tests
                      , src
   ghc-options:         -Wall
@@ -62,6 +69,8 @@ test-suite test-scrabble
                      , text-trie
                      , containers
                      , split
+                     , random
+                     , lens-simple
                      , QuickCheck
                      , test-framework
                      , test-framework-quickcheck2

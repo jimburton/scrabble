@@ -1,9 +1,6 @@
-# Chapter Three: Playing the game
+# Chapter Four: Playing the game
 
 [Contents](../README.md)
-
-The code corresponding to this version of the project is in the branch 
-`chapter3`.
 
 We now have enough resources to start playing the game. There is no UI
 as yet, and what we mean by "playing" is using the REPL to generate an

@@ -4,14 +4,27 @@ module Test.Gen
   , genPos
   , genWordPutElement
   , genWordPutStart
-  , genWordPut )
+  , genWordPut
+  , genGame )
   where
 
 import Test.QuickCheck
 import Test.QuickCheck.Gen (Gen)
+import qualified Data.Text as T
+import Data.Text (Text)
+import System.Random (getStdGen, StdGen)
 
 import Scrabble.Types
-import Scrabble.Dict (scoreLetter)
+  ( Game
+  , Tile
+  , Pos
+  , Letter(..)
+  , Dir(..)
+  , Dict )
+import Scrabble.Dict
+  ( scoreLetter
+  , englishDictionary )
+import Scrabble.Game (newGame)
 -- ======== Generators and instances for tests ============ --
 
 instance Arbitrary Letter where
@@ -54,4 +67,20 @@ genWordPut :: Gen (Pos, Tile)
 genWordPut = do
   t <- genTile
   p <- genPos (5,5)
-  pure (p,t)                         
+  pure (p,t)
+
+-- | Generate an arbitrary printable Text
+arbitraryPrintableText :: Gen Text
+arbitraryPrintableText = do
+  s <- getPrintableString <$> arbitrary
+  pure $ T.pack s
+
+-- | Generate an arbitrary game.
+genGame :: StdGen -> Dict -> Gen Game
+genGame g d = do
+  n1 <- arbitraryPrintableText
+  n2 <- arbitraryPrintableText
+  pure (newGame n1 n2 g d)
+
+
+
