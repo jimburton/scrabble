@@ -1,5 +1,5 @@
 {-|
-Module      : Scrabble.Bag
+Module      : Scrabble.Board.Bag
 Description : A bag of Scrabble tiles.
 Maintainer  : j.burton@brighton.ac.uk
 Stability   : experimental
@@ -13,8 +13,8 @@ module Scrabble.Board.Bag
   , takeFromRack )
   where
 
-import Prelude hiding (Word)
 import Data.List (delete)
+import Prelude hiding (Word)
 import System.Random
   ( StdGen
   , randomR )
@@ -22,13 +22,12 @@ import Scrabble.Types
   ( Bag
   , Rack
   , Word
-  , Letter(..) 
-  , Evaluator )
-import Scrabble.Evaluator() -- for the instances.
+  , Letter(..) )
+import Scrabble.Evaluator (Evaluator)
 
 -- ============ Functions relating to a bag of tiles ============= --
 
--- The distribution of each tile that is in a new bag.
+-- The number of each tile that is in a new bag.
 numTilesList :: [(Letter,Int)]
 numTilesList = [
   (A, 9), (B, 2), (C, 2), (D, 4), (E, 12), (F, 2), (G, 3),
@@ -53,15 +52,6 @@ fillRack r b g = pure $ fillRack' (7 - length r) r b g
           let (t, b'', g'') = getTile b' g' in
             fillRack' (n-1) (t:r') b'' g''
 
--- Get a single tile from a bag.
-getTile :: Bag    -- The bag to take the tile from.
-        -> StdGen -- The random generator.
-        -> (Letter, Bag, StdGen) -- A letter from the bag, the updated bag and the updated StdGen.
-getTile b g = let (i, g') = randomR (0, length b -1) g
-                  t = b !! i
-                  b' = take i b ++ drop (i+1) b in
-              (t, b', g')
-
 -- | Take some letters from a rack.
 takeFromRack :: Rack -- ^ The rack to take from
              -> Word -- ^ The letters to take from the rack
@@ -72,3 +62,11 @@ takeFromRack r = pure . deleteAll r
 deleteAll :: Eq a => [a] -> [a] -> [a]
 deleteAll = foldl (flip delete)
 
+-- Get a single tile from a bag.
+getTile :: Bag    -- The bag to take the tile from.
+        -> StdGen -- The random generator.
+        -> (Letter, Bag, StdGen) -- A letter from the bag, the updated bag and the updated StdGen.
+getTile b g = let (i, g') = randomR (0, length b -1) g
+                  t = b !! i
+                  b' = take i b ++ drop (i+1) b in
+              (t, b', g')

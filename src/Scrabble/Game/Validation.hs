@@ -19,7 +19,7 @@ import Scrabble.Types
   , board
   , firstMove
   , rack)
-import Scrabble.Game.Game (getPlayer) 
+import Scrabble.Game.Internal (getPlayer)
 import Scrabble.Lang.Word (wordToText)
 import Scrabble.Lang.Search (wordsInDictM)
 import Scrabble.Board.Validation

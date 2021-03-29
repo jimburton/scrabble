@@ -14,22 +14,25 @@ module Scrabble.Types
   , Board
   , Pos
   , WordPut
+  , Dir(..)
   , Rack
   , Bonus(..)
-  , Bag
-  , Dict
-  , Tile
-  , Dir(..)
-  , PosTransform
   , Player(..)
   , name, rack, score, isAI -- lenses for Player.
   , Game(..)
   , board, bag, player1, player2, turn, gen, firstMove, --lenses for Game
-    dict, gameOver, lastMovePass -- lenses for Game.
+    dict, gameOver, playable, lastMovePass -- lenses for Game.
   , Turn(..)
+  , Bag
+  , Dict
+  , Playable
+  , Freedom
+  , FreedomDir(..)
+  , PosTransform
   , Evaluator(..)
   , Validator
-  )
+  , Tile
+  , MoveResult(..))
 
 where
 
@@ -37,6 +40,7 @@ import Prelude hiding (Word)
 import Data.Array
 import Data.Trie.Text (Trie)
 import Data.Text (Text)
+import qualified Data.Map as Map
 import System.Random (StdGen)
 import Lens.Simple 
 
@@ -48,7 +52,7 @@ data Letter =
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
   deriving (Show, Read, Enum, Eq, Ord)
 
--- | A tile is a pair of a letter and a value.
+-- | A tile is a letter and a value.
 type Tile = (Letter,Int)
 
 -- | A word is a list of letters. 
@@ -60,6 +64,9 @@ type Board = Array (Int,Int) (Maybe Tile)
 -- | A position on the board.
 type Pos = (Int, Int)
 
+-- | Transform a position on the board
+type PosTransform = Pos -> Pos
+
 -- | A word placed on the board (tiles plus positions).
 type WordPut = [(Pos, Tile)]
 
@@ -67,9 +74,6 @@ type WordPut = [(Pos, Tile)]
 data Dir = HZ -- ^ The horizontal direction.
          | VT -- ^ The vertical direction.
          deriving (Show, Read, Eq)
-
--- | Transform a position on the board
-type PosTransform = Pos -> Pos
 
 -- | A rack is a list of letters.
 type Rack = [Letter]
@@ -80,12 +84,6 @@ data Bonus = W2 -- ^ Double word bonus.
            | L2 -- ^ Double letter bonus.
            | L3 -- ^ Triple letter bonus.
   deriving Show
-
--- | The bag is a list of letters.
-type Bag = [Letter]
-
--- | The dictionary is stored in a trie.
-type Dict = Trie ()
 
 -- | A player has a name, a rack and a score, and is either an interactive or an AI player.
 data Player = Player { _name  :: Text -- ^ The name of the player.
@@ -101,6 +99,25 @@ data Turn = P1 -- ^ Player 1.
           | P2 -- ^ Player 2.
           deriving (Show, Read, Eq)
 
+-- | The bag is a list of letters.
+type Bag = [Letter]
+
+-- | The dictionary is stored in a trie.
+type Dict = Trie ()
+
+-- | A direction on the board (up, down, left or right)
+data FreedomDir = UpD     -- ^ The Up direction.
+                | DownD   -- ^ The Down direction.
+                | LeftD   -- ^ The Left direction.
+                | RightD  -- ^ The Right direction.
+  deriving (Show, Read, Eq)
+
+-- | A Freedom is a direction and a distance.
+type Freedom = (FreedomDir, Int)
+
+-- | The map of all playable positions on the board, used by the AI player.
+type Playable = Map.Map Pos (Letter, [Freedom])
+
 -- | A game is comprised of all the state that is needed to play a game. 
 data Game = Game { _board     :: Board    -- ^ The board
                  , _bag       :: Bag      -- ^ The bag.
@@ -111,6 +128,7 @@ data Game = Game { _board     :: Board    -- ^ The board
                  , _firstMove :: Bool     -- ^ Is it the first move?
                  , _dict      :: Dict     -- ^ The dictionary.
                  , _gameOver  :: Bool     -- ^ Is the game over?
+                 , _playable  :: Playable -- ^ The map of playable positions.
                  , _lastMovePass :: Bool  -- ^ Was the last move a pass?
                  }
 -- | Make lenses for Game.
@@ -123,4 +141,17 @@ newtype Evaluator a = Ev (Either Text a)
 -- | Validator is the type of functions that validate words to be played.
 --   It returns unit or fails with an error message.
 type Validator = [WordPut] -> Game -> Evaluator ()
+
+-- | The Record returned by move functions.
+data MoveResult = MoveResult
+                  { mrWord            :: WordPut -- ^ The word that was played.
+                  , mrAdditionalWords :: [Word]  -- ^ The additional words.
+                  , mrBlanks          :: [Int]   -- ^ The positions in the word that were blank.
+                  , mrScore           :: Int     -- ^ The score.
+                  }
+                deriving (Show, Read, Eq)
+
+
+
+
 

@@ -17,7 +17,7 @@ important functions from `Scrabble.Game.Internal`.
 A similar change is made to the `Board` code, adding `Scrabble.Board.Internal`.
 This is the last major refactoring we'll need to do to the library.
 	
-The current state of files in the library:
+The final state of files in the library:
 	
 ```
 src

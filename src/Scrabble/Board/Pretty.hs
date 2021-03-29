@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-|
-Module      : Scrabble.Pretty
+Module      : Scrabble.Board.Pretty
 Description : Pretty printing of Scrabble boards.
 Maintainer  : j.burton@brighton.ac.uk
 Stability   : experimental
@@ -8,31 +8,32 @@ Portability : POSIX
 
 Functions for pretty-printing a Scrabble board.
 -}
-module Scrabble.Board.Pretty (showBoard)
+module Scrabble.Board.Pretty
+  ( showBoard
+  , showGame
+  , showPlayer )
   where
 
-import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Map as Map
 import Data.Array
+import qualified Data.Map as Map
+import qualified Data.Text as T
+import Data.Text (Text)
 import Data.List.Split (chunksOf)
 import Lens.Simple ((^.))
-import Scrabble.Lang.Letter (letterToChar)
 import Scrabble.Board.Bonus (bonusMap)
 import Scrabble.Types
   ( Board
-  , Tile
+  , Player(..)
+  , score
+  , rack
+  , name
   , Letter
-  , Game
-  , board, player1, player2 )
+  , Tile )
+import Scrabble.Lang.Letter
+  ( scoreLetter
+  , letterToChar ) 
 
--- ========== Show instances for Player and Game ======== --
-
-instance Show Game where
-  show g = T.unpack (showBoard False (g ^. board)) ++ "\n"
-           ++ show (g ^. player1) ++ "\n" ++ show (g ^. player2)
-           
--- ========== Printing the board ========== --
+-- =============== Functions for turning boards into text =========== --
 
 -- Get all rows from the board
 rows :: Board -> [[Maybe Tile]]
@@ -61,3 +62,25 @@ showBoard printBonuses b = topNumbers <> top <> showRows <> bottom where
   top           = line '-'
   bottom        = line '-'
   line        c = T.pack (replicate 48 c) <> "\n"
+
+-- | Textify the board and the current player.
+showGame :: Bool   -- ^ Whether to show bonus squares.
+         -> Board  -- ^ The board.
+         -> Player -- ^ The player.
+         -> Text   -- ^ The text representation of the game.
+showGame printBonuses b p = showBoard printBonuses b <> showPlayer p
+
+-- | Textify a player.
+showPlayer :: Player -- ^ The player.
+           -> Text   -- ^ The text representation of the player.
+showPlayer p = top <> playerLine <> rackLine <> bottom where
+  line       :: Char -> Text
+  line     c = T.pack (replicate 46 c) <> "\n"
+  top        = "\n" <> line '*'
+  playerLine = p ^. name <> " (" <> T.pack (show (p ^. score)) <> ")\n"
+  rackLine   = let strs   = map (T.pack . (:"") . letterToChar) (p ^. rack)
+                   scores = map (T.pack . show . scoreLetter) (p ^. rack) in
+                 T.intercalate ", " strs <> "\n"
+                 <> T.intercalate ", " scores <> "\n"
+  bottom     = line '*'
+

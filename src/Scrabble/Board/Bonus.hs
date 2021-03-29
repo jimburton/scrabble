@@ -1,19 +1,24 @@
 {-|
-Module      : Scrabble.Bonus
-Description : Functions for bonuses in the scrabble library.
+Module      : Scrabble.Board.Bonus
+Description : Functions for bonuses the scrabble library.
 Maintainer  : j.burton@brighton.ac.uk
 Stability   : experimental
 Portability : POSIX
 
 Contains the @bonusMap@ mapping positions to bonuses.
 -}
-module Scrabble.Board.Bonus (bonusMap)
+module Scrabble.Board.Bonus
+  ( bonusMap )
   where
 
-import qualified Data.Map as Map
+import Prelude hiding (Word)
 import Data.Map (Map)
-import Scrabble.Types (Pos, Bonus(..))
--- ============ Bonuses ============ --
+import qualified Data.Map as Map
+import Scrabble.Types
+  ( Pos
+  , Bonus(..) )
+
+-- ========== Bonuses ============ --
 
 -- Data for the bonus map.
 bonusSquaresList :: [(Pos, Bonus)] -- ((Row, Column), Bonus)

@@ -12,24 +12,12 @@ in the repository.
 module Scrabble.Lang.Dict (englishDictionary)
   where
 
-import Prelude hiding (Word)
 import Data.Char (toUpper)
 import qualified Data.Text as T
-import Data.Text (Text)
 import qualified Data.Trie.Text as Trie
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Maybe (fromJust)
-import Data.List (nub, permutations)
-import Control.Monad (filterM)
-import Data.Tuple (swap)
-import Scrabble.Types
-  ( Dict
-  , Letter(..)
-  , WordPut
-  , Word)
+import Scrabble.Types (Dict)
 
--- * Dictionary
+-- ===== Dictionary ===== --
 
 -- Reads in a dictionary of Scrabble words from the given file.
 readDictionary :: FilePath -> IO Dict
@@ -46,4 +34,3 @@ englishDictionaryPath = "./dict/en.txt" -- "./dict/english2.txt"
 -- | Reads in the (English) dictionary of Scrabble words.
 englishDictionary :: IO Dict
 englishDictionary = readDictionary englishDictionaryPath
-
