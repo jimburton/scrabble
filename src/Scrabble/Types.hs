@@ -35,7 +35,7 @@ data Letter =
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
   deriving (Show, Read, Enum, Eq, Ord)
 
--- | A tile is a letter and a value.
+-- | A tile is a pair of a letter and a value.
 type Tile = (Letter,Int)
 
 -- | A word is a list of letters. 

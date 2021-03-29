@@ -2,17 +2,21 @@
 
 [Contents](../README.md)
 
-Now we can move on to think about **players** and the **game** itself. A
-player has a **name**, a **rack** and a **score**. 
+Now we can move on to think about **players** and the **game**
+itself. A player has a **name**, a **rack** and a **score**. Most of
+this code is going into a new module, `Scrabble.Game`.
 
-The name is stored as `Data.Text` rather than `String`. Wherever
-possible, when we need to store some text we will use the `Text`
-datatype instead of `String`. This is because `String`, being a simple
-linked list, is very inefficient. Like `Data.Map`, it is usual practice to
-import `Data.Text` with a qualified name, apart from the name of the
-type itself which is imported directly for convenience.
+The name of each player is stored as `Data.Text` rather than
+`String`. Wherever possible, when we need to store some text we will
+use the `Text` datatype instead of `String`. This is because `String`,
+being a simple linked list, is very inefficient. Like `Data.Map`, it
+is usual practice to import `Data.Text` with a qualified name, apart
+from the name of the type itself which is imported directly for
+convenience.
 
 ```haskell
+-- in Scrabble.Types
+
 import Data.Text (Text)
 import qualified Data.Text as T
 
