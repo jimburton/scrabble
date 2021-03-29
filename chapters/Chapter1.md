@@ -67,7 +67,6 @@ library
   exposed-modules:
       Scrabble
       Scrabble.Types
-      Scrabble.Game
 	  Scrabble.Board
 	  Scrabble.Dict
 
@@ -78,11 +77,19 @@ library
 
 The `hs-source-dirs` property tells `cabal` where to find the
 code. Take a look at the `exposed-modules` property. These are the
-modules in our library. These are defined in the files
-`src/Scrabble.hs`, `src/Scrabble/Types.hs`, `src/Scrabble.Game.hs`,
-`src/Scrabble.Board.hs` and `src/Scrabble.Dict.hs`.
+source files in our library at this stage. 
 
-**TODO: source tree**
+```
+src/
+├── Scrabble
+│   ├── Board.hs
+│   ├── Bonus.hs
+│   ├── Dict.hs
+│   ├── Game.hs
+│   ├── Pretty.hs
+│   └── Types.hs
+└── Scrabble.hs
+```
 
 The `Scrabble` module just imports and re-exports the entire
 library. The `Scrabble.Types` module contains all of our datatypes and
@@ -162,11 +169,15 @@ like `('%',0)`, we might find ourselves needing to distinguish between
 letters and make the datatype derive some useful typeclasses:
 
 ```haskell
+-- in Scrabble.Types
+
+-- | Letters.
 data Letter =
   A | B | C | D | E | F | G | H | I | J | K | L | M |
   N | O | P | Q | R | S | T | U | V | W | X | Y | Z | Blank
   deriving (Show, Read, Enum, Eq, Ord)
 
+-- | A tile is a pair of a letter and a value.
 type Tile = (Letter,Int)
 
 ```
@@ -197,6 +208,8 @@ the name of the package to add but if not, use google to find the type
 you need on hackage and check which package it is part of.
 
 ```haskell
+-- in Scrabble.Board
+
 import qualified Data.Map as Map
 
 -- lookup table for the score of a letter. Not exported.
@@ -242,8 +255,11 @@ arrays, so we can create one where the type of indices is `(Int,Int)`
 two arguments, the type of indices and the type of elements.
 
 ```haskell
+-- in Scrabble.Types
+
 import Data.Array
 
+-- | The board, a 2D array of Maybe letters and their scores.
 type Board = Array (Int,Int) (Maybe Tile)
 
 ```
@@ -252,6 +268,7 @@ column `c`, by `b ! (r,c)`. These `(r,c)` pairs are going to be used a lot
 so we make a type for those too.
 
 ```haskell
+-- | A position on the board.
 type Pos = (Int,Int)
 ```
 ## Words 
@@ -265,26 +282,37 @@ we don't need anyway.
 ```haskell
 import Prelude hiding Word
 
+-- | A word is a list of letters. 
 type Word = [Letter]
 
+-- | A rack is a list of letters.
 type Rack = [Tile]
 
+-- | The bag is a list of letters.
 type Bag = [Tile]
 ```
 A word we want to place on the board is a list of pairs of `Pos` and `Tile` values. 
 We'll call this a `WordPut`.
 
 ```haskell
+-- | A word placed on the board (tiles plus positions).
 type WordPut = [(Pos, Tile)]
 ```
 
-Last up for the board are the **bonus squares**. These are either double or 
-triple word bonuses, or double or triple letter bonuses. We make a datatype for 
-bonuses and a map of their positions.
+Last up for the board are the **bonus squares**. These are either
+double or triple word bonuses, or double or triple letter bonuses. We
+make a datatype for bonuses and a map of their positions. We will put
+everything other than the type for bonuses in its own module to keep
+things tidy.
 
 ```haskell
+-- in Scrabble.Types
+
+-- | The datatype of bonuses on the board.
 data Bonus = W2 | W3 | L2 | L3
   deriving Show
+
+-- in Scrabble.Bonus
 
 bonusSquaresList =
   [((0, 0),    W3), ((0, 3),   L2)
@@ -350,6 +378,8 @@ just store `()` ("unit"), which is the type with exactly one value in
 it (also called `()`, "unit").
 
 ```haskell
+-- in Scrabble.Types
+
 import Data.Trie.Text
 
 type Dict = Trie ()
@@ -359,6 +389,8 @@ Now we can create the dictionary and check whether a word exists as
 follows:
 
 ```haskell
+-- in Scrabble.Dict
+
 import Data.Char (toUpper)
 import qualified Data.Text as T
 import qualified Data.Trie.Text as Trie
@@ -372,6 +404,13 @@ dictContainsWord :: Dict -> Text -> Bool
 dictContainsWord = flip Trie.member 
 
 ```
+
+We also create a number of utility functions for searching the dictionary, which
+you can read in `Scrabble.Dict`. These work along the same lines as 
+`dictContainsWord` but do things like finding all words that can be made with
+a rack (`makeWords`), or filtering a list of words to those that are in the
+dictionary (`findWords`).
+
 ## Putting a word on the board
 
 To create the initial empty board we can use the `array` function to
@@ -382,6 +421,8 @@ function uses a fold to update the array with each element of the
 update the array.
 
 ```haskell
+-- in Scrabble.Board
+
 newBoard :: Board
 newBoard = array ((0,0),(14,14)) [((i,j), Nothing) | i <- [0..14], j <- [0..14]]
 
@@ -397,20 +438,160 @@ updateSquare b (pos,t) = b // [(pos, Just t)]
 
 ```
 
-But we can't print it out nicely yet. Let's look at that next. We want
-a function that turns a board into nicely formatted text. To do that
-we will need to deal with a row at a time from the array, which is
-what the `rows` function below is for. It gets the contents of the
-array as a list then uses `chunksOf` to split it into 15-element
-sublists. The `intercalate` function from `Data.Text` intersperses a
-lists of texts with its argument. The `(<>)` operator concatenates
-things, including text. Note that the `showBoard` function takes a
-boolean parameter which determines whether to show the bonus squares
-on the board. If this parameter is `True` then each position is looked
-up in the map of bonus squares to see if there is a bonus value to
-display.
+## Retrieving a word from the board
+
+We can check whether a position on the board is occupied by a tile
+with the following functions.
 
 ```haskell
+-- | Is a position on the board?
+onBoard :: Pos -> Bool
+onBoard (r,c) = r >= 0 && r < 15 && c >= 0 && c < 15
+
+-- | Retrieve a position on the board.
+getSquare :: Board -> Pos -> Maybe Tile
+getSquare b pos = if onBoard pos
+                    then b ! pos
+                    else Nothing
+```
+
+Each `WordPut` is placed horizontally or vertically. We make a type
+for the direction of a `WordPut` and a function to calulate
+directions.
+
+```haskell
+-- in Scrabble.Types
+
+-- | A direction on the board (row or column).
+data Dir = HZ -- ^ The horizontal direction.
+         | VT -- ^ The vertical direction.
+         deriving (Show, Read, Eq)
+
+-- in Scrabble.Board
+
+-- | Get direction of a word on the board. WordPuts must be at least two tiles
+--   long.
+getDirection :: WordPut -> Dir
+getDirection w = let r1 = fst $ fst $ head w
+                     r2 = fst $ fst $ head (tail w) in
+                   if  r1<r2 then VT else HZ
+```
+
+Given an occupied position, if we know the direction we can find the
+beginning of the `WordPut` it is part of, the start of that WordPut
+retrieve the whole thing. To do so we need to transform positions by
+decrementing or incrementing rows and columns. Functions that do this
+will have the type `Pos -> Pos`, and we give an alias to that type,
+`PosTransform`. See `Scrabble.Board` for the `incRow`, `decRow`,
+`incCol` and `decCol` pos transforms.
+
+```haskell
+-- in Scrabble.Types
+
+-- | Transform a position on the board
+type PosTransform = Pos -> Pos
+
+-- in Scrabble.Board
+
+-- Find the starting position of a word that crosses a position on the board.
+startOfWord :: Board        -- ^ The board.
+            -> PosTransform -- ^ Moves to the start of the word (up rows or left along columns).
+            -> Pos          -- ^ The position
+            -> Pos
+startOfWord b f pos = let pos' = f pos in
+  if not (onBoard pos') || isNothing (getSquare b pos')
+  then pos
+  else startOfWord b f pos'
+
+-- Retrieve the word that crosses this pos on the board
+wordFromSquare :: Board        -- ^ The board.
+               -> PosTransform -- ^ Moves to the start of the word (up rows or left along columns).
+               -> Pos          -- ^ The pos.
+               -> WordPut
+wordFromSquare b f pos = reverse $ wordFromSquare' pos []
+  where wordFromSquare' p wp = case getSquare b p of
+          Nothing -> wp
+          Just t  -> wordFromSquare' (f p) ((p,t):wp)
+
+-- | Retrieve the word that crosses a position on the board horizontally.
+wordOnRow :: Board -- ^ The board.
+          -> Pos   -- ^ The position on the board.
+          -> WordPut
+wordOnRow b pos = wordFromSquare b incCol (startOfWord b decCol pos)
+
+-- | Retrieve the word that crosses a position on the board vertically.
+wordOnCol :: Board -- ^ The board.
+          -> Pos   -- ^ The position on the board.
+          -> WordPut
+wordOnCol b pos = wordFromSquare b incRow (startOfWord b decRow pos)
+```
+
+Now we can query the board in various ways.
+
+```
+> let cat = [((0,0),(C,3)),((0,1),(A,1)),((0,2),(T,1))]
+> getDirection cat
+HZ
+> let b = updateBoard cat newBoard
+> getSquare b (0,0)
+Just
+    ( C
+    , 3
+    )
+> getSquare b (5,6)
+Nothing
+> wordOnRow b (0,2)
+[
+    (
+        ( 0
+        , 0
+        )
+    ,
+        ( C
+        , 3
+        )
+    )
+,
+    (
+        ( 0
+        , 1
+        )
+    ,
+        ( A
+        , 1
+        )
+    )
+,
+    (
+        ( 0
+        , 2
+        )
+    ,
+        ( T
+        , 1
+        )
+    )
+]
+
+```
+## Pretty-printing boards
+
+Let's look at printing boards nicely next. We want a function that
+turns a board into text that looks something remotely like a Scrabble
+board. To do that we will need to deal with a row at a time from the
+array, which is what the `rows` function below is for. It gets the
+contents of the array as a list then uses `chunksOf` to split it into
+15-element sublists. The `intercalate` function from `Data.Text`
+intersperses a lists of texts with its argument. The `(<>)` operator
+concatenates things, including text. Note that the `showBoard`
+function takes a boolean parameter which determines whether to show
+the bonus squares on the board. If this parameter is `True` then each
+position is looked up in the map of bonus squares to see if there is a
+bonus value to display.
+
+```haskell
+-- in Scrabble.Pretty
+
 import qualified Data.Text as T
 import Data.Array
 import Data.List.Split (chunksOf)
@@ -501,8 +682,36 @@ holds.
 The `test-suite` stanza in the config file deptermines what tests should
 be run and how. It points to the file `tests/Main.hs` as the entry point.
 
-TODO write some tests and explain them.
+```
+tests/
+├── Main.hs
+└── Test
+    ├── Chapter1.hs
+    └── Gen.hs
+```
+
+To test functions relating to boards we need to be able to generate
+abitrary values of `Pos`, `Letter`, `WordPut` and so on. We write
+generators that use the `QuickCheck` library to do that in
+`Test.Gen`. For instance, here's the generator for arbitrary
+tiles. Before we can define it we have to tell `QuickCheck` how to
+produce an arbitrary `Letter` by defining an `Arbitrary` instance.
+
+```haskell
+instance Arbitrary Letter where
+  arbitrary = chooseEnum (A,Z) 
+
+-- | Generate an arbitrary Tile.
+genTile :: Gen Tile
+genTile = do
+  l <- elements [A .. Z]
+  pure (l, scoreLetter l)
+```
+
+Tests that use these generators are in `Test.Chapter1`.
 
 ## Exercises
+
+TODO
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)
