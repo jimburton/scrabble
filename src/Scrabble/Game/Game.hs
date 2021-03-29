@@ -15,7 +15,10 @@ module Scrabble.Game.Game
   , newBag
   , updateBoard
   , getPlayer
-  , setPlayer )
+  , setPlayer
+  , pass
+  , swap
+  , move )
   where
 
 import System.Random

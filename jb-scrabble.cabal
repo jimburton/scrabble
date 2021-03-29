@@ -6,7 +6,7 @@ cabal-version:       >=1.10
 name:                jb-scrabble
 version:             0.1.0.0
 -- synopsis:
-description:         Code accompanying Chapter 3.
+description:         Code accompanying Chapter 4.
 -- bug-reports:
 -- license:
 license-file:        LICENSE
@@ -57,6 +57,7 @@ test-suite test-scrabble
                      , Test.Chapter1
                      , Test.Chapter2
                      , Test.Chapter3
+                     , Test.Chapter4
                      , Scrabble
                      , Scrabble.Types
                      , Scrabble.Evaluator

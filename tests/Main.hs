@@ -16,6 +16,10 @@ import Test.Chapter3
   , prop_fMCentre
   , prop_connects
   , prop_lettersAvailable)
+import Test.Chapter4
+  ( prop_pass
+  , prop_swap
+  , prop_move )
   
 -- ============= Tests ================ --
 
@@ -33,5 +37,8 @@ tests = [ testProperty "updateSquare places a (pos,tile) on the board" prop_upda
         , testProperty "The first move must touch the centre square" prop_fMCentre
         , testProperty "Words played must connect to others" prop_connects
         , testProperty "Words played must come from available tiles" prop_lettersAvailable
+        , testProperty "We can pass a move" prop_pass
+        , testProperty "We can swap some tiles" prop_swap
+        , testProperty "We can play a move" prop_move
         ]
 
