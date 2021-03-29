@@ -25,7 +25,8 @@ module Scrabble.Board.Internal
   , freedomsFromWord
   , getDirection
   , adjacent
-  , wordPutToWord )
+  , wordPutToWord
+  , onBoard )
   where
 
 import Prelude hiding (Word)

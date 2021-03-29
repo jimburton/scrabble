@@ -9,10 +9,7 @@ Validation of boards.
 -}
 module Scrabble.Board.Validation
   ( validateMove
-  , validateRack
-  , touches
-  , connects
-  , straight )
+  , validateRack )
   where
 
 import Data.Maybe (fromJust)
@@ -34,7 +31,8 @@ import Scrabble.Board.Internal
   , empty
   , formatWP
   , occupiedNeighbours
-  , getDirection )
+  , getDirection
+  , onBoard ) 
 
 -- ================= Validation for boards ===============--
 
@@ -48,12 +46,13 @@ validateMove :: Board    -- ^ The board.
              -> Bool     -- ^ Is first move?
              -> Evaluator ()
 validateMove b p w fm =
-  connects w b fm
+  wordOnBoard w 
+  >> connects w b fm
   >> straight w
   >> firstMoveTouchesCentre w fm
   >> lettersAvailable w p b
 
--- The letter in this move are available in the player's rack or on the board
+-- The letter in this move are available in the player's rack or on the board.
 lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
 lettersAvailable w p b = all available w
                          `evalBool` ("Letters not in rack or not on board: " <> formatWP w)
@@ -70,6 +69,9 @@ validateRack b r w = someNewTiles b w >>
            || (not (empty b pos) && (fst . fromJust . getSquare b) pos == t)) w
   `evalBool` ("Not all tiles in rack or on board: " <> formatWP w)
 
+-- | Check that a @WordPut@ is on the board.
+wordOnBoard :: WordPut -> Evaluator ()
+wordOnBoard w = all (onBoard . fst) w `evalBool` "Word not on board"
 
 -- | Does the word touch the pos on the board?
 touches :: Pos -> WordPut -> Bool
