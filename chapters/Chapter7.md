@@ -460,26 +460,18 @@ channel.
 --   connections.
 main :: IO ()
 main = do
-  args <- getArgs
-  -- Parse options, getting a list of option actions
-  let (actions, _, _) = getOpt RequireOrder options args
-  -- Here we thread startOptions through all supplied option actions
-  opts <- foldl (>>=) (return defaultOptions) actions
-  let Options { optConf = path } = opts
-  conf <- parseConf path defaultConf
-  let pr = read (T.unpack $ log_priority conf) :: Priority
-  updateGlobalLogger "Scrabble" (setLevel pr)
-  h <- fileHandler (T.unpack $ log_file conf) pr >>= \lh -> return $
+  updateGlobalLogger "Scrabble" (setLevel DEBUG)
+  h <- fileHandler "./log/scrabble.log" DEBUG >>= \lh -> return $
     setFormatter lh (simpleLogFormatter "[$time : $loggername : $prio] $msg")
   updateGlobalLogger "Scrabble" (addHandler h)
-  infoM "Scrabble" ("Starting server with conf "<>show conf)
+  infoM "Scrabble" "Starting server..."
   state <- newBoundedChan 2
   _ <- forkIO (gameStarter state)
-  WS.runServer (T.unpack $ hostname conf) (port conf) $ enqueue state
+  WS.runServer "127.0.0.1" 9160 $ enqueue state
 ```
 
 The `enqueue` function loops forever accepting incoming
-connections. When a connection comes in it reads from it
+connections. When a connection comes in, `enqueue` reads from it
 and tries to convert the incoming data to a `MsgJoin`. If this
 can't be done the request is rejected.
 
@@ -608,6 +600,8 @@ which you can supply by opening the index page in a second tab.
 In the final chapter we will add a configuration system to
 the server that allows you to change the hostname, port and other
 server details without needing to recompile it.
+
+## Tests
 
 ## Exercises
 
