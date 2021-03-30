@@ -70,7 +70,7 @@ playGame g = do
   takeTurn g Nothing
 
 -- | Take a turn.
-takeTurn :: Game -- ^ The game
+takeTurn :: Game       -- ^ The game
          -> Maybe Text -- ^ Previous score as text
          -> IO Game
 takeTurn g msc = runInputT defaultSettings loop
@@ -80,7 +80,7 @@ takeTurn g msc = runInputT defaultSettings loop
      liftIO $ printBoard False (g ^. board) msc
      if g ^. gameOver
        then liftIO $ doGameOver g
-       else if g ^. (getPlayer g) ^. isAI
+       else if g ^. (getPlayer g . isAI)
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
 
@@ -179,13 +179,29 @@ doPass (g, mLn) = case pass g of
                       pure (g,mLn)
 
 -- | Print the help message.
---   TODO
 help :: IO ()
-help = T.putStrLn "HELP: TODO"
-
+help = T.putStrLn "Scrabble help: \n\
+                  \               \n\
+                  \ Choose a single player or two player game when the program starts. \n\
+                  \               \n\
+                  \ While the game is in play enter a move as \n\
+                  \               \n\
+                  \ WORD ROW COL DIR \n\
+                  \               \n\
+                  \ where WORD is a word made using tiles from your rack or on the board, \n\
+                  \ ROW and COL are numbers between 0 and 14 giving the position of the \n\
+                  \ first tile in the word, and DIR is either H (horizontal) or V (vertical). \n\
+                  \               \n \
+                  \ Alternatively, enter one of these commands: \n \
+                  \               \n \
+                  \ + :HINT gets a list of hints based on your rack, \n \
+                  \ + :SWAP prompts you for tiles from your rack to swap, \n \
+                  \ + :PASS passes your move \n \
+                  \ + :HELP shows this message. \n"
+                  
 -- | Print some word suggestions based on the current player's rack.
 hints :: Game -> IO ()
 hints g = do
-  let w = g ^. getPlayer g ^. rack
+  let w = g ^. (getPlayer g . rack)
   T.putStrLn "HINTS:"
   mapM_ print $ makeWords g w

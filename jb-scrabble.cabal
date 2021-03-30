@@ -155,19 +155,34 @@ executable scrabble-client
 test-suite test-scrabble
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
-  other-modules:       Scrabble
+  other-modules:       Test.Chapter1
+                     , Test.Chapter2
+                     , Test.Chapter3
+                     , Test.Chapter4
+                     , Test.Chapter5
+                     , Test.Chapter6
+                     , Test.Chapter7
+                     , Test.Gen
+                     , Scrabble
                      , Scrabble.Types
                      , Scrabble.Game.Game
+                     , Scrabble.Game.AI
+                     , Scrabble.Game.Validation
+                     , Scrabble.Game.Internal
+                     , Scrabble.Lang.Letter
+                     , Scrabble.Lang.Word
+                     , Scrabble.Lang.Dict
+                     , Scrabble.Lang.Search
                      , Scrabble.Board.Board
                      , Scrabble.Board.Bag
                      , Scrabble.Board.Bonus
                      , Scrabble.Board.Internal
+                     , Scrabble.Board.Pretty
+                     , Scrabble.Board.Validation
                      , Scrabble.Evaluator
-                     , Scrabble.Game.Internal
-                     , Scrabble.Lang.Letter
-                     , Scrabble.Lang.Word
   hs-source-dirs:      tests
                      , src
+                     , cli
   ghc-options:         -Wall
   default-extensions: OverloadedStrings
                     , TemplateHaskell
@@ -176,6 +191,7 @@ test-suite test-scrabble
                      , aeson
                      , text
                      , array
+                     , split
                      , text-trie
                      , containers
                      , QuickCheck

@@ -139,17 +139,18 @@ it calls the function that reads a move from the terminal. Otherwise,
 it calls the function that plays an AI move.
 
 ```haskell
-takeTurn :: Game -- ^ The game
+-- | Take a turn.
+takeTurn :: Game       -- ^ The game
          -> Maybe Text -- ^ Previous score as text
          -> IO Game
 takeTurn g msc = runInputT defaultSettings loop
  where
    loop :: InputT IO Game
    loop  = do
-     liftIO $ printBoard True (board g) msc
-     if gameOver g
+     liftIO $ printBoard False (g ^. board) msc
+     if g ^. gameOver
        then liftIO $ doGameOver g
-       else if isAI (getPlayer g)
+       else if g ^. (getPlayer g . isAI)
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
 ```
@@ -162,28 +163,27 @@ own monadic type, `InputT`. Any time we want to run an `IO` action
 inside an `InputT` action we need to "lift" the `IO` action using 
 `liftIO` which has the type `MonadIO m => IO a -> m a`. 
 
-The second argument to `takeTurn` is a `Maybe Text` that allos us to
+The second argument to `takeTurn` is a `Maybe Text` that allows us to
 display an optional message to the user. Within the function the
 `gameOver` field of the game is checked. If it is true, we pass the game
 to the `doGameOver` function. Otherwise, either an AI player or a human
 player takes a turn.
 
-```haskell			
+```haskell
 -- | Handle the situation when the game ends.
 doGameOver :: Game -> IO Game
 doGameOver g = do
-  let p1     = player1 g
-      p2     = player2 g
-      draw   = score p1 == score p2
-      winner = if score p1 > score p2
+  let p1     = g ^. player1
+      p2     = g ^. player2
+      draw   = p1 ^. score == p2 ^. score
+      winner = if p1 ^. score > p2 ^. score
                then p1 else p2
   T.putStrLn "Game over!"
-  T.putStrLn $ name p1 <> ": " <> T.pack (show (score p1))
-  T.putStrLn $ name p2 <> ": " <> T.pack (show (score p2))
+  T.putStrLn $ p1 ^. name <> ": " <> T.pack (show (p1 ^. score))
+  T.putStrLn $ p2 ^. name <> ": " <> T.pack (show (p2 ^. score))
   if draw
     then T.putStrLn "It's a draw!" >> pure g
-    else T.putStrLn ("Congratulations " <> name winner) >> pure g
-
+    else T.putStrLn ("Congratulations " <> winner ^. name) >> pure g
 ```
 
 ## Taking a turn as the AI player
@@ -244,7 +244,6 @@ takeTurnManual g = runInputT defaultSettings loop
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
                Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
-
 ```
 If the input begins with a colon (':'), it is treated as a
 "command". These are some builtin functions for the user that allow
@@ -315,7 +314,24 @@ player's rack.
 -- | Print the help message.
 --   TODO
 help :: IO ()
-help = T.putStrLn "HELP: TODO"
+help = T.putStrLn "Scrabble help: \n\
+                  \               \n\
+                  \ Choose a single player or two player game when the program starts. \n\
+                  \               \n\
+                  \ While the game is in play enter a move as \n\
+                  \               \n\
+                  \ WORD ROW COL DIR \n\
+                  \               \n\
+                  \ where WORD is a word made using tiles from your rack or on the board, \n\
+                  \ ROW and COL are numbers between 0 and 14 giving the position of the \n\
+                  \ first tile in the word, and DIR is either H (horizontal) or V (vertical). \n\
+                  \               \n \
+                  \ Alternatively, enter one of these commands: \n \
+                  \               \n \
+                  \ + :HINT gets a list of hints based on your rack, \n \
+                  \ + :SWAP prompts you for tiles from your rack to swap, \n \
+                  \ + :PASS passes your move \n \
+                  \ + :HELP shows this message. \n"
 
 -- | Print some word suggestions based ont hte current player's rack.
 hints :: Game -> IO ()
@@ -331,8 +347,9 @@ If the input didn't start with a colon, we expect it to be of the form
 WORD ROW COL DIR
 ```
 
-where WORD is a word made from the player's rack, ROW and COL are numbers representing
-a row and a column respectively, and DIR is either H (horizontal) or V (vertical). Let's
+where WORD is a word made from the player's rack and tiles on the
+board, ROW and COL are numbers representing a row and a column
+respectively, and DIR is either H (horizontal) or V (vertical). Let's
 repeat this part of the `takeTurnManual`.
 
 ```haskell
@@ -348,7 +365,7 @@ case move valGameRules g wp is of
   Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
 ```
 
-First we replace any balnks that were in the WORD part of the input. This is done by interrogating
+First we replace any blanks that were in the WORD part of the input. This is done by interrogating
 the user and producing a list of pairs of replacements and their indices. This code is in
 `ScrabbleCLI.Blanks` and we won't go through it here. Then weparse the other parts of the input 
 with the `words` function, the `makeWordPut` function
@@ -359,7 +376,7 @@ new, updated game to `takeTurn`.
 
 ## Running the game
 
-We no longer need to call functions in the RELP. Now we can actually run the game.
+We no longer need to call functions in the REPL. Now we can actually run the game.
 Here is the first couple of moves of an AI game in which the human player asks
 for hints and at one point plays a blank tile.
 
