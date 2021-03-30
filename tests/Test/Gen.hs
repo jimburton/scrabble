@@ -8,7 +8,7 @@ module Test.Gen
   , genWordPut
   , genGame
   , genGameAI
-  , p1Word)
+  , p1Word )
   where
 
 import Test.QuickCheck
@@ -18,7 +18,6 @@ import Data.Text (Text)
 import System.Random (StdGen)
 import Data.Bifunctor (first)
 import Lens.Simple ((^.))
-import Data.Functor ((<&>))
 import Scrabble.Types
   ( Game
   , player1, rack
@@ -36,7 +35,6 @@ import Scrabble.Board.Board
   ( incCol
   , incRow
   , makeWordPut )
-import ScrabbleCLI.Game (startGameAI)
 
 -- ======== Generators and instances for tests ============ --
 

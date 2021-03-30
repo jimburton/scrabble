@@ -17,8 +17,8 @@ import Scrabble.Board.Pretty()
 import Scrabble.Game.Validation (valGameRules)  
 import Scrabble.Lang.Dict (englishDictionary)
 import Test.Gen
-  ( genGameAI
-  , p1Word )
+  ( p1Word
+  , genGameAI)
 
 -- ========= Tests for Chapter 5 ========== --
 

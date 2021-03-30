@@ -158,6 +158,8 @@ test-suite test-scrabble
                      , Test.Chapter4
                      , Test.Chapter5
                      , Test.Chapter6
+                     , Test.Chapter7
+                     , Test.Chapter8
                      , Test.Gen
                      , Scrabble
                      , Scrabble.Types

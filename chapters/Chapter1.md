@@ -1,4 +1,4 @@
-s# Chapter One: Getting started
+# Chapter One: Getting started
 
 [Contents](../README.md)
 

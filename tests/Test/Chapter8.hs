@@ -1,4 +1,4 @@
-module Test.Chapter7 (prop_cliGame)
+module Test.Chapter8 (prop_cliGame)
   where
 
 import Test.QuickCheck (Property)
