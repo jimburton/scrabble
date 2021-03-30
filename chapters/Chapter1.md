@@ -328,7 +328,7 @@ bonusMap = Map.fromList bonusSquaresList
 ## Dealing with blanks
 
 When a blank tile is played the player nominates a letter that the blank should
-stand for, and the blank tile keeps that value for the rest of the game. The blank
+stand for and it keeps that value for the rest of the game. The blank
 contributes zero to the score.
 
 There are several ways we could deal with blanks in the game. We could
