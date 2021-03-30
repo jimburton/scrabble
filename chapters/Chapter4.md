@@ -163,10 +163,9 @@ being calculated, such as the score. Some things to note:
   to the `(<&>)` operator from `Data.Functor`.  This operator is the
   same as `(<$>)` but with the order of the arguments reversed:
   
-  ```
- (<&>) :: Functor f => f a -> (a -> b) -> f b 
-  ```
-  
+```
+(<&>) :: Functor f => f a -> (a -> b) -> f b 
+```  
   So it takes a functor (the game, wrapped up in the `Evaluator`
   functor) and a pure function as it's second argument, then applies
   that function within the functor. The pure function uses a *tuple
