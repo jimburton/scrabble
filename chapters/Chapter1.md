@@ -254,14 +254,11 @@ care of interrogating players for the letters to use when they play a
 blank. 
 
 This approach has the advantage that after being played the tile is
-treated like any other. A disadvantage is that it means the code that
-plays moves will need an additional parameter, the indices of any
-letters in a word that were originally blanks (and so whose score
-should be set to zero). It also means that we have to store the whole
-tile -- the letter and its score -- on the board, rather than just
-storing the letter and looking up its score when we need it. But it
-means we don't need to check for and accomodate blanks on the board in
-a lot of code that we'll write later.
+treated like any other. A disadvantage is that it means we have to
+store the whole tile -- the letter and its score -- on the board,
+rather than just storing the letter and looking up its score when we
+need it. But it means we don't need to check for and accomodate blanks
+on the board in a lot of code that we'll write later.
 
 
 ## The board
