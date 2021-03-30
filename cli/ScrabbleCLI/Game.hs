@@ -80,7 +80,7 @@ takeTurn g msc = runInputT defaultSettings loop
      liftIO $ printBoard False (g ^. board) msc
      if g ^. gameOver
        then liftIO $ doGameOver g
-       else if g ^. (getPlayer g) ^. isAI
+       else if g ^. (getPlayer g . isAI)
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
 

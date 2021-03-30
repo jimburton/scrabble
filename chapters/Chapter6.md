@@ -2,13 +2,18 @@
 
 [Contents](../README.md)
 
-The first client is a terminal-based CLI (command line interface). It's probably
-true that nobody would want to play a multi-player game of Scrabble this way. You
-can see each other's tiles. But it does work well enough for a one-player game and
-above all else it's a straightforward way to understand the general problem
-of writing clients that use the library and provide a user interface. All the client
-needs to do is to print the board to the terminal, read keystrokes from the user and
-interact with the library.
+Compared to getting the code in the library right, writing clients is
+easy. They need to read input from the user, interact with the library
+and present the state of the game.
+
+The first is a terminal-based CLI (command line interface). It's
+probably true that nobody would want to play a multi-player game of
+Scrabble this way. You can see each other's tiles. But it does work
+well enough for a one-player game and above all else it's a
+straightforward way to understand the general problem of writing
+clients that use the library and provide a user interface. All the
+client needs to do is to print the board to the terminal, read
+keystrokes from the user and interact with the library.
 
 This code will live in a completely separate area to the library. We
 store it under the directory `cli/` and add an `executable` stanza to
@@ -325,6 +330,9 @@ hints g = do
   mapM_ print $ findPrefixes g w
 
 ```
+
+## Parsing moves and dealing with blanks
+
 If the input didn't start with a colon, we expect it to be of the form 
 
 ```
@@ -348,18 +356,22 @@ case move valGameRules g wp is of
   Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
 ```
 
-First we replace any balnks that were in the WORD part of the input. This is done by interrogating
-the user and producing a list of pairs of replacements and their indices. This code is in
-`ScrabbleCLI.Blanks` and we won't go through it here. Then weparse the other parts of the input 
-with the `words` function, the `makeWordPut` function
-is used to create a `WordPut` from what we have, and the game and the `WordPut` are passed
-to the `move` function. Finally, the `Evaluator` result is pattern matched. As with `takeTurnAI`,
-we either print an error message and send the unchanged game to `takeTurn` loop, or send the
-new, updated game to `takeTurn`.
+First we replace any underscores (representing blank tiles) that were
+in the WORD part of the input. This is done by interrogating the user
+and producing a list of pairs of replacements and their indices. This
+code is in `ScrabbleCLI.Blanks` and we won't go through it here. 
+
+Then we parse the other parts of the input using the `words`
+function. The `makeWordPut` function is used to create a `WordPut`
+from what we have, and the game and the `WordPut` are passed to the
+`move` function. The result of `move` is pattern matched as an
+`Evaluator (Game,MoveResult)`. As with `takeTurnAI`, we either print an error
+message and send the unchanged game to the `takeTurn` loop, or send the
+new, updated game back round to `takeTurn`.
 
 ## Running the game
 
-We no longer need to call functions in the RELP. Now we can actually run the game.
+We no longer need to call functions in the REPL. Now we can actually run the game.
 Here is the first couple of moves of an AI game in which the human player asks
 for hints and at one point plays a blank tile.
 
@@ -541,17 +553,19 @@ Enter WORD ROW COL DIR[H/V]:
 ## Wrapping up
 
 We have seen that writing a client for the Scrabble library meant
-writing `IO`-bound code that interacts with the user and calling the
-functions in the library that know how to take a move. We could easily
-extend this approach to clients with different (mor realistic) interfaces 
-written for, say, mobile devices or  the desktop.
+writing `IO`-bound code that interacts with the user and calls the
+pure functions in the library that know how to take a move. We could easily
+extend this approach to clients with different (more realistic) interfaces 
+written for, say, mobile devices or the desktop.
 
-In the next chapter, however, we make a much more general interface
-for networked clients which is based on a web service, thus decoupling
-the library from clients altogether. From then on, clients can be written
+In the next chapter however, we make a more general interface for
+networked clients which is based on a web service, decoupling the
+library from clients altogether. From then on, clients can be written
 in any language, and we'll write one in Javascript.
 
 ## Tests
 
+We write a test that starts an AI game via the CLI interface and takes the first
+couple of moves.
 
 [Contents](../README.md) | [Chapter Seven](Chapter7.md)

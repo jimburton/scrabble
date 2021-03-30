@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Scrabbλe</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="shortcut icon" href="">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="./main.js"></script>
+</head>
+
+<body>
+    <!-- INSTRUCTIONS -->
+    <div class="instructions">
+        <h1>INSTRUCTIONS</h1>
+        <ul class="instructionsList">
+            <li>Place tiles on the board to spell out words.  Click on the letter on your rack and then click again on the location you'd like to place it.</li>
+            <li>Except for the first turn, at least one of your letters must touch a letter already in play, and your new letters must all be in the same row or column, and be touching another tile.</li>
+            <li>The letter values of each tile can be accessed by clicking the tab on the right side of the screen.</li>
+            <li>At the beginning of your turn, click "SHOW TILES" to reveal the letters on your rack.</li>
+            <li>After you click "Submit Word" your score is tallied and your rack refreshed from the tile bag.</li>
+            <li>Clicking "Back to Rack" will return the tiles from your current turn back to your rack.</li>
+            <li>Clicking "Refresh Tiles" will give you a brand new rack and shuffle your current tiles back into the bag.  Doing this forfeits your current turn.</li>
+            <li>When one player clears their rack and the bag is empty, the game ends.  The other player's score will decrease by the total value of the letters still in his/her rack.</li>
+            <li>Enter both player's names and click "START" to begin!</li>
+        </ul>
+        <div class="playerNameHolder">
+          <input type="text" placeholder="Player Name" class="playerName">
+	  <input type="checkbox" id="aiCheck" name="aiCheck" value="AI">
+	  <label for="aiCheck">Play against computer</label>
+        </div>
+        <button class="start">START</button>
+	
+    </div>
+
+    <!-- LETTER VALUES KEY -->
+    <div class="letterValuesBox">
+        <div class="tab">
+            <hr>
+            <hr>
+            <hr>
+        </div>
+        <div class="letterValues">
+            <ul class="letterValueList"></ul>
+        </div>
+    </div>
+
+    <!-- MAIN GAME BOARD -->
+    <div class="container">
+        <div class="title">Scrabbλe</div>
+        <div class="gameBoard">
+        </div>
+        <div class="playerScoreBox textBox">
+            <h3  id="playerDisplayName">Player Score</h3>
+            <div id="playerDisplayScore">&nbsp;</div>
+	    <h3  id="opponentDisplayName">Opponent Score</h3>
+            <div id="opponentDisplayScore">&nbsp;</div>
+        </div>
+        <div class="serverMessagesBox textBox">
+	    <h3 class="serverMessagesTitle">Server Messages</h3>
+            <div id="serverMessages"></div>
+        </div>
+        <div class="playerTiles">
+          <div class="playerTilesRow">
+	    <div class="playerTile tileBox" id="playerTile0"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile1"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile2"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile3"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile4"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile5"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+	    <div class="playerTile tileBox" id="playerTile6"
+		 draggable="true" ondragstart="drag(event)"><div></div></div>
+            </div>
+        </div>
+	<div id="buttonsRow">
+          <button class="backToRack button" disabled>Back to Rack</button>
+	  <button class="hints button" disabled>Hints</button>
+	  <button class="swap button" disabled>Swap tiles</button>
+	  <button class="pass button" disabled>Pass</button>
+          <button class="submitWord button" disabled>Submit Word</button>
+	</div>
+    </div>
+</body>
+
+</html>

@@ -95,29 +95,95 @@ executable scrabble
   default-language:    Haskell2010
 
   
+executable scrabble-server
+  main-is:            Main.hs
+  other-modules:      Scrabble
+                    , Scrabble.Types
+                    , ScrabbleWeb.Types
+                    , ScrabbleWeb.Announce
+                    , ScrabbleWeb.Game
+                    , Scrabble.Evaluator
+                    , Scrabble.Game.Game
+                    , Scrabble.Game.AI
+                    , Scrabble.Game.Internal
+                    , Scrabble.Game.Validation
+                    , Scrabble.Lang.Dict
+                    , Scrabble.Lang.Letter
+                    , Scrabble.Lang.Word
+                    , Scrabble.Lang.Search
+                    , Scrabble.Board.Bag
+                    , Scrabble.Board.Board
+                    , Scrabble.Board.Bonus
+                    , Scrabble.Board.Pretty
+                    , Scrabble.Board.Validation
+                    , Scrabble.Board.Internal
+  build-depends:      base >=4.12 && <4.13
+                    , array
+                    , random
+                    , text
+                    , text-trie
+                    , split
+                    , containers
+                    , aeson
+                    , websockets
+                    , BoundedChan
+                    , lens-simple
+                    , hslogger
+  hs-source-dirs:     web/server
+                    , src
+  ghc-options: -Wall -fno-warn-orphans
+  default-extensions: TemplateHaskell
+                    , OverloadedStrings
+                    , DeriveGeneric
+                    , DeriveAnyClass
+                    , ApplicativeDo
+  default-language:   Haskell2010
+
+executable scrabble-client
+  main-is:            Main.hs
+  other-modules:      
+  build-depends:      base >=4.12 && <4.13
+                    , happstack-server
+  hs-source-dirs:     web/client
+  default-extensions:
+  ghc-options: -Wall -fno-warn-orphans
+  default-language:   Haskell2010
+
 test-suite test-scrabble
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
-  other-modules:       Test.Gen
-                     , Test.Chapter1
+  other-modules:       Test.Chapter1
                      , Test.Chapter2
                      , Test.Chapter3
                      , Test.Chapter4
                      , Test.Chapter5
                      , Test.Chapter6
+                     , Test.Gen
                      , Scrabble
                      , Scrabble.Types
                      , Scrabble.Game.Game
+                     , Scrabble.Game.AI
+                     , Scrabble.Game.Validation
+                     , Scrabble.Game.Internal
+                     , Scrabble.Lang.Letter
+                     , Scrabble.Lang.Word
+                     , Scrabble.Lang.Dict
+                     , Scrabble.Lang.Search
                      , Scrabble.Board.Board
                      , Scrabble.Board.Bag
                      , Scrabble.Board.Bonus
                      , Scrabble.Board.Internal
+                     , Scrabble.Board.Pretty
+                     , Scrabble.Board.Validation
                      , Scrabble.Evaluator
-                     , Scrabble.Game.Internal
-                     , Scrabble.Lang.Letter
-                     , Scrabble.Lang.Word
+                     , ScrabbleCLI.Blanks
+                     , ScrabbleCLI.Game
+                     , ScrabbleCLI.Out
+        
   hs-source-dirs:      tests
                      , src
+                     , cli
+                     , web/server
   ghc-options:         -Wall
   default-extensions: OverloadedStrings
                     , TemplateHaskell
@@ -126,8 +192,10 @@ test-suite test-scrabble
                      , aeson
                      , text
                      , array
+                     , split
                      , text-trie
                      , containers
+                     , haskeline
                      , QuickCheck
                      , test-framework
                      , test-framework-quickcheck2
