@@ -263,7 +263,7 @@ Haskell. This is the language extension that provides
 pragma `{-# LANGUAGE TemplateHaskell #-}` at the top of each file that
 has an expression like this in it, and add `TemplateHaskell` to the
 list of language extensions being used in the config file. When the
-code is compiled, a preprocessor runs and generates all of those
+code is compiled, a preprocessor runs and generates all the lens
 definitions for us. As a result there are lens functions defined with
 the name of each field, minus the underscores. We need to export these
 from the `Scrabble.Types` module and import them wherever they are
