@@ -193,12 +193,14 @@ more efficient (`O(log n)`) lookup tables.
 
 Because it contains many functions whose names clash with those of
 functions in the `Prelude`, like `filter` and `map`, `Data.Map` is
-normally imported with a qualified name (e.g. `Map`) like this:
+normally imported with a qualified name (e.g. `Map`), then import
+just the name of the main type directly for convenience:
 
 ```haskell
 import qualified Data.Map as Map
+import Data.Map (Map)
 ```
-Since `Data.Map` isn't in the `Prelude`, we need to tell `cabal` where
+Since `Data.Map` isn't in the `Prelude` we need to tell `cabal` where
 to find it. If we try to import it without doing anything else, `cabal` 
 will prompt us to add the package that includes it, `containers`, to 
 the `build-depends` section of the `cabal` file. We will do that, 
@@ -211,6 +213,7 @@ you need on hackage and check which package it is part of.
 -- in Scrabble.Board
 
 import qualified Data.Map as Map
+import Data.Map (Map)
 
 -- lookup table for the score of a letter. Not exported.
 letterToScoreList :: [(Letter,Int)]
