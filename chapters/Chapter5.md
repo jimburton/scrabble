@@ -538,7 +538,7 @@ Now we'll take a move with Bob's rack and let the AI have a go.
 ------------------------------------------------
 "
 ```
-The Ai played the word ALEPH. At least that's a beginning :-) 
+The AI played the word ALEPH. At least that's a beginning :-) 
 
 ## Tests
 
