@@ -160,7 +160,7 @@ instances of the `ToJSON` and `FromJSON` typeclasses. We can do this
 ourselves by defining `encode` and `decode` functions for each type,
 but as we don't want to do anything special the instances can be
 derived. In order to make this work we have to turn on two language
-extensions `DeriveGeneric` and `DeriveAnyClass`. For each type we want
+extensions: `DeriveGeneric` and `DeriveAnyClass`. For each type we want
 to derive the `aeson` instances for, we also need to derive an instance
 of `Generic`, which is a typeclass the compiler uses internally. 
 
@@ -313,9 +313,9 @@ player is `P1`.
 | CLIENT |                                     | SERVER |       
  --------                                       --------
      |      -- REQUEST FOR AI GAME [NAME] -->      |
-	 |                                             |
-	 |      <- ACK [NAME,OPPNAME,RACK,TURN] --     |
-	 |                                             |
+     |                                             |
+     |      <- ACK [NAME,OPPNAME,RACK,TURN] --     |
+     |                                             |
 ```
 
 Now the game is in play the following sequence, with possible
@@ -328,7 +328,7 @@ player and the sequence is repeated (except that when it is the AI player's
 turn no `MOVE` or `RACK` messages are sent of course).
 
 ```
-	 |                                             |
+     |                                             |
 	 |      <- TURN [P1]                           |
 	 |                                             |
 	 |      -- MOVE [MOVE] -->                     |
@@ -391,7 +391,7 @@ Whenever the client is expecting the `TURN` message it could
 alternatively receive the news that the game is ended.
 
 ```			
-	 |      <- END OF GAME [SCORES] --             |
+     |      <- END OF GAME [SCORES] --             |
 	 
 ```
 
