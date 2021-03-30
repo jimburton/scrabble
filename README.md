@@ -123,7 +123,7 @@ tab for a two player game.
 If you want to run clients on a network, start the client server with
 `cabal run scrabble-client`. This serves the web client on 
 http://localhost:8000/index.html. To change the hostname, port, etc, see
-`web/client/Main.hs`.
+`/conf/scrabble.conf`.
 
 ## Disclaimer
 
