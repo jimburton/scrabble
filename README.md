@@ -14,8 +14,8 @@ them
 The emphasis is on explaining the process of developing a Haskell
 project with several parts, aimed at students who have already learned
 Haskell syntax and functional problem solving. Commonly used data
-structures and libraries like `Data.Text`, maps, arrays and `aeson`
-are explained, as well as monadic error checking and building a
+structures and libraries like `Data.Text`, maps, arrays, `aeson` and
+`lens` are explained, as well as monadic error checking and building a
 WebSocket client to the game that shows how to use threads and other
 concurrency abstractions safely.
 
