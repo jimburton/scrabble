@@ -329,13 +329,13 @@ turn no `MOVE` or `RACK` messages are sent of course).
 
 ```
      |                                             |
-	 |      <- TURN [P1]                           |
-	 |                                             |
-	 |      -- MOVE [MOVE] -->                     |
-	 |                                             |
-	 |      <- MOVE ACK [MOVE,P1] --               |
-	 |                                             |
-	 |      <- RACK [LETTERS] --                   |	 
+     |      <- TURN [P1]                           |
+     |                                             |
+     |      -- MOVE [MOVE] -->                     |
+     |                                             |
+     |      <- MOVE ACK [MOVE,P1] --               |
+     |                                             |
+     |      <- RACK [LETTERS] --                   |	 
 ```
 
 If the client sends an illegal move then, rather than receiving `MOVE ACK` 
@@ -345,46 +345,44 @@ the other player.
 
 ```
      |      -- MOVE [P1] -->                       |
-	 |                                             |
-	 |      <- ANNOUNCE [ERROR]                    |
-	 |                                             |
-	 |      <- TURN [P1]                           |
-	 |                                             |
-
+     |                                             |
+     |      <- ANNOUNCE [ERROR]                    |
+     |                                             |
+     |      <- TURN [P1]                           |
+     |                                             |
 ```
 Any time it is the client's turn they can send `PASS MOVE`. The server
 responds by giving the turn to P2.
 
 ```
      |      <- TURN [P1] --                        |
-	 |                                             |
+     |                                             |
      |      -- PASS MOVE [P1] -->                  |
-	 |                                             |
-	 |      <- TURN [P2] --                        |
-	 |                                             |
-
+     |                                             |
+     |      <- TURN [P2] --                        |
+     |                                             |
 ```
 
 Similarly, if it the client's turn they can use it by swapping tiles.
 
 ```
      |      <- TURN [P1] --                        |
-	 |                                             |
+     |                                             |
      |      -- SWAP [TILES] -->                    |
-	 |                                             |
-	 |      <- TURN [P2] --                        |
-	 |                                             |
+     |                                             |
+     |      <- TURN [P2] --                        |
+     |                                             |
 ```
 
 Finally, if it is the clients turn they can ask for hints.
 
 ```
      |      <- TURN [P1] --                        |
-	 |                                             |
+     |                                             |
      |      -- HINT -->                            |
-	 |                                             |
-	 |      <- HINT [HINTS] --                     |
-	 |                                             |
+     |                                             |
+     |      <- HINT [HINTS] --                     |
+     |                                             |
 ```
 
 Whenever the client is expecting the `TURN` message it could
