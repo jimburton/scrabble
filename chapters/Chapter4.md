@@ -163,7 +163,7 @@ being calculated, such as the score. Some things to note:
   to the `(<&>)` operator from `Data.Functor`.  This operator is the
   same as `(<$>)` but with the order of the arguments reversed:
   
-  ```
+  ```haskell
   (<&>) :: Functor f => f a -> (a -> b) -> f b 
   ```  
   So it takes a functor (the game, wrapped up in the `Evaluator`
@@ -175,7 +175,7 @@ being calculated, such as the score. Some things to note:
   which is turned on at the top of the module and added to the `cabal`
   file. We could always have written this part of the code like this:
   
-  ```
+  ```haskell
   >>= checkEndOfGame >>= \g' -> pure (g',(map wordPutToWord (w:aw),sc))
   ```
  
