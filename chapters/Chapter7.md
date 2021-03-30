@@ -10,7 +10,23 @@ game, moves and so on. In this way the library is fully decoupled from
 clients, and we demonstrate this by writing a web-based client using
 HTML, CSS and Javascript.
 
-**SOURCE TREE**
+```
+web/
+├── client
+│   ├── html
+│   │   ├── favicon.ico
+│   │   ├── index.html
+│   │   ├── main.js
+│   │   ├── style.css
+│   │   └── tile.jpeg
+│   └── Main.hs
+└── server
+    ├── Main.hs
+    └── ScrabbleWeb
+        ├── Announce.hs
+        ├── Game.hs
+        └── Types.hs
+```
 
 ## Serving websockets
 
