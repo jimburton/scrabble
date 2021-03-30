@@ -163,7 +163,7 @@ being calculated, such as the score. Some things to note:
   to the `(<&>)` operator from `Data.Functor`.  This operator is the
   same as `(<$>)` but with the order of the arguments reversed:
   
-  ```haskell
+  ```
  (<&>) :: Functor f => f a -> (a -> b) -> f b 
   ```
   
