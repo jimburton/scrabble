@@ -3,6 +3,7 @@ module Main
 
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
+import Test.QuickCheck
 
 import Test.Chapter1
   ( prop_updateSquare
@@ -20,7 +21,9 @@ import Test.Chapter4
   ( prop_pass
   , prop_swap
   , prop_move )
-  
+import Test.Chapter5
+  ( prop_AIGame )
+
 -- ============= Tests ================ --
 
 
@@ -40,5 +43,6 @@ tests = [ testProperty "updateSquare places a (pos,tile) on the board" prop_upda
         , testProperty "We can pass a move" prop_pass
         , testProperty "We can swap some tiles" prop_swap
         , testProperty "We can play a move" prop_move
+        , testProperty "We can start an AI game" (withMaxSuccess 10 prop_AIGame)
         ]
 
