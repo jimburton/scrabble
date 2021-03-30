@@ -13,12 +13,12 @@ import Data.List (isInfixOf)
 import Scrabble.Types
   ( Evaluator(..)
   , player1, rack, turn, bag
-  , Turn(..))
+  , Turn(..)
+  , MoveResult(..))
 import Scrabble.Game.Game
   ( pass
   , swap
   , move ) 
-import Scrabble.Board.Board (wordPutToWord)
 import Scrabble.Board.Pretty()
 import Scrabble.Game.Validation (valGameRules)  
 import Scrabble.Lang.Dict (englishDictionary)
@@ -59,8 +59,8 @@ prop_move = monadicIO $ do
   g   <- pick $ genGame gen d
   let wp = p1Word g
   case move valGameRules g wp [] of
-    Ev (Right (g',(ws,_))) -> do assert $ (g' ^. turn) == P2
-                                 assert $ wordPutToWord wp == head ws
-                                 assert $ length (g ^. bag) == length (g' ^. bag) + 7
+    Ev (Right (g',mr)) -> do assert $ (g' ^. turn) == P2
+                             assert $ wp == mrWord mr
+                             assert $ length (g ^. bag) == length (g' ^. bag) + 7
     Ev (Left _)  -> assert False
 
