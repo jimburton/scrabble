@@ -86,7 +86,7 @@ after the first move. The freedom of one of the positions with a tile
 on it is shown: `[(LeftD, 7), (RightD, 7)]`. In this case, all of the
 playable positions have the same freedom.
 	
-![](/images/freedoms0.png)
+<img src="/chapters/images/freedoms0.png" alt="Scrabble board" width="500px" />
 	
 Note that it would be possible to make a legal move by extending the
 word with a prefix or suffix.  For instance, playing tiles to make the
@@ -95,7 +95,7 @@ word to make `BEFOULED`. The AI currently makes no attempt to do
 this. Nor does it try to get a high score! We will talk about these
 optimisations at the end of the chapter
 	
-![](/images/freedoms1.png)
+<img src="/chapters/images/freedoms1.png" alt="Scrabble board" width="500px" />
 	
 The figure above shows what happens after more tiles are placed on the
 board. Several freedoms have been removed (too many, in fact -- see
