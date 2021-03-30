@@ -339,7 +339,7 @@ a list of `Maybes`, each of which is `Nothing` or the longest word playable at a
 We filter the `Nothing` values and find the longest word in the list, if there is one. 
 
 There is a lot happening in the `findWord` function. Try to read and understand its
-constituent parts -- the top level of `findWord`, the inner function `findWord'` and
+constituent parts -- the top level, the inner function `findWord'` and
 the helper function `maxWd` -- one at a time.
 
 ```haskell
@@ -375,7 +375,7 @@ writing the `moveAI` function we uncover a discrepancy with the way
 `(Game, ([Word],Int))` in the `Evaluator` monad, where the list of
 words is the word played and all additional words and the int is the
 score. This won't quite do for the AI version. We need to return the
-word to play as a `WordPut`, so we know where to put it. Although we
+`WordPut` tp play so we know where to put it. Although we
 haven't handled blanks yet, when we do we will need to know which positions
 in the word were originally blank, so we will have to return a list of indices
 too. Taking the updated game and the score into account, this is an awful lot 
@@ -449,7 +449,7 @@ newGame1P pName theGen d =
     g
 ```
 	
-## Work in progress
+## Strategies for better AI
 
 The AI would be much more effective if it were more flexible about
 choosing where to play. At the moment it can only play perpendicular
@@ -463,6 +463,11 @@ more of a fight by searching for the best move, but smarter strategies
 would be needed to do this in reasonable time. These strategies could
 include trying to make words using high value tiles and which are
 placed on bonus tiles.
+
+To really improve the AI, my starting point would be the existing
+literature on AI Scrabble. People have been designing and improving
+algorithms for playing Scrabble for many decades. For example, 
+[Appel and Jacobson 1988](http://www.cs.cmu.edu/afs/cs/academic/class/15451-s06/www/lectures/scrabble.pdf). 
 
 ## In the REPL
 
@@ -542,6 +547,13 @@ The Ai played the word ALEPH. At least that's a beginning :-)
 
 ## Tests
 
-TODO
+Our last test for the library is one that trie to start a new AI game and play a couple
+of moves. Because the AI has to think of a word, it could take too long to run this for the
+default number of `QuickCheck` tests each time (100), so we wrap the call to the test in
+the `withMaxSuccess` function.
+
+```haskell
+testProperty "We can start an AI game" (withMaxSuccess 10 prop_AIGame)
+```
  
 [Contents](../README.md) | [Chapter Six](Chapter6.md)

@@ -7,6 +7,7 @@ module Test.Gen
   , genWordPutStart
   , genWordPut
   , genGame
+  , genGameAI
   , p1Word )
   where
 
@@ -14,7 +15,7 @@ import Test.QuickCheck
 import Test.QuickCheck.Gen (Gen)
 import qualified Data.Text as T
 import Data.Text (Text)
-import System.Random (getStdGen, StdGen)
+import System.Random (StdGen)
 import Data.Bifunctor (first)
 import Lens.Simple ((^.))
 import Scrabble.Types
@@ -26,10 +27,10 @@ import Scrabble.Types
   , Dir(..)
   , Dict
   , WordPut )
-import Scrabble.Lang.Dict (englishDictionary)
 import Scrabble.Lang.Word (wordToText)
 import Scrabble.Lang.Letter (scoreLetter)
 import Scrabble.Game.Game (newGame)
+import Scrabble.Game.AI (newGame1P)
 import Scrabble.Board.Board
   ( incCol
   , incRow
@@ -94,6 +95,13 @@ genGame g d = do
   n1 <- arbitraryPrintableText
   n2 <- arbitraryPrintableText
   pure (newGame n1 n2 g d)
+
+-- | Generate an arbitrary game.
+genGameAI :: StdGen -> Dict -> Gen Game
+genGameAI g d = do
+  n <- arbitraryPrintableText
+  pure (newGame1P n g d)
+
 
 -- | Make a @WordPut@ from Player 1's rack.
 p1Word :: Game -> WordPut
