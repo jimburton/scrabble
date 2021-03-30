@@ -225,4 +225,35 @@ given hostname and port.
 
 ## Conclusion
 
+From our initial datatypes that modelled the basic idea of letters on
+a board to a webservice that provides a decoupled concurrent API to
+our library, we've come a long way. If you've studied the code and
+worked on the exercises youhave been introduced to a number of
+widely-used language extensions and modern idiomatic approaches based
+on libraries like `aeson` and `lens-simple`.
+
+The purpose of the book has not really been to explain how to
+implement Scrabble in Haskell, but to talk you through the entire
+design and implementation of a medium-sized project using best
+practices. Getting the hang of that involves developing skills at many
+different levels: you need an eye for detail, taking advantage of the
+strengths of the Haskell language to write code that is both elegant
+and correct, and an eye for broader issues of software design,
+designing APIs that expose just the right functionality and are nice
+to use, protocols that determine communication between remote
+components of an application, and so on. It is sometimes said that the
+main thing someone needs to be a good programmer is the capacity to
+jump between levels of abstraction and to be able to hold the
+requirements of the different levels in their head simulateneously.
+
+The only way to learn these skills is by practising them, which means
+writing a lot of code. It's a continuous process, and one of the great
+things about being a programmer is that you never stop learning. Every
+now and then you "level up" -- some concept or technique that you were
+aware of but never really understood suddenly becomes clear, and seems
+so simple that you wonder how anyone could fail to see the usefulness
+of it. This is particularly true if you're using Haskell! I hope that
+this book might provide a levelling-up moment for some reader on the 
+way to understanding functional problem solving and design.
+
 [Contents](../README.md) 
