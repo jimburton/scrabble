@@ -193,10 +193,12 @@ Each lens has a type similar to this one for the `_name` field of `Player`:
 name  :: Lens' Player Text
 ```
 
-The first type parameter to `Lens'` is the type of the record, the second is the name of the field.
-The `Lens'` type is a very crafty type synonym that allows us to use different functors depending
-on whether we want to get or set fields. It speaks to the power of Haskell's type system that this
-is even possible (in most languages, it isn't).
+The first type parameter to `Lens'` is the type of the record, the
+second is the name of the field.  The `Lens'` type is a very crafty
+type synonym that allows us to use different functors depending on
+whether we want to get or set fields. It speaks to the power and
+flexibility of Haskell's type system that this is even possible (in
+most languages, it isn't).
 
 ```haskell
 type Lens' s a = forall f. Functor f => (a -> f a) -> s -> f s
