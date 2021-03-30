@@ -1,4 +1,4 @@
-# Chapter Seven: Configuration and conclusions
+# Chapter Eight: Configuration and conclusions
 
 The code for this chapter corresponds to the `main` branch.
 
