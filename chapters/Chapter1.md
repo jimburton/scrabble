@@ -42,6 +42,98 @@ each chapter you should check out the corresponding branch and study
 the code. There are exercises at the end of each chapter which expect
 you to be working on the code from the right branch.
 
+## Having a quick game
+
+First of all, try out the game. There are two front ends, each of which allows you
+to play against the computer or against another person. Start a game
+in the terminal like this:
+
+```
+$ cabal run scrabble
+Enter 1P or 2P
+1p
+Enter name of player
+bob
+
+**********************************************
+bob (0)
+O, E, O, H, N, N, E
+1, 1, 1, 4, 1, 1, 1
+**********************************************
+
+
+**********************************************
+Haskell (0)
+D, Z, B, L, I, A, _
+2, 10, 3, 1, 1, 1, 0
+**********************************************
+
+  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 7|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 8|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 9|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+10|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+------------------------------------------------
+
+
+**********************************************
+bob (0)
+O, E, O, H, N, N, E
+1, 1, 1, 4, 1, 1, 1
+**********************************************
+Enter WORD ROW COL DIR[H/V]:
+hone 7 7 v
+
+  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+------------------------------------------------
+ 0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+ 7|  |  |  |  |  |  |  | H|  |  |  |  |  |  |  |
+ 8|  |  |  |  |  |  |  | O|  |  |  |  |  |  |  |
+ 9|  |  |  |  |  |  |  | N|  |  |  |  |  |  |  |
+10|  |  |  |  |  |  |  | E|  |  |  |  |  |  |  |
+11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+------------------------------------------------
+
+14
+
+```
+
+To start a web-based game you need to start the server then start one
+or two clients. Start the server with `cabal run
+scrabble-server`. Then start the first client by opening
+`web/client/html/index.html` in a browser. Select the checkbox 
+for a one-player game or leave it unchecked and open the page again in another 
+tab for a two player game.
+
+<img src="/chapters/images/webgame.png" alt="Playing Scrabble on the web" width="500px" />
+
+If you want to run clients on a network, start the client server with
+`cabal run scrabble-client`. This serves the web client on 
+http://localhost:8000/index.html. To change the hostname, port, etc, see
+`/etc/scrabble.conf`.
+
+
 ## The project
 
 We're using `cabal` to manage the project. `cabal` deals in
