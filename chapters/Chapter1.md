@@ -239,6 +239,31 @@ errors because there is an entry in the map for every letter, so the
 function such as `fromJust` or `head`, ask yourself whether this is
 definitely safe to do.
 
+## Dealing with blanks
+
+When a blank tile is played, the player nominates a letter that the blank should
+stand for, and the blank tile keeps that value for the rest of the game. The blank
+contributes zero to the score.
+
+There are several ways we could deal with blanks in the game. We could
+store blanks on the board like normal tiles and keep a map of
+positions and letters (`Map Pos Letter`) to lookup the letters blanks
+stand for. We choose to store a `Tile` with the letter the blank
+stands for on the board, with its score set to zero. Clients will take
+care of interrogating players for the letters to use when they play a
+blank. 
+
+This approach has the advantage that after being played the tile is
+treated like any other. A disadvantage is that it means the code that
+plays moves will need an additional parameter, the indices of any
+letters in a word that were originally blanks (and so whose score
+should be set to zero). It also means that we have to store the whole
+tile -- the letter and its score -- on the board, rather than just
+storing the letter and looking up its score when we need it. But it
+means we don't need to check for and accomodate blanks on the board in
+a lot of code that we'll write later.
+
+
 ## The board
 
 A Scrabble board is a 15x15 matrix of rows and columns, so a natural way to
