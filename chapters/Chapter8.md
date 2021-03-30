@@ -243,7 +243,7 @@ designing APIs that expose just the right functionality and are nice
 to use, protocols that determine robust communication between remote
 components of an application, and so on. 
 
-It is sometimes said that the main things a preson needs to be a good
+It is sometimes said that the main things a person needs to be a good
 programmer are the capacity to jump eaily between levels of
 abstraction and the ability to keep the requirements of the different
 levels in their head simultaneously.
