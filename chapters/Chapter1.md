@@ -595,12 +595,12 @@ getDirection w = let r1 = fst $ fst $ head w
 ```
 
 Given an occupied position, if we know the direction we can find the
-beginning of the `WordPut` it is part of, the start of that WordPut
-retrieve the whole thing. To do so we need to transform positions by
-decrementing or incrementing rows and columns. Functions that do this
-will have the type `Pos -> Pos`, and we give an alias to that type,
-`PosTransform`. See `Scrabble.Board` for the `incRow`, `decRow`,
-`incCol` and `decCol` pos transforms.
+beginning of the `WordPut` it is part of. Given the start of that
+`WordPut` we can retrieve the whole thing. To do all this we need to
+transform positions by decrementing or incrementing rows and
+columns. Functions that do this will have the type `Pos -> Pos`, and
+we give an alias to that type, `PosTransform`. See `Scrabble.Board`
+for the `incRow`, `decRow`, `incCol` and `decCol` pos transforms.
 
 ```haskell
 -- in Scrabble.Types
