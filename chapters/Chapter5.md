@@ -92,8 +92,9 @@ Note that it would be possible to make a legal move by extending the
 word with a prefix or suffix.  For instance, playing tiles to make the
 word `FOULED`, or `BEFOUL` or even putting tiles before and after the
 word to make `BEFOULED`. The AI currently makes no attempt to do
-this. Nor does it try to get a high score! We will talk about these
-optimisations at the end of the chapter
+this. Nor does it try to make sure it gets the high possible score. As
+we will see, at the moment it just tries to play the longest word. We
+will talk about ways to improve this at the end of the chapter.
 	
 <img src="/chapters/images/freedoms1.png" alt="Scrabble board" width="500px" />
 	
