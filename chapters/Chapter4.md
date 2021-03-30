@@ -50,32 +50,39 @@ rackValue = sum . map scoreLetter
 
 -- in Scrabble.Game.Game
 
+-- | Ends the game and subtracts the tiles in each players rack from their score. If
+--   one player has used all of their tiles the value of the opponent's tiles is added
+--   to their score.
 endGame :: Game -> Evaluator Game
 endGame g = do
-  let r1v = rackValue (rack (player1 g))
-      r2v = rackValue (rack (player2 g))
-      p1s = (score (player1 g) - r1v) + r2v
-      p2s = (score (player2 g) - r2v) + r1v
-  pure g { player1 = (player1 g) { score = p1s }
-         , player2 = (player2 g) { score = p2s }
-         , gameOver = True }
-		 
+  let r1v = rackValue $ g ^. (player1 . rack)
+      r2v = rackValue $ g ^. (player2 . rack)
+      p1s = (g ^. (player1 . score) - r1v) + r2v
+      p2s = (g ^. (player2 . score) - r2v) + r1v
+  pure (g & player1 . score .~ p1s 
+         & player2 . score .~ p2s 
+         & gameOver .~ True )
+
+-- | Checks whether this game has ended because the bag and one
+--   of the racks are empty, and calls endGame if so.
 checkEndOfGame :: Game -> Evaluator Game
 checkEndOfGame g =
-  let eog = null (bag g) &&
-        (null (rack (player1 g)) || null (rack (player2 g))) in
+  let eog = null (g ^. bag) &&
+        (null (g ^. (player1 . rack)) || null (g ^. (player2 . rack))) in
   if eog
   then endGame g
   else pure g
 
-toggleTurn :: Game -> Evaluator Game
-toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
+-- | Toggle the turn in the game (between P1 and P2)
+toggleTurn :: Game -- ^ The game in which to toggle the turn
+           -> Evaluator Game
+toggleTurn g = pure (g & turn %~ \t -> if t == P1 then P2 else P1)
 
+-- | Take a move by passing.
 pass :: Game -> Evaluator Game
-pass g = if lastMovePass g
+pass g = if g ^. lastMovePass
          then endGame g
-         else toggleTurn g { lastMovePass = True } >>= checkEndOfGame
-
+         else toggleTurn (g & lastMovePass .~ True ) >>= checkEndOfGame
 ```
 ## Swapping tiles
 
@@ -86,22 +93,26 @@ the rack, then add the old tiles from the rack back to the bag. The
 and `lastMovePass`.
 
 ```haskell
+-- | Finishes a move that is not a pass by updating the firstMove and lastMovePass fields
+--   then toggling the turn.
 endNonPassMove :: Game -> Evaluator Game
-endNonPassMove g = toggleTurn $ g { firstMove = False, lastMovePass = False }
+endNonPassMove g = toggleTurn $ g & firstMove .~ False & lastMovePass .~ False 
 
-swap :: Word -> Game -> Evaluator Game
+-- | Take a move by swapping tiles.
+swap :: Word -- ^ The tiles to swap.
+     -> Game -- ^ The game.
+     -> Evaluator Game
 swap ls g = do
-  let p      = getPlayer g
-      r      = rack p
-      theBag = bag g
-      theGen = gen g
+  let p      = g ^. getPlayer g
+      r      = p ^. rack
+      theBag = g ^. bag
+      theGen = g ^. gen
   takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
-    >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
+    >>= \(r'', theBag', theGen') -> setPlayer g (p & rack .~ r'')
     >>= endNonPassMove >>= checkEndOfGame
-    >>= \g' -> pure g' { bag = ls++theBag'
-                       , gen = theGen'
-                       , lastMovePass = False }
-
+    >>= \g' -> pure (g' & bag .~ (ls++theBag')
+                      & gen .~ theGen'
+                      & lastMovePass .~ False )
 ```
 
 ## Playing a move
