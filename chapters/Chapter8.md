@@ -243,10 +243,10 @@ designing APIs that expose just the right functionality and are nice
 to use, protocols that determine robust communication between remote
 components of an application, and so on. 
 
-It is sometimes said that the main thing someone needs to be a good
-programmer is the capacity to jump between levels of abstraction and
-to be able to hold the requirements of the different levels in their
-head simulateneously.
+It is sometimes said that the main things a preson needs to be a good
+programmer are the capacity to jump eaily between levels of
+abstraction and the ability to keep the requirements of the different
+levels in their head simultaneously.
 
 The only way to learn these skills is by practising them, which means
 writing a lot of code. It's a continuous process, and one of the great
