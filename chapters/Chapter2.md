@@ -220,7 +220,7 @@ name :: Lens' Player Text
 name = lens getName setName
 ```
 But doing this for every field is a lot of boilerplate code -- typing with no 
-real thought required. As we'll see we can get tools to do for us.
+real thought required. As we'll see we can get tools to do it for us.
 
 We are going to use the `Lens.Simple` library, so we add it to the
 cabal dependencies. Rather than defining our own lenses for each field
