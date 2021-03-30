@@ -164,7 +164,7 @@ whether it touches another word, and whether the tile are available
 of these function calls will return an `Either String a` and we may
 find ourselves doing a lot of case statements and pattern matching on
 `Either` values. A function that puts together the various ways we
-migh validate move could look like this:
+can validate move could look like this:
 	
 ```
 -- in Scrabble.Board.Validation
