@@ -385,7 +385,7 @@ refactor the `move` function to return the same type.
 
 ```haskell
 data MoveResult = MoveResult { mvWord :: WordPut
-	                         , mvAdditionalWords :: [Word]
+                             , mvAdditionalWords :: [Word]
                              , mvBlanks          :: [Int]
                              , mvScore           :: Int
                              }
