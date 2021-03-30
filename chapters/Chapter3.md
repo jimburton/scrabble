@@ -237,6 +237,7 @@ instance Applicative Evaluator where
   Ev (Right f)  <*>  r  =  fmap f r    -- keep going
 
 instance Monad Evaluator where
+    -- (>>=) :: m a -> (a -> m b) -> m b
     (Ev ev) >>= k =
         case ev of
           Left msg -> Ev (Left msg) -- report the error
