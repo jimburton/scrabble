@@ -1,4 +1,4 @@
-# Chapter Six: The scrabble server
+# Chapter Seven: The scrabble server
 
 [Contents](../README.md)
 
