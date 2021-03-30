@@ -292,7 +292,7 @@ ones like `connects` into larger ones like `validateMove` that check
 several things. Functions at the top level can run an evaluator then
 unpack the result in a single case statement to see if all went well
 or, if not, exactly what went wrong.
-								 
+				
 ## Checking words in the dictionary
 
 We have already seen how to check that a word is in the dictionary
