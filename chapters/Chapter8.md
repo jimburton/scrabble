@@ -226,7 +226,7 @@ given hostname and port.
 ## Conclusion
 
 From our initial datatypes that modelled the basic idea of letters on
-a board to a webservice that provides a decoupled concurrent API to
+a board, to a webservice that provides a decoupled concurrent API to
 our library, we've come a long way. If you've studied the code and
 worked on the exercises youhave been introduced to a number of
 widely-used language extensions and modern idiomatic approaches based
