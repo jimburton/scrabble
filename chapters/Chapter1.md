@@ -333,7 +333,7 @@ contributes zero to the score.
 
 There are several ways we could deal with blanks in the game. We could
 store blanks on the board like normal tiles and keep a map of
-positions and letters (`Map Pos Letter`) to lookup the letters blanks
+positions and letters (`Map Pos Letter`) to look up the letters blanks
 stand for. We choose to store a `Tile` with the letter the blank
 stands for on the board, with its score set to zero. Clients will take
 care of interrogating players for the letters to use when they play a
@@ -351,7 +351,7 @@ on the board in a lot of code that we'll write later.
 
 A copy of the standard English Scrabble dictionary as a text file with
 one word per line is stored at `dict/en.txt`. It is a pretty big file, with
-more than 260,000 entries. Obviously we need to store this in a data
+more than 260,000 entries. It's critically important that we store this in a data
 structure which is as efficient as possible, especially when it comes to 
 being searched.
 

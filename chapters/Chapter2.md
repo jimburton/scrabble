@@ -8,8 +8,10 @@ this code is going into a new module, `Scrabble.Game`.
 
 We introduce two record types, `Player` and `Game`, that play a very
 important part in managing the state of games. The types themselves
-are simple, but we need to take a bit of a digression to explain the
+are simple, but we need to take a couple of digressions to explain the
 way we will working with them.
+
+## `Text` and overloaded strings
 
 The name of each player is stored as `Data.Text` rather than
 `String`. Wherever possible, when we need to store some text we will
