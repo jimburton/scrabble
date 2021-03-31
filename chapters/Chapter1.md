@@ -464,7 +464,8 @@ a lot of space but allows the flexibility in searching that we
 need. The [trie](https://en.wikipedia.org/wiki/Trie) allows us to find
 a word and all of its prefixes very quickly (in `O(m)` time, where `m`
 is the length of the word -- i.e. independently of `n`, the size of
-the dictionary). 
+the dictionary). The name is usually pronounced like *try*, to distinguish
+them from regular trees.
 
 Other good options for storing a dictionary of words include the
 Suffix Tree and Directed Acyclic Word Graph. Both of these use less
