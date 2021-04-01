@@ -42,98 +42,6 @@ each chapter you should check out the corresponding branch and study
 the code. There are exercises at the end of each chapter which expect
 you to be working on the code from the right branch.
 
-## Having a quick game
-
-First of all, try out the game. There are two front ends, each of which allows you
-to play against the computer or against another person. Start a game
-in the terminal like this:
-
-```
-$ cabal run scrabble
-Enter 1P or 2P
-1p
-Enter name of player
-bob
-
-**********************************************
-bob (0)
-O, E, O, H, N, N, E
-1, 1, 1, 4, 1, 1, 1
-**********************************************
-
-
-**********************************************
-Haskell (0)
-D, Z, B, L, I, A, _
-2, 10, 3, 1, 1, 1, 0
-**********************************************
-
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 7|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 8|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 9|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-10|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-------------------------------------------------
-
-
-**********************************************
-bob (0)
-O, E, O, H, N, N, E
-1, 1, 1, 4, 1, 1, 1
-**********************************************
-Enter WORD ROW COL DIR[H/V]:
-hone 7 7 v
-
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
-------------------------------------------------
- 0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 1|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 2|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 3|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 4|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 5|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 6|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
- 7|  |  |  |  |  |  |  | H|  |  |  |  |  |  |  |
- 8|  |  |  |  |  |  |  | O|  |  |  |  |  |  |  |
- 9|  |  |  |  |  |  |  | N|  |  |  |  |  |  |  |
-10|  |  |  |  |  |  |  | E|  |  |  |  |  |  |  |
-11|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-12|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-13|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-14|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-------------------------------------------------
-
-14
-
-```
-
-To start a web-based game you need to start the server then start one
-or two clients. Start the server with `cabal run
-scrabble-server`. Then start the first client by opening
-`web/client/html/index.html` in a browser. Select the checkbox 
-for a one-player game or leave it unchecked and open the page again in another 
-tab for a two player game.
-
-<img src="/chapters/images/webgame.png" alt="Playing Scrabble on the web" width="500px" />
-
-If you want to run clients on a network, start the client server with
-`cabal run scrabble-client`. This serves the web client on 
-http://localhost:8000/index.html. To change the hostname, port, etc, see
-`/etc/scrabble.conf`.
-
-
 ## The project
 
 We're using `cabal` to manage the project. `cabal` deals in
@@ -285,14 +193,12 @@ more efficient (`O(log n)`) lookup tables.
 
 Because it contains many functions whose names clash with those of
 functions in the `Prelude`, like `filter` and `map`, `Data.Map` is
-normally imported with a qualified name (e.g. `Map`), then import
-just the name of the main type directly for convenience:
+normally imported with a qualified name (e.g. `Map`) like this:
 
 ```haskell
 import qualified Data.Map as Map
-import Data.Map (Map)
 ```
-Since `Data.Map` isn't in the `Prelude` we need to tell `cabal` where
+Since `Data.Map` isn't in the `Prelude`, we need to tell `cabal` where
 to find it. If we try to import it without doing anything else, `cabal` 
 will prompt us to add the package that includes it, `containers`, to 
 the `build-depends` section of the `cabal` file. We will do that, 
@@ -305,7 +211,6 @@ you need on hackage and check which package it is part of.
 -- in Scrabble.Board
 
 import qualified Data.Map as Map
-import Data.Map (Map)
 
 -- lookup table for the score of a letter. Not exported.
 letterToScoreList :: [(Letter,Int)]
@@ -422,13 +327,13 @@ bonusMap = Map.fromList bonusSquaresList
 
 ## Dealing with blanks
 
-When a blank tile is played the player nominates a letter that the blank should
-stand for and it keeps that value for the rest of the game. The blank
+When a blank tile is played, the player nominates a letter that the blank should
+stand for, and the blank tile keeps that value for the rest of the game. The blank
 contributes zero to the score.
 
 There are several ways we could deal with blanks in the game. We could
 store blanks on the board like normal tiles and keep a map of
-positions and letters (`Map Pos Letter`) to look up the letters blanks
+positions and letters (`Map Pos Letter`) to lookup the letters blanks
 stand for. We choose to store a `Tile` with the letter the blank
 stands for on the board, with its score set to zero. Clients will take
 care of interrogating players for the letters to use when they play a
@@ -446,7 +351,7 @@ on the board in a lot of code that we'll write later.
 
 A copy of the standard English Scrabble dictionary as a text file with
 one word per line is stored at `dict/en.txt`. It is a pretty big file, with
-more than 260,000 entries. It's critically important that we store this in a data
+more than 260,000 entries. Obviously we need to store this in a data
 structure which is as efficient as possible, especially when it comes to 
 being searched.
 
@@ -464,8 +369,7 @@ a lot of space but allows the flexibility in searching that we
 need. The [trie](https://en.wikipedia.org/wiki/Trie) allows us to find
 a word and all of its prefixes very quickly (in `O(m)` time, where `m`
 is the length of the word -- i.e. independently of `n`, the size of
-the dictionary). The name is usually pronounced like *try*, to distinguish
-them from regular trees.
+the dictionary). 
 
 Other good options for storing a dictionary of words include the
 Suffix Tree and Directed Acyclic Word Graph. Both of these use less
@@ -596,12 +500,12 @@ getDirection w = let r1 = fst $ fst $ head w
 ```
 
 Given an occupied position, if we know the direction we can find the
-beginning of the `WordPut` it is part of. Given the start of that
-`WordPut` we can retrieve the whole thing. To do all this we need to
-transform positions by decrementing or incrementing rows and
-columns. Functions that do this will have the type `Pos -> Pos`, and
-we give an alias to that type, `PosTransform`. See `Scrabble.Board`
-for the `incRow`, `decRow`, `incCol` and `decCol` pos transforms.
+beginning of the `WordPut` it is part of, the start of that WordPut
+retrieve the whole thing. To do so we need to transform positions by
+decrementing or incrementing rows and columns. Functions that do this
+will have the type `Pos -> Pos`, and we give an alias to that type,
+`PosTransform`. See `Scrabble.Board` for the `incRow`, `decRow`,
+`incCol` and `decCol` pos transforms.
 
 ```haskell
 -- in Scrabble.Types
@@ -797,8 +701,9 @@ means that we specify some property that we want our functions to have and
 the library generates arbitrary input that checks whether the property
 holds.
 
-The `test-suite` stanza in the config file deptermines what tests should
-be run and how. It points to the file `tests/Main.hs` as the entry point.
+The `test-suite` stanza in the config file deptermines what tests
+should be run and how. It points to the file `tests/Main.hs` as the
+entry point. Run the tests with `cabal run test-scrabble`.
 
 ```
 tests/
@@ -826,10 +731,30 @@ genTile = do
   pure (l, scoreLetter l)
 ```
 
-Tests that use these generators are in `Test.Chapter1`.
+Tests that use these generators are in `Test.Chapter1`. For instance,
+this test generates an arbitrary element of a `WordPut`, places it on the board
+then checks that it is there.
+
+```haskell
+-- | Test that using @updateSquare@ places one @WordPut@
+--   element on the board in the right place,
+prop_updateSquare :: Gen Bool 
+prop_updateSquare = do
+  (p,t) <- genWordPutElement
+  let b = updateSquare newBoard (p,t) 
+  pure $ Just t == b ! p
+```
 
 ## Exercises
 
-TODO
++ Write a function in the `Scrabble.Board` module that takes a
+  starting position, a direction and a list of letters then produces a
+  `WordPut`.
+
+  ```haskell
+  makeWordPut :: Pos -> Dir -> Word -> WordPut
+  ```
++ Write one or more tests for `makeWordPut` and add them to `Test.Chapter1`.
+  Make sure the test suite still runs 
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)
