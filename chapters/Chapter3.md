@@ -158,13 +158,13 @@ lettersAvailable w p b = if all available w
 ``` 
 
 So, we already have lots of things to check about the validity of a
-move. We need to check whether the word is on the board, is straight,
-whether it touches another word, and whether the tile are available
-(and we haven't even got onto checking the dictionary yet). Each
-of these function calls will return an `Either String a` and we may
-find ourselves doing a lot of case statements and pattern matching on
+move. We need to check whether the word is straight, whether it
+touches another word and whether the tile are available, and this is
+before we have even got onto checking the dictionary. Each of these
+function calls will return an `Either String a` and we may find
+ourselves doing a lot of case statements and pattern matching on
 `Either` values. A function that puts together the various ways we
-can validate move could look like this:
+migh validate move could look like this:
 	
 ```
 -- in Scrabble.Board.Validation
@@ -237,7 +237,6 @@ instance Applicative Evaluator where
   Ev (Right f)  <*>  r  =  fmap f r    -- keep going
 
 instance Monad Evaluator where
-    -- (>>=) :: m a -> (a -> m b) -> m b
     (Ev ev) >>= k =
         case ev of
           Left msg -> Ev (Left msg) -- report the error
@@ -293,7 +292,7 @@ ones like `connects` into larger ones like `validateMove` that check
 several things. Functions at the top level can run an evaluator then
 unpack the result in a single case statement to see if all went well
 or, if not, exactly what went wrong.
-								 
+				
 ## Checking words in the dictionary
 
 We have already seen how to check that a word is in the dictionary
@@ -435,9 +434,36 @@ within the game.
 ## Tests
 
 The tests from chapters one and two are refactored to work with the `Evaluator`
-type. We add a bunch of tests relating to validating words in `Test.Chapter3`.
+type. We add a series of tests relating to validating words in `Test.Chapter3`.
+At this stage the tests start to look nastily complex. This is because when we
+call functions in the `Evaluator` monad we have to unwrap the result by pattern
+matching. Here is the test for the `wordOnBoard` validator.
+
+```haskell
+-- | Test the @wordOnBoard@ validation.
+prop_wordOnBoard :: Property 
+prop_wordOnBoard = monadicIO $ do
+  gen <- liftIO getStdGen
+  d   <- liftIO englishDictionary
+  g   <- pick $ genGame gen d
+  let wp = p1Word g
+  case validateMove (g ^. board) (g ^. player1) wp True of
+    Ev (Right _) -> assert True
+    Ev (Left e)  -> do liftIO $ print e
+                       assert False
+  let e = makeWordPut (wordToText $ g ^. (player1 . rack)) (10,7) HZ []
+  case validateMove (g ^. board) (g ^. player1) e False of
+    Ev (Right _) -> assert False
+    Ev (Left _)  -> assert True
+```
 
 ## Exercises
+
++ Refactor the `straight` validator into two parts -- one called
+  `straight` that checks the tiles are placed horizontally or vertically, and
+  one called `continuous` that checks whether there are any gaps in the
+  placement of the tiles. In this way you can return more details when
+  something goes wrong.
  
 [Contents](../README.md) | [Chapter Four](Chapter4.md)
 
