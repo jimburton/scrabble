@@ -8,10 +8,8 @@ this code is going into a new module, `Scrabble.Game`.
 
 We introduce two record types, `Player` and `Game`, that play a very
 important part in managing the state of games. The types themselves
-are simple, but we need to take a couple of digressions to explain the
+are simple, but we need to take a bit of a digression to explain the
 way we will working with them.
-
-## `Text` and overloaded strings
 
 The name of each player is stored as `Data.Text` rather than
 `String`. Wherever possible, when we need to store some text we will
@@ -111,7 +109,7 @@ to increase the score of Player 1 by 10:
 ```
 
 Oof! Haskell is meant to be elegant...considering that in an OO
-language we could probably do something like `g.player1.score += 10`,
+language we could probably do something like `p.player1.score += 10`,
 this is very cumbersome. This is the problem that *lenses* overcome.
 
 Lenses are first class getters and setters for records (and tuples,
@@ -146,8 +144,8 @@ As we can see from the differences in their names, `score` and
 lenses. Give a record, `player`, with a field, `score`, we can get the
 value of `score` with `player ^. score` and set it to a new value,
 `x`, with `player & score .~ x`. The other main thing we want to do is
-to update the value of `score` by applying a function to it, say `foo`. This
-looks like this: `player & score %~ foo`.
+to update the value of `score` by applying a function to it, say `g`. This
+looks like this: `player & score %~ g`.
 
 The `(&)` operator is like `($)` but it takes its arguments in reverse
 order, so our original lens function,
@@ -193,12 +191,10 @@ Each lens has a type similar to this one for the `_name` field of `Player`:
 name  :: Lens' Player Text
 ```
 
-The first type parameter to `Lens'` is the type of the record, the
-second is the name of the field.  The `Lens'` type is a very crafty
-type synonym that allows us to use different functors depending on
-whether we want to get or set fields. It speaks to the power and
-flexibility of Haskell's type system that this is even possible (in
-most languages, it isn't).
+The first type parameter to `Lens'` is the type of the record, the second is the name of the field.
+The `Lens'` type is a very crafty type synonym that allows us to use different functors depending
+on whether we want to get or set fields. It speaks to the power of Haskell's type system that this
+is even possible (in most languages, it isn't).
 
 ```haskell
 type Lens' s a = forall f. Functor f => (a -> f a) -> s -> f s
@@ -222,7 +218,7 @@ name :: Lens' Player Text
 name = lens getName setName
 ```
 But doing this for every field is a lot of boilerplate code -- typing with no 
-real thought required. As we'll see we can get tools to do it for us.
+real thought required. As we'll see we can get tools to do for us.
 
 We are going to use the `Lens.Simple` library, so we add it to the
 cabal dependencies. Rather than defining our own lenses for each field
@@ -263,7 +259,7 @@ Haskell. This is the language extension that provides
 pragma `{-# LANGUAGE TemplateHaskell #-}` at the top of each file that
 has an expression like this in it, and add `TemplateHaskell` to the
 list of language extensions being used in the config file. When the
-code is compiled, a preprocessor runs and generates all the lens
+code is compiled, a preprocessor runs and generates all of those
 definitions for us. As a result there are lens functions defined with
 the name of each field, minus the underscores. We need to export these
 from the `Scrabble.Types` module and import them wherever they are
@@ -418,15 +414,42 @@ actually playing the game.
 
 ## Testing
 
-To test functions involving games we obviously need to create new
-(arbitrary) games. This involves `IO` because we need to supply a
-dictionary and a `StdGen` to the `newGame` function. As a result the
-tests in `Test.Chapter1` need to be rewritten to use functions from
-`Test.QuickCheck.Monadic` such as `monadicIO`. This allows us to run
-`IO` actions inside a `QuickCheck` test. The module `Test.Chapter2`
-adds some tests relating to bags and filling racks.
+To test functions involving games we obviously need to be able to
+create new (arbitrary) games. This involves `IO` because we need to
+supply a dictionary and a `StdGen` to the `newGame` function. For
+instance, the module `Test.Chapter2` adds some tests relating to bags
+and filling racks. As the `fillRack` function requires a `StdGen` as a
+parameter, so clearly this has to do some `IO`. We can achieve this 
+using functions from `Test.QuickCheck.Monadic` such as `monadicIO` then
+`liftIO` when we want to run an `IO` action.
 
+
+```haskell
+-- | Test that using @fillRack@ takes the tiles
+--   from the bag and puts them in the rack.
+prop_fillRack1 :: Property 
+prop_fillRack1 = monadicIO $ do
+  g <- liftIO getStdGen
+  let b = newBag
+      (r',b',_) = fillRack [] b g
+  assert $ (length r' == 7) && (length b' == length b - 7)
+
+```
 
 ## Exercises
+
++ In `Scrabble.Game`, write a function to return the lens for the
+  player whose turn it currently is. To make this type check you need
+  to add the Language pragma `Rank2Types` to the top of the file.
+
+  ```haskell
+  getPlayer :: Game -> Lens' Game Player
+  ```
++ Use `getPlayer` to write a function that uses lens operators to add
+  a value to the score of the current player.
+  
+  ```haskell
+  addToCurrentPlayerScore :: Game -> Int -> Game
+  ```
 
 [Contents](../README.md) | [Chapter Three](Chapter3.md)
