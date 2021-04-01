@@ -435,7 +435,7 @@ within the game.
 
 The tests from chapters one and two are refactored to work with the `Evaluator`
 type. We add a series of tests relating to validating words in `Test.Chapter3`.
-At this stage the tests start to look nastily complex. This is because when we
+At this stage the tests start to look more complex. This is because when we
 call functions in the `Evaluator` monad we have to unwrap the result by pattern
 matching. Here is the test for the `wordOnBoard` validator.
 
