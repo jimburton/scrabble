@@ -462,7 +462,6 @@ prop_wordOnBoard = monadicIO $ do
 + Refactor the `straight` validator into two parts -- one called
   `straight` that checks the tiles are placed horizontally or vertically, and
   one called `continuous` that checks whether there are any gaps in the
-  placement of the tiles. In this way you can return more details when
   something goes wrong.
  
 [Contents](../README.md) | [Chapter Four](Chapter4.md)
