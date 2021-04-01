@@ -701,8 +701,9 @@ means that we specify some property that we want our functions to have and
 the library generates arbitrary input that checks whether the property
 holds.
 
-The `test-suite` stanza in the config file deptermines what tests should
-be run and how. It points to the file `tests/Main.hs` as the entry point.
+The `test-suite` stanza in the config file deptermines what tests
+should be run and how. It points to the file `tests/Main.hs` as the
+entry point. Run the tests with `cabal run test-scrabble`.
 
 ```
 tests/
@@ -730,10 +731,30 @@ genTile = do
   pure (l, scoreLetter l)
 ```
 
-Tests that use these generators are in `Test.Chapter1`.
+Tests that use these generators are in `Test.Chapter1`. For instance,
+this test generates an arbitrary element of a `WordPut`, places it on the board
+then checks that it is there.
+
+```haskell
+-- | Test that using @updateSquare@ places one @WordPut@
+--   element on the board in the right place,
+prop_updateSquare :: Gen Bool 
+prop_updateSquare = do
+  (p,t) <- genWordPutElement
+  let b = updateSquare newBoard (p,t) 
+  pure $ Just t == b ! p
+```
 
 ## Exercises
 
-TODO
++ Write a function in the `Scrabble.Board` module that takes a
+  starting position, a direction and a list of letters then produces a
+  `WordPut`.
+
+  ```haskell
+  makeWordPut :: Pos -> Dir -> Word -> WordPut
+  ```
++ Write one or more tests for `makeWordPut` and add them to `Test.Chapter1`.
+  Make sure the test suite still runs 
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)
