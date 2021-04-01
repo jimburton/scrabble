@@ -414,15 +414,42 @@ actually playing the game.
 
 ## Testing
 
-To test functions involving games we obviously need to create new
-(arbitrary) games. This involves `IO` because we need to supply a
-dictionary and a `StdGen` to the `newGame` function. As a result the
-tests in `Test.Chapter1` need to be rewritten to use functions from
-`Test.QuickCheck.Monadic` such as `monadicIO`. This allows us to run
-`IO` actions inside a `QuickCheck` test. The module `Test.Chapter2`
-adds some tests relating to bags and filling racks.
+To test functions involving games we obviously need to be able to
+create new (arbitrary) games. This involves `IO` because we need to
+supply a dictionary and a `StdGen` to the `newGame` function. For
+instance, the module `Test.Chapter2` adds some tests relating to bags
+and filling racks. As the `fillRack` function requires a `StdGen` as a
+parameter, so clearly this has to do some `IO`. We can achieve this 
+using functions from `Test.QuickCheck.Monadic` such as `monadicIO` then
+`liftIO` when we want to run an `IO` action.
 
+
+```haskell
+-- | Test that using @fillRack@ takes the tiles
+--   from the bag and puts them in the rack.
+prop_fillRack1 :: Property 
+prop_fillRack1 = monadicIO $ do
+  g <- liftIO getStdGen
+  let b = newBag
+      (r',b',_) = fillRack [] b g
+  assert $ (length r' == 7) && (length b' == length b - 7)
+
+```
 
 ## Exercises
+
++ In `Scrabble.Game`, write a function to return the lens for the
+  player whose turn it currently is. To make this type check you need
+  to add the Language pragma `Rank2Types` to the top of the file.
+
+  ```haskell
+  getPlayer :: Game -> Lens' Game Player
+  ```
++ Use `getPlayer` to write a function that uses lens operators to add
+  a value to the score of the current player.
+  
+  ```haskell
+  addToCurrentPlayerScore :: Game -> Int -> Game
+  ```
 
 [Contents](../README.md) | [Chapter Three](Chapter3.md)

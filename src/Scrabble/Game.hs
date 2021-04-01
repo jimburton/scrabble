@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 {-|
 Module      : Scrabble.Game
 Description : Functions for playing a game of scrabble (for a human player).
@@ -14,19 +15,15 @@ module Scrabble.Game
 
 import System.Random
 import Prelude hiding (Word)
-import qualified Data.Map as Map
 import Data.Text (Text)
+import Lens.Simple ((^.),(&),(.~),(%~),Lens')
 import Scrabble.Types
   ( Game(..)
-  , lastMovePass
-  , gen
-  , bag
+  , turn, player1, player2
   , Turn(..)
-  , WordPut
   , Player(..)
-  , rack
-  , Dict
-  , Word )
+  , score
+  , Dict )
 import Scrabble.Board
   ( newBoard
   , updateBoard )

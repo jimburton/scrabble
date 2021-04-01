@@ -1,22 +1,8 @@
 module Main
     where
 
--- import Debug.Trace
-import Data.Array
-import Test.QuickCheck
 import Test.Framework
 import Test.Framework.Providers.QuickCheck2
-
-import Scrabble.Board
-  ( newBoard
-  , updateBoard
-  , updateSquare
-  , wordOnRow
-  , wordOnCol
-  , incCol
-  , incRow )
-import Scrabble.Dict (scoreLetter)
-import Scrabble.Types
 
 import Test.Chapter1
   ( prop_updateSquare
