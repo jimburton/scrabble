@@ -375,4 +375,6 @@ In the next chapter we'll make it possible to play against the computer.
 
 TODO
 
+## Exercises
+
 [Contents](../README.md) | [Chapter Five](Chapter5.md)
