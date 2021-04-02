@@ -542,6 +542,9 @@ The AI played the word ALEPH. At least that's a beginning :-)
 
 ## Tests
 
-TODO
+There is just one new test for this chapter. It checks that we can create an AI game and
+play the first two moves.
+
+## Exercises
  
 [Contents](../README.md) | [Chapter Six](Chapter6.md)

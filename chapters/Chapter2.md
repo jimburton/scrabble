@@ -414,13 +414,14 @@ actually playing the game.
 
 ## Testing
 
-To test functions involving games we obviously need to be able to
-create new (arbitrary) games. This involves `IO` because we need to
-supply a dictionary and a `StdGen` to the `newGame` function. For
-instance, the module `Test.Chapter2` adds some tests relating to bags
-and filling racks. As the `fillRack` function requires a `StdGen` as a
-parameter, so clearly this has to do some `IO`. We can achieve this 
-using functions from `Test.QuickCheck.Monadic` such as `monadicIO` then
+To test functions involving games we need to be able to create new
+(arbitrary) games. This involves `IO` because we need to supply a
+dictionary and a `StdGen` to the `newGame` function. 
+
+The module `Test.Chapter2` adds some tests relating to bags and
+filling racks. As the `fillRack` function requires a `StdGen` as a
+parameter, clearly this has to do some `IO`. We can achieve this using
+functions from `Test.QuickCheck.Monadic` such as `monadicIO` then
 `liftIO` when we want to run an `IO` action.
 
 

@@ -383,6 +383,28 @@ In the next chapter we'll make it possible to play against the computer.
 
 ## Tests
 
-TODO
+There are tests for the `swap`, `pass` and `move` functions in `Test.Chapter4`.
+
+## Exercises
+
++ When exploring code in the REPL we now frequently have to set up a
+  lot of supporting data such as `WordPut`s to use in move. Create a
+  module called `Scrabble.REPLHelpers` containing predefined `WordPut`
+  data and other helpfule values. Use the `MakeWordPut` function from
+  the earlier exercise to create a function
+  
+  ```haskell
+  wordPutStarting :: Pos -> Game -> WordPut
+  ```
+  
+  which creates a `WordPut` starting at the given position, in the
+  given direction and based on the contents of the current player's
+  rack. Any sequence of letters will do; it doesn't have to be a
+  dictionary word as we aren't checking words against the dictionary
+  in development.
++ Use the `wordPutStarting` function to create a tests that plays several 
+  moves by each player.
+
+
 
 [Contents](../README.md) | [Chapter Five](Chapter5.md)

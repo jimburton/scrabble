@@ -749,12 +749,12 @@ prop_updateSquare = do
 
 + Write a function in the `Scrabble.Board` module that takes a
   starting position, a direction and a list of letters then produces a
-  `WordPut`.
+  `WordPut`. Think about using the `PosTransform` functions.
 
   ```haskell
   makeWordPut :: Pos -> Dir -> Word -> WordPut
   ```
 + Write one or more tests for `makeWordPut` and add them to `Test.Chapter1`.
-  Make sure the test suite still runs 
+  Make sure the test suite still runs.
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)

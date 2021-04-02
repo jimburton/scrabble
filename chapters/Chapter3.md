@@ -463,6 +463,8 @@ prop_wordOnBoard = monadicIO $ do
   `straight` that checks the tiles are placed horizontally or vertically, and
   one called `continuous` that checks whether there are any gaps in the
   something goes wrong.
++ Change the tests so that if a `Left` value is returned you make sure the right
+  error message is being received.
  
 [Contents](../README.md) | [Chapter Four](Chapter4.md)
 
