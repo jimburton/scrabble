@@ -3,12 +3,15 @@
 [Contents](../README.md)
 
 Now we can move on to think about **players** and the **game**
-itself. A player has a **name**, a **rack** and a **score**. Most of
-this code is going into a new module, `Scrabble.Game`.
+itself. A player has a **name**, a **rack**, a **score** and might
+be an **AI** player. A game will have two players, a **board**, a 
+`StdGem` for pseudo-random requirements, and several Boolean fields 
+to keep track of the progress of the game. Most of this code is going 
+into a new module, `Scrabble.Game`.
 
-We introduce two record types, `Player` and `Game`, that play a very
-important part in managing the state of games. The types themselves
-are simple, but we need to take a bit of a digression to explain the
+We introduce two record types, `Player` and `Game`, that embody 
+everything we need to know to manage the state of games. The types themselves
+are simple but we need to take a bit of a digression to explain the
 way we will working with them.
 
 The name of each player is stored as `Data.Text` rather than
