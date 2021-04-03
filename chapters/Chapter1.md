@@ -184,7 +184,7 @@ type Tile = (Letter,Int)
 We will need to know a number of things about letters:
 
 + the score of each letter,
-+ how many of each letter should be in a full bag, and
++ how many tiles bearing each letter should be in a full bag, and
 + the `Char` value for printing.
 
 We will store this data in *maps*, using the `Data.Map` API. We could
