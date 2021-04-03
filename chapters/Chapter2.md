@@ -147,8 +147,8 @@ As we can see from the differences in their names, `score` and
 lenses. Give a record, `player`, with a field, `score`, we can get the
 value of `score` with `player ^. score` and set it to a new value,
 `x`, with `player & score .~ x`. The other main thing we want to do is
-to update the value of `score` by applying a function to it, say `g`. This
-looks like this: `player & score %~ g`.
+to update the value of `score` by applying a function to it, say `foo`. This
+looks like this: `player & score %~ foo`.
 
 The `(&)` operator is like `($)` but it takes its arguments in reverse
 order, so our original lens function,
