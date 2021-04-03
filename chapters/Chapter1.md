@@ -16,9 +16,9 @@ There is a notoriously big gap between learning the basics of Haskell
 listed above, which mostly means a lot of fiddling about with lists,
 and finding yourself making useful, nicely written and idiomatic
 software with Haskell. For beginners the language can seem academic
-and removed from the tasks we normally want to achieve with
+and far removed from the tasks we normally want to achieve with
 programming languages. When they look at Haskell code in the wild it
-bears very little resemblance to their exercises.
+bears little resemblance to their exercises.
 
 This book is meant to go some way towards filling that gap. By the end
 you'll have been introduced to some major and widely used libraries,
