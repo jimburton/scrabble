@@ -86,7 +86,7 @@ as the field.
 > let p = Player { _name = "Bob", _rack = [A, B, C, D, E, F, G], _score = 0}
 > _name p
 "Bob"
-> p { _name = "Alice", score = 42 }
+> p { _name = "Alice", _score = 42 }
 Player
     { _name = "Alice"
     , _rack =
