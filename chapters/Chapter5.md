@@ -146,6 +146,8 @@ opposite of the one in which the word was played. If a word was played horizonta
 we want to calculate the row freedom (above and below), and if *vice versa* the column freedom
 (to the left and right).
 
+TODO refactor below.
+
 ```haskell
 -- The playable space around an occupied position on the board.
 freedom :: Board  -- ^ The board.
@@ -162,7 +164,7 @@ freedom b p l d =
 Now we can map the `freedom` function over every position in a new `WordPut`.
 
 ```haskell
--- | The value of a Freedom
+-- | The size of a Freedom
 freeness :: Freedom -> Int
 freeness = snd
 
