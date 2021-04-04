@@ -1,4 +1,4 @@
-s# Chapter One: Getting started
+# Chapter One: Getting started
 
 [Contents](../README.md)
 
@@ -16,9 +16,9 @@ There is a notoriously big gap between learning the basics of Haskell
 listed above, which mostly means a lot of fiddling about with lists,
 and finding yourself making useful, nicely written and idiomatic
 software with Haskell. For beginners the language can seem academic
-and removed from the tasks we normally want to achieve with
+and far removed from the tasks we normally want to achieve with
 programming languages. When they look at Haskell code in the wild it
-bears very little resemblance to their exercises.
+bears little resemblance to their exercises.
 
 This book is meant to go some way towards filling that gap. By the end
 you'll have been introduced to some major and widely used libraries,
@@ -184,7 +184,7 @@ type Tile = (Letter,Int)
 We will need to know a number of things about letters:
 
 + the score of each letter,
-+ how many of each letter should be in a full bag, and
++ how many tiles bearing each letter should be in a full bag, and
 + the `Char` value for printing.
 
 We will store this data in *maps*, using the `Data.Map` API. We could
@@ -275,7 +275,7 @@ type Pos = (Int,Int)
 
 *Words* are lists of letters and both *racks* and *bags* are lists of tiles.
 Because the `Prelude` includes a type called `Word` we have a name clash here.
-We could call it `ScrabbleWord` or something like that, but it seems more 
+We could call our new type `ScrabbleWord` or something like that, but it seems more 
 convenient to keep the short name and hide the type in the `Prelude`, which
 we don't need anyway.
 
@@ -500,8 +500,8 @@ getDirection w = let r1 = fst $ fst $ head w
 ```
 
 Given an occupied position, if we know the direction we can find the
-beginning of the `WordPut` it is part of, the start of that WordPut
-retrieve the whole thing. To do so we need to transform positions by
+beginning of the `WordPut` it is part of. Given the start of a `WordPut`
+we can retrieve the whole thing. To do so we need to transform positions by
 decrementing or incrementing rows and columns. Functions that do this
 will have the type `Pos -> Pos`, and we give an alias to that type,
 `PosTransform`. See `Scrabble.Board` for the `incRow`, `decRow`,

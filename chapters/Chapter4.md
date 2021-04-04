@@ -118,7 +118,7 @@ swap ls g = do
 ## Playing a move
 
 Now we need to write a function that plays a word onto the board in
-the normal way. It will need a `Validator` to heck the move, a game,
+the normal way. It will need a `Validator` to check the move, a game,
 and a word to play. If all goes well it will return an updated game and a
 pair of a list of all new words and the score. Like the other ways of playing a
 move it will run in the `Evaluator` monad, so failure at any point is
@@ -141,11 +141,12 @@ each stage the game state is being updated or some other value is
 being calculated, such as the score. Some things to note:
 
 + Because the `Validator` is a parameter we can call `move` with
-  `valGameRules` only if we don't want to include a dictionary check,
+  `valGameRules` if we don't want to include a dictionary check,
   or `valGameRulesAndDict` to check everything.
 + To see how the score is calculated, study the functions `scoreWord`
   and `scoreWords` in `Scrabble.Board`. (*Disclaimer*: these functions
-  are unpleasantly messy, but this seems to be unavoidable.) 
+  are unpleasantly messy but this seems to be unavoidable, given the
+  algorithm for calculating the score.) 
   
   Every tile in a new word adds its face value multiplied by the
   letter-bonus of the square it is placed on, if any. Then the score
@@ -402,7 +403,7 @@ There are tests for the `swap`, `pass` and `move` functions in `Test.Chapter4`.
   rack. Any sequence of letters will do; it doesn't have to be a
   dictionary word as we aren't checking words against the dictionary
   in development.
-+ Use the `wordPutStarting` function to create a tests that plays several 
++ Use the `wordPutStarting` function to create a test that plays several 
   moves by each player.
 
 

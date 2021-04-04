@@ -143,8 +143,10 @@ colFreedom b (r,c) l =
 
 When a move is played, we only want to calculate the freedoms in one direction, the
 opposite of the one in which the word was played. If a word was played horizontally
-we want to calculate the row freedom (up and down), and if *vice versa* the column freedom
+we want to calculate the row freedom (above and below), and if *vice versa* the column freedom
 (to the left and right).
+
+TODO refactor below.
 
 ```haskell
 -- The playable space around an occupied position on the board.
@@ -162,7 +164,7 @@ freedom b p l d =
 Now we can map the `freedom` function over every position in a new `WordPut`.
 
 ```haskell
--- | The value of a Freedom
+-- | The size of a Freedom
 freeness :: Freedom -> Int
 freeness = snd
 
@@ -380,7 +382,7 @@ word to play as a `WordPut`, so we know where to put it. Although we
 haven't handled blanks yet, when we do we will need to know which positions
 in the word were originally blank, so we will have to return a list of indices
 too. Taking the updated game and the score into account, this is an awful lot 
-to pack into a tuple so for readability we'll make a Record type, `MoveResult`, and
+to pack into a tuple. For readability we'll make a Record type, `MoveResult`, and
 refactor the `move` function to return the same type.
 
 ```haskell
