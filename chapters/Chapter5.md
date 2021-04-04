@@ -546,5 +546,7 @@ There is just one new test for this chapter. It checks that we can create an AI 
 play the first two moves.
 
 ## Exercises
+
++ Complete the function `Scrabble.Lang.Search.wordPlaysT`.
  
 [Contents](../README.md) | [Chapter Six](Chapter6.md)
