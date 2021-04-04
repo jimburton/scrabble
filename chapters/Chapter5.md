@@ -143,7 +143,7 @@ colFreedom b (r,c) l =
 
 When a move is played, we only want to calculate the freedoms in one direction, the
 opposite of the one in which the word was played. If a word was played horizontally
-we want to calculate the row freedom (up and down), and if *vice versa* the column freedom
+we want to calculate the row freedom (above and below), and if *vice versa* the column freedom
 (to the left and right).
 
 ```haskell
