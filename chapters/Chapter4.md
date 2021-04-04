@@ -403,7 +403,7 @@ There are tests for the `swap`, `pass` and `move` functions in `Test.Chapter4`.
   rack. Any sequence of letters will do; it doesn't have to be a
   dictionary word as we aren't checking words against the dictionary
   in development.
-+ Use the `wordPutStarting` function to create a tests that plays several 
++ Use the `wordPutStarting` function to create a test that plays several 
   moves by each player.
 
 
