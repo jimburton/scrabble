@@ -77,15 +77,12 @@ freeness :: Freedom -> Int
 freeness = snd
 
 -- The playable spaces around an occupied position on the board.
-freedom :: Board  -- ^ The board.
+freedom :: Dir    -- ^ The direction of the word the letter is part of.
+        -> Board  -- ^ The board.
         -> Pos    -- ^ The pos.
         -> Letter -- ^ The letter on the pos.
-        -> Dir    -- ^ The direction of the word the letter is part of.
         -> (Pos, Letter, (Freedom, Freedom))
-freedom b p l d =
-  if d == HZ
-  then rowFreedom b p l 
-  else colFreedom b p l 
+freedom d = if d == HZ then rowFreedom else colFreedom
 
 -- The playable space above and below this position.
 rowFreedom :: Board        -- ^ The board.
@@ -120,7 +117,7 @@ freedomsFromWord :: WordPut -> Board -> [(Pos, Letter, (Freedom, Freedom))]
 freedomsFromWord w b =
   let d  = getDirection w in 
     filter (\(_,_,(n,s)) -> freeness n > 0 || freeness s > 0)
-    $ map (\(p,(l,_)) -> freedom b p l d) w
+    $ map (\(p,(l,_)) -> freedom d b p l) w
 
 -- Is this position on the board and unoccupied?
 canPlay :: Board -> Pos -> Bool
@@ -200,7 +197,7 @@ newTilesInMove b = length . newTiles b
 
 -- | The new tiles that are being played in a move.
 newTiles :: Board -> WordPut -> [(Pos, Tile)]
-newTiles b = filter (\(p,_) -> isNothing (getSquare b p))  
+newTiles b = filter (isNothing. getSquare b . fst)
 
 -- Retrieve the word that crosses this pos on the board
 wordFromSquare :: Board        -- ^ The board.

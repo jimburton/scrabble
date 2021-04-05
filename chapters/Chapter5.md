@@ -2,7 +2,7 @@
 
 [Contents](../README.md)
 
-In this chapter a basic AI is added so games can be played against
+In this chapter a basic AI is added so that games can be played against
 the computer. 
 
 Most of the code in this chapter will go into a new module
@@ -56,6 +56,8 @@ A `FreedomDir` is a direction on the board. A `Freedom` is a `FreedomDir`
 and a distance.
 
 ```haskell
+-- in Scrabble.Types
+
 data FreedomDir = UpD     -- ^ The Up direction.
                 | DownD   -- ^ The Down direction.
                 | LeftD   -- ^ The Left direction.
@@ -108,15 +110,13 @@ free space above and below it, or to the right and left of it, with
 these functions:
 
 ```haskell
+-- in Scrabble.Board.Internal
+
 -- Is this position on the board and unoccupied?
 canPlay :: Board -> Pos -> Bool
 canPlay b p = onBoard p && isNothing (getSquare b p)
 
 -- The playable space above and below this position.
-rowFreedom :: Board        -- ^ The board.
-           -> Pos          -- ^ The pos.
-           -> Letter       -- ^ The letter on the pos.
-           -> (Pos, Letter, (Freedom, Freedom))
 rowFreedom b (r,c) l =
   let mins = takeWhile (\p -> canPlay b p && (fst p == 0 || canPlay b (decRow p)))
              (iterate decRow (r,c))
@@ -146,19 +146,14 @@ opposite of the one in which the word was played. If a word was played horizonta
 we want to calculate the row freedom (above and below), and if *vice versa* the column freedom
 (to the left and right).
 
-TODO refactor below.
-
 ```haskell
--- The playable space around an occupied position on the board.
-freedom :: Board  -- ^ The board.
+-- The playable spaces around an occupied position on the board.
+freedom :: Dir    -- ^ The direction of the word the letter is part of.
+        -> Board  -- ^ The board.
         -> Pos    -- ^ The pos.
         -> Letter -- ^ The letter on the pos.
-        -> Dir    -- ^ The direction of the word the letter is part of.
         -> (Pos, Letter, (Freedom, Freedom))
-freedom b p l d =
-  if d == HZ
-  then rowFreedom b p l 
-  else colFreedom b p l 
+freedom d = if d == HZ then rowFreedom else colFreedom
 ```
 
 Now we can map the `freedom` function over every position in a new `WordPut`.
@@ -182,16 +177,28 @@ We write a function `updatePlayables`, which needs to be added to the
 chain of evaluations after `updateBoard` in the `move` function.
 
 ```haskell
-newTiles :: Board -> WordPut -> [(Pos, Tile)]
-newTiles b = filter (\(p,_) -> isNothing (getSquare b p))
+-- in Scrabble.Board.Internal
 
+-- | The new tiles that are being played in a move.
+newTiles :: Board -> WordPut -> [(Pos, Tile)]
+newTiles b = filter (isNothing. getSquare b . fst)
+
+-- | Are two positions adjacent vertically, horizontally or diagonally? 
 adjacent :: Pos -> Pos -> Bool
 adjacent (r1,c1) (r2,c2) = abs (r1-r2) <= 1 && abs (c1-c2) <= 1
 
+-- in Scrabble.Game.Internal
+
+-- | Update the list of playable positions on the board based on the placement
+--   of this word like so:
+--   + a horizontal word may add some playable positions to the board in the UpD and DownD directions,
+--   + a vertical word may add some playable positions to the board in the LeftD and RightD- directions,
+--   + a horizontal word may reduce the playability of positions in the same columns,
+--   + a vertical word may reduce the playability of positions in the same rows.
 updatePlayables :: WordPut -> Game -> Evaluator Game
 updatePlayables w g = do
-  let ps  = playable g
-      b   = board g
+  let ps  = g ^. playable
+      b   = g ^. board 
       nt  = newTiles b w
       ntp = map fst nt
       -- assuming any existing playable that is adjacent to the new word
@@ -199,26 +206,31 @@ updatePlayables w g = do
       ps' = Map.filterWithKey (\k _ -> not (any (adjacent k) ntp))  ps
       fs  = freedomsFromWord nt b
       f (u,p) = filter ((>0) . freeness) [u, p]
-      nps = foldl (\acc (p,l,(n,s)) -> Map.insert p (l,f (n,s)) acc) ps' fs
-  pure (g { playable = nps })
+      nps = foldl (\acc (p,l,(f1,f2)) -> Map.insert p (l,f (f1,f2)) acc) ps' fs
+  pure (g & playable .~ nps)
 ```
 
 ## Finding a word
 
 Now we know where the AI might be able to play a word, we need to pick
-a word based on the contents of the AI player's rack. To make things
-easier for ourselves, we won't consider blanks for now.
+a word based on the contents of the AI player's rack. 
 
-We'll start by finding all the words that can be made with a rack and
-that end with a given letter that isn't in the rack. We write
-functions to find all possible combinations of a rack. We start by
-finding the *powerset* of the letters, the set (or list, in this case)
-of all subsets (sublists). The function that does that, `powerSet`, is
-very concise! It makes use of the fact that the list type is a monad. 
-Read more about it at http://evan-tech.livejournal.com/220036.html, or
-just accept the fact that it works :-)
+To make things easier for ourselves, we won't consider blanks for now,
+and we will start with the simplest case: looking for words made from
+tiles in the AI player's rack plus one tile from the board, where that
+tile is the first or the last letter in the word.
+
+We need to write functions to find all possible combinations of a list
+of letters. We start by finding the *powerset* of the letters, the set
+(or list, in this case) of all subsets (sublists). The function that
+does that, `powerSet`, is very concise!  It makes use of the fact that
+the list type is a monad.  Read more about it at
+http://evan-tech.livejournal.com/220036.html, or just accept the fact
+that it works :-)
 
 ```haskell
+-- in Scrabble.Lang.Search
+
 -- Generate a power set.  The algorithm used here is from
 --   <http://evan-tech.livejournal.com/220036.html>.
 powerSet :: [a] -> [[a]]
@@ -392,27 +404,28 @@ data MoveResult = MoveResult { mvWord :: WordPut
                              , mvScore           :: Int
                              }
                              deriving (Show)
-				 
+
 -- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
 --   Validation of the word is carried out when finding the word.
 --   Sets the new board, updates the current player's score, refills their rack with letters, then
 --   toggles the current turn.
---   Returns the updated game and a MoveResult containing:
+--   Returns:
+--     + the updated game,
 --     + the word played,
 --     + additional words generated by the move,
 --     + the indices of any blanks played in the move, and
 --     + the score.
 moveAI :: Game      -- ^ The game.
-       -> Evaluator (Game, Move)
+       -> Evaluator (Game, MoveResult)
 moveAI g = do
-  let r  = rack (getPlayer g)
-      mw = findWord g (filter (/=Blank) r)
+  let r  = g ^. (getPlayer g . rack)
+      mw = findWord g (filter (/=Blank) r)  
   case mw of
-    Nothing -> pass g >>= \g' -> pure (g',([],[],[],0))
+    Nothing -> pass g >>= \g' -> pure (g', MoveResult [] [] [] 0)
     Just (w,aw)  -> scoreWords g w aw >>=
-                    \i -> setScore g { firstMove = False } i >>= updatePlayer w
+                    \i -> setScore (g & firstMove .~ False) i >>= updatePlayer w
                     >>= updatePlayables w >>= updateBoard w
-                    >>= toggleTurn <&> (,Move w (map wordPutToWord (w:aw)) [] i)
+                    >>= toggleTurn <&> (, MoveResult w (map wordPutToWord (w:aw)) [] i)
 ```
 
 Finally for the code in this chapter, we need to begin a new AI
@@ -450,22 +463,6 @@ newGame1P pName theGen d =
                 , lastMovePass = False } in
     g
 ```
-	
-## Work in progress
-
-The AI would be much more effective if it were more flexible about
-choosing where to play. At the moment it can only play perpendicular
-to an existing word.  It could play words that by adding letters to
-the beginning or end of existing ones, and could play words with the
-playable position somewhere in the middle. It could also be more
-careful about pruning playable positions.  In the example above the
-position `(7,7)` which has the letter 'F' on it *is* playable, but is
-currently removed from the list for simplicity. It could also put up
-more of a fight by searching for the best move, but smarter strategies
-would be needed to do this in reasonable time. These strategies could
-include trying to make words using high value tiles and which are
-placed on bonus tiles.
-
 ## In the REPL
 
 Let's have a go at playing against the computer.
@@ -483,8 +480,8 @@ Let's have a look at the players:
 ```
 > player1 g1
 Player
-    { name = "Bob"
-    , rack =
+    { _name = "Bob"
+    , _rack =
         [ L
         , N
         , A
@@ -493,13 +490,13 @@ Player
         , N
         , E
         ]
-    , score = 0
-    , isAI = False
+    , _score = 0
+    , _isAI = False
     }
 > player2 g1
 Player
-    { name = "Haskell"
-    , rack =
+    { _name = "Haskell"
+    , _rack =
         [ L
         , P
         , E
@@ -508,8 +505,8 @@ Player
         , R
         , V
         ]
-    , score = 0
-    , isAI = True
+    , _score = 0
+    , _isAI = True
     }
 ```
 
@@ -544,11 +541,31 @@ The AI played the word ALEPH. At least that's a beginning :-)
 
 ## Tests
 
-There is just one new test for this chapter. It checks that we can create an AI game and
-play the first two moves.
+There is just one new test for this chapter. It checks that we can
+create an AI game and play the first two moves. See `Test.Chapter5`.
 
 ## Exercises
 
-+ Complete the function `Scrabble.Lang.Search.wordPlaysT`.
++ The AI would be much more effective if it were more flexible about
+  choosing where to play. At the moment it can only play perpendicular
+  to an existing word.  It could play words that by adding letters to
+  the beginning or end of existing ones, and could play words with the
+  playable position somewhere in the middle. Complete the function
+  `Scrabble.Lang.Search.wordPlaysT` that does this. Add code to the
+  `findWord` function to include words of this type in the list of
+  possible words for a playable position.
+  
++ The AI could put up more of a fight by searching for the best move,
+  but smarter strategies would be needed to do this in reasonable
+  time. These strategies could include trying to make words using high
+  value tiles and which are placed on bonus tiles. Add a weighting to
+  the words returned by `findWord` that is based on the score of the
+  word.
+
++ The AI could also be more careful about pruning playable positions.
+  In the illustration given earlier in this chapter the position
+  `(7,7)` which has the letter 'F' on it *is* playable, but is
+  currently removed from the list for simplicity. Modify
+  `updatePlayables` to reflect this.
  
 [Contents](../README.md) | [Chapter Six](Chapter6.md)

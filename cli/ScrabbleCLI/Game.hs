@@ -33,8 +33,7 @@ import Scrabble.Types
   , name
   , score
   , Evaluator(..)
-  , Dir(..)
-  , MoveResult(..))
+  , Dir(..))
 import ScrabbleCLI.Out
   ( printBoard
   , printPlayer
@@ -87,7 +86,7 @@ takeTurn g msc = runInputT defaultSettings loop
 -- | Allow the computer to take a turn.
 takeTurnAI :: Game -> IO Game
 takeTurnAI g = case moveAI g of
-  Ev (Right (g',i)) -> takeTurn g' (Just (T.pack $ show i))
+  Ev (Right (g',mr)) -> takeTurn g' (Just (T.pack $ show mr))
   Ev (Left e)       -> do T.putStrLn e
                           pure g
 
@@ -121,7 +120,7 @@ takeTurnManual g = runInputT defaultSettings loop
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-               Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
+               Ev (Right (g',mr)) -> liftIO $ takeTurn g' (Just (T.pack $ show mr))
            
 
 -- | Handle the situation when the game ends.

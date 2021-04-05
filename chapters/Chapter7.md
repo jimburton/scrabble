@@ -3,12 +3,12 @@
 [Contents](../README.md)
 
 Going a step beyond writing clients in Haskell that import the library
-directly, in this chapter we develop a server for remote
-clients. These can be written in any language so long as they can
-reach the server, send JSON objects representing requests to join a
-game, moves and so on. In this way the library is fully decoupled from
-clients, and we demonstrate this by writing a web-based client using
-HTML, CSS and Javascript.
+directly, we now develop a server for *remote* clients. These can be
+written in any language so long as they can reach the server, send
+JSON objects representing requests to join a game, moves and so on. In
+this way the library is fully decoupled from clients, and we
+demonstrate this by writing a web-based client using HTML, CSS and
+Javascript.
 
 ```
 web/
@@ -33,14 +33,14 @@ web/
 We will write the server using *websockets*. This is a modern protocol
 that allows full duplex communications (either side can send a message
 at any time) over TCP between clients and servers on a network such as
-the web. It is designed with web browsers in mind and it's easy to
-communicate over websockets with Javascript, but we can write servers
-and clients in any language that has a library for the
+the web. It is designed with web browsers in mind. It's particularly
+easy to communicate over websockets with Javascript, but we can write
+servers and clients in any language that has a library for the
 protocol. Messages are normally sent back and forth over the standard
-HTTP or HTTPS ports, meaning that there aren't likely to be firewall
-issues. We'll run our server on a higher port during development, as
-you need admin privileges to attach to ports below 1024. The handshake
-between client and server starts with a HTTP request/response. After
+`HTTP` or `HTTPS` ports, meaning that there aren't likely to be firewall
+issues (we'll run our server on a higher port during development, as
+you need admin privileges to attach to ports below 1024). The handshake
+between client and server starts with a `HTTP` request/response. After
 that, communication switches to a much more efficient binary protocol.
 
 To demonstrate how easy it is to get started, here is a self-contained
@@ -117,28 +117,30 @@ Here is a client that runs in a browser.
 When the page is loaded the `connect` function runs. This creates a `WebSocket`
 object connected to the server. It uses the socket to create a `Client` object
 that defines event handlers for the lifecycle of the socket. The `onmessage`
-handler is called whenever a message comes in from the server. The form in the 
+handler is triggered whenever a message comes in from the server. The form in the 
 body of the page allows us to send messages to the server using `socket.send`.
 
-To write a server that allows users to play Scrabble, we can start with code like
-this. On the server side we need to replace `echo` with code that parses messages
-from the user and acts accordingly. Similarly, on the client side we need to add
-code to the `onmessage` handler that parses input from the server and uses it to 
-present the game.
+To write a server that allows users to play Scrabble, we can start
+with code like this. On the Haskell side (the server) we need to
+replace `echo` with code that parses messages from the user and acts
+accordingly. Similarly, on the Javascript side we need to add code to
+the `onmessage` handler that parses input from the server and uses it
+to present the game as a webpage.
 
 ## Serialising data
 
-The format we will use for the communication is JSON (Javascript
-Object Notation), which is nice and simple, human-readable and well
-supported in Javascript and Haskell. In fact, JSON is a subset of
-Javascript, so there's very little parsing to do on the client side. The
-parts of Javascript that are allowed in JSON are *numbers*, *strings*,
-*booleans*, *objects* (braces containing
-comma-separated key:value pairs, like `{"name":"James", "score": 42}`
-and *arrays* (comma-separated values within square brackets).
+Data sent over the network needs to be serialised. The format we will
+use for the communication is JSON (Javascript Object Notation). JSON
+is nice and simple, human-readable and well supported in Javascript
+and Haskell. In fact, JSON is a subset of Javascript so there's very
+little parsing to do on the client side. The parts of Javascript that
+are allowed in JSON are *numbers*, *strings*, *booleans*, *objects*
+(braces containing comma-separated key:value pairs, like
+`{"name":"James", "score": 42}` and *arrays* (comma-separated values
+within square brackets).
 
 We do have to turn Javascript objects into strings and back again
-though. We do this with `JSON.stringify` and `JSON.parse`.
+in the client though. We do this with `JSON.stringify` and `JSON.parse`.
 
 ```javascript
 // send a JSON object (an array of numbers) to the server
@@ -151,18 +153,19 @@ socket.onmessage = function (event) {
 }
 ```
 
-Thanks to the `aeson` library, it isn't that much more difficult on
+Thanks to the `aeson` library, life isn't that much more difficult on
 the Haskell side. `aeson` provides a powerful and neat way of converting
 Haskell values into JSON representations and back again. 
 
-Datatypes that need to be sent over the network are made into
-instances of the `ToJSON` and `FromJSON` typeclasses. We can do this
-ourselves by defining `encode` and `decode` functions for each type,
-but as we don't want to do anything special the instances can be
+Datatypes that need to be sent from the server to clients are made
+into instances of the `ToJSON` and `FromJSON` typeclasses. We can do
+this ourselves by defining `encode` and `decode` functions for each
+type, but as we don't want to do anything special the instances can be
 derived. In order to make this work we have to turn on two language
-extensions: `DeriveGeneric` and `DeriveAnyClass`. For each type we want
-to derive the `aeson` instances for, we also need to derive an instance
-of `Generic`, which is a typeclass the compiler uses internally. 
+extensions: `DeriveGeneric` and `DeriveAnyClass`. For each type we
+want to derive the `aeson` instances for, we also need to derive an
+instance of `Generic`, which is a typeclass the compiler uses
+internally.
 
 We will keep the data sent back and forth to an absolute
 minimum. There's no need to send entire boards, for instance. Clients

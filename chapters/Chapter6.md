@@ -2,17 +2,19 @@
 
 [Contents](../README.md)
 
-The first client is a terminal-based CLI (command line interface). It's probably
-true that nobody would want to play a multi-player game of Scrabble this way. You
-can see each other's tiles. But it does work well enough for a one-player game and
-above all else it's a straightforward way to understand the general problem
-of writing clients that use the library and provide a user interface. All the client
-needs to do is to print the board to the terminal, read keystrokes from the user and
-interact with the library.
+The first client is a terminal-based CLI (command line
+interface). It's probably true that nobody would want to play a
+two-player game of Scrabble this way -- you can see each other's
+tiles. But it does work well enough for a one-player game, and above
+all else it's a straightforward way to understand the general problem
+of writing clients that use the library and provide a user
+interface. All the CLI client needs to do is to read keystrokes from
+the user, interact with the library and print the board to the
+terminal.
 
-This code will live in a completely separate area to the library. We
-store it under the directory `cli/` and add an `executable` stanza to
-the config file. The `cli` directory contains these files:
+This code will live in a separate area to the library. We store it
+under the directory `cli/` and add an `executable` stanza to the
+config file. The `cli` directory contains these files:
 
 ```
 cli/
@@ -52,7 +54,6 @@ executable scrabble
                      , Scrabble.Board.Pretty
                      , Scrabble.Board.Validation
                      , Scrabble.Board.Internal
-  -- ghc-options: -Wall -Werror -fno-warn-name-shadowing
   ghc-options: -Wall -fno-warn-orphans
   build-depends:       base >=4.12 && <4.13
                      , random
@@ -102,16 +103,20 @@ doAIGame = do
   pStr <- T.getLine
   startGameAI pStr
 ```
-The main effort goes into `ScrabbleCLI.Game`. The other modules, `ScrabbleCLI.Blanks` and
+Most of the effort goes into `ScrabbleCLI.Game`. The other modules, `ScrabbleCLI.Blanks` and
 `ScrabbleCLI.Out`, handle blank tiles and output to the user respectively.
 
 ## Interacting with users to play the game
 
 `ScrabbleCLI.Game` contains the code that interacts with users: taking
 input that it tries to interpret as moves, passing that to the library
-and providing users with the response. The first thing we need is to
-be able to start a game. This is dealt with in two functions, each of
-which creates a new `Game` object then calls the `playGame` function.
+and providing users with the response. 
+
+The first thing we need is to be able to start a game. This is dealt
+with in two functions, each of which creates a new `Game` object then
+calls the `playGame` function. (The result of the `playGame` action is
+bound to the wildcard identifier `_` just to suppress the warning about
+its result, which is of type `IO Game`, being discarded.)
 
 
 ```haskell
@@ -129,14 +134,16 @@ startGameAI p1Name = do
   _ <- playGame (newGame1P p1Name theGen d)
   return ()
 ```
-The `playGame` function prints the details of the two players then passes the game
-to the `takeTurn` function. This is the top level of the loop that actually plays the game.
+The `playGame` action prints the details of the two players then passes the game
+to the `takeTurn` function. This is the top level of the loop that actually plays 
+the game.
 
 The `takeTurn` function prints the current state of the board then
 checks whether the game is over. If so, it prints the result. If not,
-it checks whose turn it is. If the current player is a human player,
-it calls the function that reads a move from the terminal. Otherwise,
-it calls the function that plays an AI move.
+it checks whether the player whose turn it is is an AI player. If the
+current player is a human it calls the function that reads a move from
+input. Otherwise, it calls the function that plays a move
+automatically.
 
 ```haskell
 -- | Take a turn.
@@ -161,7 +168,9 @@ entering a move -- otherwise we would have to type everything
 perfectly the first try. `haskeline` reads input from users into its
 own monadic type, `InputT`. Any time we want to run an `IO` action
 inside an `InputT` action we need to "lift" the `IO` action using 
-`liftIO` which has the type `MonadIO m => IO a -> m a`. 
+`liftIO` which has the type `MonadIO m => IO a -> m a`. `InputT` is
+an instance of `MonadIO`, which is the class of types in which `IO`
+actions can be embedded.
 
 The second argument to `takeTurn` is a `Maybe Text` that allows us to
 display an optional message to the user. Within the function the
@@ -198,12 +207,12 @@ the score to `takeTurn.
 -- | Allow the computer to take a turn.
 takeTurnAI :: Game -> IO Game
 takeTurnAI g = case moveAI g of
-  Ev (Right (g',i)) -> takeTurn g' (Just (T.pack $ show i))
+  Ev (Right (g',mr)) -> takeTurn g' (Just (T.pack $ show mr))
   Ev (Left e)       -> do T.putStrLn e
                           pure g
 ```
 
-That's it. The library takes care of everything.
+That's it. The library takes care of everything else.
 
 ## Taking a turn as the human player
 
@@ -243,16 +252,15 @@ takeTurnManual g = runInputT defaultSettings loop
              case move valGameRules g wp is of
                Ev (Left e) -> do liftIO $ T.putStrLn e
                                  liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-               Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
+               Ev (Right (g',mr)) -> liftIO $ takeTurn g' (Just (T.pack $ show mr))
 ```
 If the input begins with a colon (':'), it is treated as a
-"command". These are some builtin functions for the user that allow
-her to:
+"command". Commands are builtin functions that allow the user to:
 
-+ pass the move by entering :PASS
-+ swap some tiles by entering :SWAP <TILES>, e.g. :SWAP ABC
-+ print a help message by entering :HELP
-+ get a list of all words that can be made with her tiles by entering :HINT.
++ pass the move by entering `:PASS`
++ swap some tiles by entering `:SWAP <TILES>`, e.g. `:SWAP ABC`
++ print a help message by entering `:HELP`
++ get a list of all words that can be made with her tiles by entering `:HINT`.
 
 This is handled by a new datatype, `Cmd`, the `getCmd` function that parse the input, and 
 functions that handle swapping, passing, help and hints. After running the command, the 
@@ -306,34 +314,11 @@ doPass (g, mLn) = case pass g of
   Ev (Left e)   -> do T.putStrLn e
                       pure (g,mLn)
 ```
-The `help` function is work-in-progress. The hints function calls `findPrefixes`
-to find all of the words in the dictionary that can be made with the current
-player's rack.
+The hints function calls `findPrefixes` to find all of the words in the 
+dictionary that can be made with the current player's rack.
 
 ```haskell
--- | Print the help message.
---   TODO
-help :: IO ()
-help = T.putStrLn "Scrabble help: \n\
-                  \               \n\
-                  \ Choose a single player or two player game when the program starts. \n\
-                  \               \n\
-                  \ While the game is in play enter a move as \n\
-                  \               \n\
-                  \ WORD ROW COL DIR \n\
-                  \               \n\
-                  \ where WORD is a word made using tiles from your rack or on the board, \n\
-                  \ ROW and COL are numbers between 0 and 14 giving the position of the \n\
-                  \ first tile in the word, and DIR is either H (horizontal) or V (vertical). \n\
-                  \               \n \
-                  \ Alternatively, enter one of these commands: \n \
-                  \               \n \
-                  \ + :HINT gets a list of hints based on your rack, \n \
-                  \ + :SWAP prompts you for tiles from your rack to swap, \n \
-                  \ + :PASS passes your move \n \
-                  \ + :HELP shows this message. \n"
-
--- | Print some word suggestions based ont hte current player's rack.
+-- | Print some word suggestions based on the current player's rack.
 hints :: Game -> IO ()
 hints g = do
   let w = rack (getPlayer g) 
@@ -347,10 +332,11 @@ If the input didn't start with a colon, we expect it to be of the form
 WORD ROW COL DIR
 ```
 
-where WORD is a word made from the player's rack and tiles on the
-board, ROW and COL are numbers representing a row and a column
-respectively, and DIR is either H (horizontal) or V (vertical). Let's
-repeat this part of the `takeTurnManual`.
+where `WORD` is a word made from the player's rack and (after the
+first move) tiles on the board, `ROW` and `COL` are numbers
+representing a row and a column respectively, and `DIR` is either `H`
+(horizontal) or `V` (vertical). Let's repeat this part of the
+`takeTurnManual` to look at how this input is parsed.
 
 ```haskell
 (wd,is) <- liftIO $ replaceBlanks (head wds)
@@ -362,17 +348,19 @@ let [rowStr,colStr,dirStr] = tail $ words wdStr
 case move valGameRules g wp is of
   Ev (Left e) -> do liftIO $ T.putStrLn e
                     liftIO $ takeTurn g $ Just (T.pack wd  <> ": NO SCORE")
-  Ev (Right (g',mv)) -> liftIO $ takeTurn g' (Just (T.pack $ show (mrScore mv)))
+  Ev (Right (g',mr)) -> liftIO $ takeTurn g' (Just (T.pack $ show mr))
 ```
 
-First we replace any blanks that were in the WORD part of the input. This is done by interrogating
-the user and producing a list of pairs of replacements and their indices. This code is in
-`ScrabbleCLI.Blanks` and we won't go through it here. Then weparse the other parts of the input 
-with the `words` function, the `makeWordPut` function
-is used to create a `WordPut` from what we have, and the game and the `WordPut` are passed
-to the `move` function. Finally, the `Evaluator` result is pattern matched. As with `takeTurnAI`,
-we either print an error message and send the unchanged game to `takeTurn` loop, or send the
-new, updated game to `takeTurn`.
+First we replace any blanks that were in the `WORD` part of the
+input. This is done by interrogating the user and producing a list of
+pairs of replacements and their indices. This code is in
+`ScrabbleCLI.Blanks` and we won't go through it here. Then we select the
+other parts of the input with the `words` function, the `makeWordPut`
+function is used to create a `WordPut` from what we have, and the game
+and the `WordPut` are passed to the `move` function. Finally, the
+`Evaluator` result is pattern matched. As with `takeTurnAI`, we either
+print an error message and send the unchanged game to the `takeTurn` loop,
+or send the new, updated game to `takeTurn`.
 
 ## Running the game
 
@@ -480,8 +468,10 @@ cortile 7 7 v
 13|  |W2|  |  |  |L3|  | E|  |L3|  |  |  |W2|  |
 14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
 ------------------------------------------------
-70
-  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
+
+CORTILE 70
+
+| 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
 ------------------------------------------------
  0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
  1|  |W2|  |  |  |L3|  |  |  |L3|  |  |  |W2|  |
@@ -499,6 +489,8 @@ cortile 7 7 v
 13|  |W2|  |  |  |L3|  | E|  |L3|  |  |  |W2|  |
 14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
 ------------------------------------------------
+
+PUBIC 13
 
 **********************************************
 Bob (70)
@@ -528,7 +520,7 @@ Enter a letter for the blank:s
 14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
 ------------------------------------------------
 
-12
+GREENS 12
   | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
 ------------------------------------------------
  0|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
@@ -547,6 +539,8 @@ Enter a letter for the blank:s
 13|  |W2|  |  |  | G| R| E| E| N| S|  |  |W2|  |
 14|W3|  |  |L2|  |  |  |W3|  |  |  |L2|  |  |W3|
 ------------------------------------------------
+
+PERT 6
 
 **********************************************
 Bob (82)
@@ -569,6 +563,8 @@ the library from clients altogether. From then on, clients can be written
 in any language, and we'll write one in Javascript.
 
 ## Tests
+
+TODO
 
 
 [Contents](../README.md) | [Chapter Seven](Chapter7.md)

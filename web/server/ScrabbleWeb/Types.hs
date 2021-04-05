@@ -28,7 +28,8 @@ import Scrabble.Types
   , Game
   , Evaluator(..)
   , Word
-  , MoveResult(..)) 
+  , MoveResult(..))
+import Scrabble.Game.Internal() -- for instances.
 
 -- ======== Types for ScrabbleWeb ========== --
 

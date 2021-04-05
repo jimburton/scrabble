@@ -42,20 +42,32 @@ import Scrabble.Types
   , score
   , rack
   , Turn(..)
-  , Letter(Blank))
+  , Letter(Blank)
+  , MoveResult(..))
 import Scrabble.Board.Board
   ( rackValue
   , adjacent
   , empty
   , freedomsFromWord
   , freeness 
-  , newTiles )
+  , newTiles
+  , wordPutToWord)
 import Scrabble.Board.Bag 
   ( fillRack
   , takeFromRack )
-import Scrabble.Evaluator ()
+import Scrabble.Lang.Word (wordToString)
+import Scrabble.Evaluator () -- for instances.
 
 -- ======== Internal for games ========= --
+
+-- | Show instance for MoveResult 
+instance Show MoveResult where
+  show mr = let w  = wordToString $ wordPutToWord $ mrWord mr
+                aw = if length (mrAdditionalWords mr) > 1
+                     then " [" ++ show (map wordToString $ tail (mrAdditionalWords mr)) ++ "] "
+                     else " "
+                sc = show (mrScore mr) in
+    w ++ aw ++ sc
 
 -- | Update the current player's rack so that any blanks which have been played
 --   are exchanged with the letters the player wants them to stand for.

@@ -149,7 +149,7 @@ data MoveResult = MoveResult
                   , mrBlanks          :: [Int]   -- ^ The positions in the word that were blank.
                   , mrScore           :: Int     -- ^ The score.
                   }
-                deriving (Show, Read, Eq)
+                deriving (Read, Eq)
 
 
 
