@@ -110,7 +110,9 @@ Here is a client that runs in a browser.
     <body onload="connect()">
       <label for="echoText">Text to echo:</label><br>
       <input type="text" id="echoText" name="echoText"><br>
-      <button onclick="socket.send(document.getElementById('echoText').value)">Echo</button> 
+      <button onclick="socket.send(document.getElementById('echoText').value)">
+		  Echo
+	  </button> 
     </body>
 </html>
 ```
@@ -219,8 +221,8 @@ deriving instance FromJSON Turn
 deriving instance ToJSON   Turn
 ```
 
-Now we can turn a `Turn`, a `Letter` or a `MoveResult` into JSON with `encode`.
-We can read text into `Maybe`s of those type with `decode`.
+Now we can encode a `Turn`, a `Letter` or a `MoveResult` as JSON with `encode`.
+We can read text into `Maybe` values of those types with `decode`.
 	
 ```
 $ cabal repl scrabble-server
@@ -279,7 +281,7 @@ Just
     )
 ``` 
 
-As you can see, a record is encoded into a JSON object with key:value
+As you can see, a record is encoded into a JSON object with `key:value`
 pairs for the fields.  Algebraic datatypes (i.e. non-records) are
 encoded as an object with a key called "tag" with the name of the type
 in it and a key called "contents" with the data. For example, here is
@@ -438,11 +440,11 @@ separate thread, the `gameStarter` thread, will watch this queue,
 waiting until there are two requests then creating a new game in a
 separate thread and allowing them to play.
 
-If there are already two requests for games in the queue, the main
-thread will have to wait until there are less than two before adding
-another. If there are less than two requests for games in the queue,
-obviously the `gameStarter` thread will have to wait before it can 
-create a game.
+If there are already two requests for games in the queue the main
+thread will wait until there are less than two before adding
+another. If there are fewer than two requests in the queue, the
+`gameStarter` thread will wait until two arrive so that it can create
+a game.
 
 The `BoundedChan` type serves this purpose. It provide a *bounded
 channel*, or concurrent queue that can contain only a given number of

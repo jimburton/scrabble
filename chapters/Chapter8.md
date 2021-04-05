@@ -1,5 +1,7 @@
 # Chapter Eight: Configuration and conclusions
 
+[Contents](../README.md)
+
 The code for this chapter corresponds to the `main` branch.
 
 In this chapter we will tidy things up by adding a clean way of
@@ -91,8 +93,9 @@ For a fuller example of using `GetOpt` see
 
 ## Configuration file parsing using `config-value`
 
-The actual properties we want to configure will be held in a config
-file. The default for this is `etc/scrabble.conf`, which looks like this:
+The actual properties we want to configure will be held in a simple
+config file of `key:value` pairs. The default for this is
+`etc/scrabble.conf`, which looks like this:
 
 ```
 -- This is the config file for the Scrabble server
@@ -183,7 +186,7 @@ spec def = sectionsSpec "scrabble-server conf" $
      lf <- fromMaybe (log_file def) <$> optSection "log_file"
            "Supply the path to the log file."
      pr <- fromMaybe (log_priority def) <$>  optSection "log_priority"
-                 "Supply the logging priority, a string representing a value of System.Log.Priority."
+                 "Supply a value of System.Log.Priority."
      return (Conf hn pt lf pr)
 
 -- Parse the config file with default.
