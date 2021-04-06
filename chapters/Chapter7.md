@@ -488,9 +488,14 @@ This code creates an additional handler for the `"Scrabble"` logger with the `DE
 priority. If we only wanted to write errors (or worse) to file, we could set a
 different priority here. The handler writes its output to a file, `./log/scrabble.log`,
 that will be created if it does not exist. The call to `setFormatter` determines the 
-format of the messages. Ours will look something like this:
+format of the messages. Ours will look something like this, where we log an `INFO` 
+message:
 
 ```
+-- in the code, after setting up the logger
+infoM "Starting server."
+
+-- in ./log/scrabble.log
 [2021-04-06 12:47:52 BST : Scrabble : INFO] Starting server.
 ```
 
