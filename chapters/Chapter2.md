@@ -5,7 +5,7 @@
 Now we can move on to think about **players** and the **game**
 itself. A player has a **name**, a **rack**, a **score** and might
 be an **AI** player. A game will have two players, a **board**, a 
-`StdGem` for pseudo-random requirements, and several Boolean fields 
+`StdGen` for pseudo-randomness requirements, and several Boolean fields 
 to keep track of the progress of the game. Most of this code is going 
 into a new module, `Scrabble.Game`.
 
