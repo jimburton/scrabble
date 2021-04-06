@@ -233,7 +233,13 @@ a board, to a webservice that provides a decoupled concurrent API to
 our library, we've come a long way. If you've studied the code and
 worked on the exercises you have been introduced to a number of
 widely-used language extensions and modern idiomatic approaches based
-on libraries like `aeson` and `lens-simple`.
+on libraries like `aeson` and `lens-simple`. Despite providing quite a
+bit of functionality, there are fewer than 2400 lines of code in the
+final project. This says something about the conciseness of Haskell in
+particular and the power of the functional approach in
+general. Functional style, including as it does higher-order functions
+and patterns like monadic error-checking, allows us to express things
+that would take a lot more code in an imperative language.
 
 The purpose of the book has not really been to explain how to
 implement Scrabble in Haskell, but to talk you through the entire
