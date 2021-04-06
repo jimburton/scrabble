@@ -234,7 +234,7 @@ our library, we've come a long way. If you've studied the code and
 worked on the exercises you have been introduced to a number of
 widely-used language extensions and modern idiomatic approaches based
 on libraries like `aeson` and `lens-simple`. Despite providing quite a
-bit of functionality, there are fewer than 2400 lines of code in the
+bit of functionality, there are fewer than 2400 lines of Haskell code in the
 final project. This says something about the conciseness of Haskell in
 particular and the power of the functional approach in
 general. Functional style, including as it does higher-order functions
