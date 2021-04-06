@@ -2,15 +2,14 @@
 
 [Contents](../README.md)
 
-The code for this chapter corresponds to the `main` branch.
-
 In this chapter we will tidy things up by adding a clean way of
-configuring the server from the previous chapter, and summarise
-what was covered in the book.
+configuring the server from the previous chapter, and summarise what
+was covered in the book. The code for this chapter corresponds to the
+`main` branch.
 
 ## Configuration
 
-In order to run the game "for real" we have to host it on a server connected 
+In order to run the game for real we have to host it on a server connected 
 to the internet. Such a server will either have a real hostname that can be 
 looked up by DNS, or at least an IP address allowing the web client to make
 a websocket connection.
@@ -45,7 +44,7 @@ defaultOptions = Options {
 ```
 
 Then we need to define a list of handlers that can consume each
-option and set the right value in our `Config` value. As there is only one,
+option and set the right value in our `Config` record. As there is only one,
 this is easily done.
 
 ```haskell
@@ -94,8 +93,9 @@ For a fuller example of using `GetOpt` see
 ## Configuration file parsing using `config-value`
 
 The actual properties we want to configure will be held in a simple
-config file of `key:value` pairs. The default for this is
-`etc/scrabble.conf`, which looks like this:
+config file of `key:value` pairs with Haskell-style single line
+comments. The default for this is `etc/scrabble.conf`, which looks
+like this:
 
 ```
 -- This is the config file for the Scrabble server
@@ -108,7 +108,7 @@ log_file: "log/scrabble.log"
 -- log_priority should be one of DEBUG,INFO,NOTICE,WARNING,ERROR,CRITICAL,ALERT,EMERGENCY
 log_priority: DEBUG
 ```
-Our config details will be stored in a datatype and we create a value with the defauls.
+Our config details will be stored in a datatype and we create a record value with the defaults.
 
 ```haskell
 -- | Container for the config.
@@ -139,7 +139,7 @@ two strings (the hostname and the location of the log file), a number
 (the port) and the logging priority (a value of `System.Log.Priority`,
 which is what we need to supply to `hslogger` when we say what level
 of messages we want to record). Each of these should be optional and
-we will use a sensible default if they aren't specified.
+we will use the defaults given above if they aren't specified.
 
 The library has parsers for strings and numbers, as well as many other
 types, but it doesn't have a parser for the `Priority` type. So we
@@ -247,18 +247,19 @@ to use, protocols that determine robust communication between remote
 components of an application, and so on. 
 
 It is sometimes said that the main things a person needs to be a good
-programmer are the capacity to jump easily between levels of
-abstraction and the ability to keep the requirements of the different
+programmer are the capacity to jump easily between different levels of
+abstraction, and the ability to keep the differing requirements of the
 levels in their head simultaneously.
 
 The only way to learn these skills is by practising them, which means
 writing a lot of code. It's a continuous process, and one of the great
-things about being a programmer is that you never stop learning. Every
-now and then you "level up" -- some concept or technique that you were
-aware of but never really understood suddenly becomes clear, and seems
-so simple that you wonder how anyone could fail to see the usefulness
-of it. This is particularly true if you're using Haskell! I hope that
-this book might provide a levelling-up moment for some reader on the 
-way to understanding functional problem solving and design.
+things about being a programmer is that (like it or not) you never
+stop learning. Every now and then you "level up" -- some concept or
+technique that you were aware of but never properly understood
+suddenly becomes clear, and seems so simple that you wonder how anyone
+could fail to see the usefulness of it. This is particularly true if
+you're using Haskell! I hope that this book might add to a
+levelling-up moment for some reader on the way to understanding
+functional problem solving and design.
 
 [Contents](../README.md) 
