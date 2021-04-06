@@ -16,7 +16,7 @@ module Scrabble.Game.AI
   , moveAI )
   where
 
-import Debug.Trace
+--import Debug.Trace
 import Prelude hiding ( Word )
 import qualified Data.Map as Map
 import Data.Maybe (catMaybes)
@@ -141,7 +141,8 @@ findWord g r =
                                DownD  -> findSuffixOfSize g k l r (fd,i) 
                                LeftD  -> findPrefixOfSize g k l r (fd,i) 
                                RightD -> findSuffixOfSize g k l r (fd,i)) fs
-              wds = trace("findWord' at pos "<>show fs<>" starting with letter "<>show l) catMaybes mwds in
+              --wds = trace("findWord' at pos "<>show fs<>" starting with letter "<>show l) catMaybes mwds in
+              wds = catMaybes mwds in
             maxWd wds
         maxWd :: [(WordPut, [WordPut])] -> Maybe (WordPut,[WordPut])
         maxWd wds = if null wds

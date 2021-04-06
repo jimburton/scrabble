@@ -754,6 +754,24 @@ prop_updateSquare = do
   ```haskell
   makeWordPut :: Pos -> Dir -> Word -> WordPut
   ```
++ Import the module `Debug.Trace` to `Scrabble.Board` and add one or
+  more `trace` statements to `makeWordPut`. This is the method used
+  for basic "printf debugging", i.e. tracing the flow of execution and
+  checking values that you are interested in, in pure code. This is an
+  extremely useful thing to do. In Java we would use
+  `System.out.println` to do it. But we can't just use an action like
+  `putStrLn` in this context because we can't mix pure code with `IO`;
+  `trace` allows us to get around this. It takes two arguments: the
+  message to print then a value which it returns unchanged. For
+  example,
+  
+  ```haskell
+  import Debug.Trace
+  
+  add :: Int -> Int -> Int
+  add x y = trace ("Adding " ++ show x ++ " to " ++ show y) $ x + y
+  ```
+
 + Write one or more tests for `makeWordPut` and add them to `Test.Chapter1`.
   Make sure the test suite still runs.
 

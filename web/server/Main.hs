@@ -85,7 +85,7 @@ main = do
   h <- fileHandler (T.unpack $ log_file conf) pr >>= \lh -> return $
     setFormatter lh (simpleLogFormatter "[$time : $loggername : $prio] $msg")
   updateGlobalLogger "Scrabble" (addHandler h)
-  infoM "Scrabble" ("Starting server with conf "<>show conf)
+  infoM "Scrabble" ("Starting server with conf " <> show conf)
   state <- newBoundedChan 2
   _ <- forkIO (gameStarter state)
   WS.runServer (T.unpack $ hostname conf) (port conf) $ enqueue state

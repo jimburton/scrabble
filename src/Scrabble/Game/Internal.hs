@@ -20,7 +20,7 @@ module Scrabble.Game.Internal
   , endGame )
   where
 
-import Debug.Trace
+--import Debug.Trace
 import qualified Data.Map as Map
 import Lens.Simple ((&),(^.),(.~),(%~))
 import Scrabble.Types
@@ -109,7 +109,8 @@ updatePlayables w g = do
       fs  = freedomsFromWord nt b
       f (u,p) = filter ((>0) . freeness) [u, p]
       nps = foldl (\acc (p,l,(f1,f2)) -> Map.insert p (l,f (f1,f2)) acc) ps' fs
-  (trace $ "Playables: \n" ++ show nps) pure (g & playable .~ nps)
+  --(trace $ "Playables: \n" ++ show nps) pure (g & playable .~ nps)
+  pure (g & playable .~ nps)
 
 -- | Update the rack of the current player and the bag.
 updatePlayer :: WordPut -> Game -> Evaluator Game
