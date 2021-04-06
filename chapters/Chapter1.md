@@ -273,11 +273,12 @@ type Pos = (Int,Int)
 ```
 ## Words 
 
-*Words* are lists of letters and both *racks* and *bags* are lists of tiles.
-Because the `Prelude` includes a type called `Word` we have a name clash here.
-We could call our new type `ScrabbleWord` or something like that, but it seems more 
-convenient to keep the short name and hide the type in the `Prelude`, which
-we don't need anyway.
+*Words*, *racks* and *bags* are all just lists of letters, but it's helpful to
+distinguish between them in type signatures so we make aliases for
+each of them.  Because the `Prelude` includes a type called `Word` we
+have a name clash here.  We could call our new type `ScrabbleWord` or
+something like that, but it seems more convenient to keep the short
+name and hide the type in the `Prelude`, which we don't need anyway.
 
 ```haskell
 import Prelude hiding Word
