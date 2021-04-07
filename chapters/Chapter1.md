@@ -251,7 +251,7 @@ In many languages we would create an array of arrays to achieve this,
 where each element of the 15-element outer array is a 15-element array
 representing a row. However, Haskell supports true multi-dimensional
 arrays, so we can create one where the type of indices is `(Int,Int)`
-(for our purpose, `(row,column)`). The `Array` type constructor takes
+(for our purposes, `(row,column)`). The `Array` type constructor takes
 two arguments, the type of indices and the type of elements.
 
 ```haskell
