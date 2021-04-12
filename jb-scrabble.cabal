@@ -62,6 +62,8 @@ test-suite test-scrabble
                      , text-trie
                      , containers
                      , split
+                     , lens-simple
+                     , random
                      , QuickCheck
                      , test-framework
                      , test-framework-quickcheck2
