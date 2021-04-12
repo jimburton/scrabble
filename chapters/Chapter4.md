@@ -50,32 +50,39 @@ rackValue = sum . map scoreLetter
 
 -- in Scrabble.Game.Game
 
+-- | Ends the game and subtracts the tiles in each players rack from their score. If
+--   one player has used all of their tiles the value of the opponent's tiles is added
+--   to their score.
 endGame :: Game -> Evaluator Game
 endGame g = do
-  let r1v = rackValue (rack (player1 g))
-      r2v = rackValue (rack (player2 g))
-      p1s = (score (player1 g) - r1v) + r2v
-      p2s = (score (player2 g) - r2v) + r1v
-  pure g { player1 = (player1 g) { score = p1s }
-         , player2 = (player2 g) { score = p2s }
-         , gameOver = True }
-		 
+  let r1v = rackValue $ g ^. (player1 . rack)
+      r2v = rackValue $ g ^. (player2 . rack)
+      p1s = (g ^. (player1 . score) - r1v) + r2v
+      p2s = (g ^. (player2 . score) - r2v) + r1v
+  pure (g & player1 . score .~ p1s 
+         & player2 . score .~ p2s 
+         & gameOver .~ True )
+
+-- | Checks whether this game has ended because the bag and one
+--   of the racks are empty, and calls endGame if so.
 checkEndOfGame :: Game -> Evaluator Game
 checkEndOfGame g =
-  let eog = null (bag g) &&
-        (null (rack (player1 g)) || null (rack (player2 g))) in
+  let eog = null (g ^. bag) &&
+        (null (g ^. (player1 . rack)) || null (g ^. (player2 . rack))) in
   if eog
   then endGame g
   else pure g
 
-toggleTurn :: Game -> Evaluator Game
-toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
+-- | Toggle the turn in the game (between P1 and P2)
+toggleTurn :: Game -- ^ The game in which to toggle the turn
+           -> Evaluator Game
+toggleTurn g = pure (g & turn %~ \t -> if t == P1 then P2 else P1)
 
+-- | Take a move by passing.
 pass :: Game -> Evaluator Game
-pass g = if lastMovePass g
+pass g = if g ^. lastMovePass
          then endGame g
-         else toggleTurn g { lastMovePass = True } >>= checkEndOfGame
-
+         else toggleTurn (g & lastMovePass .~ True ) >>= checkEndOfGame
 ```
 ## Swapping tiles
 
@@ -86,28 +93,32 @@ the rack, then add the old tiles from the rack back to the bag. The
 and `lastMovePass`.
 
 ```haskell
+-- | Finishes a move that is not a pass by updating the firstMove and lastMovePass fields
+--   then toggling the turn.
 endNonPassMove :: Game -> Evaluator Game
-endNonPassMove g = toggleTurn $ g { firstMove = False, lastMovePass = False }
+endNonPassMove g = toggleTurn $ g & firstMove .~ False & lastMovePass .~ False 
 
-swap :: Word -> Game -> Evaluator Game
+-- | Take a move by swapping tiles.
+swap :: Word -- ^ The tiles to swap.
+     -> Game -- ^ The game.
+     -> Evaluator Game
 swap ls g = do
-  let p      = getPlayer g
-      r      = rack p
-      theBag = bag g
-      theGen = gen g
+  let p      = g ^. getPlayer g
+      r      = p ^. rack
+      theBag = g ^. bag
+      theGen = g ^. gen
   takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
-    >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
+    >>= \(r'', theBag', theGen') -> setPlayer g (p & rack .~ r'')
     >>= endNonPassMove >>= checkEndOfGame
-    >>= \g' -> pure g' { bag = ls++theBag'
-                       , gen = theGen'
-                       , lastMovePass = False }
-
+    >>= \g' -> pure (g' & bag .~ (ls++theBag')
+                      & gen .~ theGen'
+                      & lastMovePass .~ False )
 ```
 
 ## Playing a move
 
 Now we need to write a function that plays a word onto the board in
-the normal way. It will need a `Validator` to heck the move, a game,
+the normal way. It will need a `Validator` to check the move, a game,
 and a word to play. If all goes well it will return an updated game and a
 pair of a list of all new words and the score. Like the other ways of playing a
 move it will run in the `Evaluator` monad, so failure at any point is
@@ -130,11 +141,12 @@ each stage the game state is being updated or some other value is
 being calculated, such as the score. Some things to note:
 
 + Because the `Validator` is a parameter we can call `move` with
-  `valGameRules` only if we don't want to include a dictionary check,
+  `valGameRules` if we don't want to include a dictionary check,
   or `valGameRulesAndDict` to check everything.
 + To see how the score is calculated, study the functions `scoreWord`
   and `scoreWords` in `Scrabble.Board`. (*Disclaimer*: these functions
-  are unpleasantly messy, but this seems to be unavoidable.) 
+  are unpleasantly messy but this seems to be unavoidable, given the
+  algorithm for calculating the score.) 
   
   Every tile in a new word adds its face value multiplied by the
   letter-bonus of the square it is placed on, if any. Then the score
@@ -153,9 +165,8 @@ being calculated, such as the score. Some things to note:
   same as `(<$>)` but with the order of the arguments reversed:
   
   ```haskell
- (<&>) :: Functor f => f a -> (a -> b) -> f b 
-  ```
-  
+  (<&>) :: Functor f => f a -> (a -> b) -> f b 
+  ```  
   So it takes a functor (the game, wrapped up in the `Evaluator`
   functor) and a pure function as it's second argument, then applies
   that function within the functor. The pure function uses a *tuple
@@ -165,7 +176,7 @@ being calculated, such as the score. Some things to note:
   which is turned on at the top of the module and added to the `cabal`
   file. We could always have written this part of the code like this:
   
-  ```
+  ```haskell
   >>= checkEndOfGame >>= \g' -> pure (g',(map wordPutToWord (w:aw),sc))
   ```
  
@@ -373,6 +384,28 @@ In the next chapter we'll make it possible to play against the computer.
 
 ## Tests
 
-TODO
+There are tests for the `swap`, `pass` and `move` functions in `Test.Chapter4`.
+
+## Exercises
+
++ When exploring code in the REPL we now frequently have to set up a
+  lot of supporting data such as `WordPut`s to use in move. Create a
+  module called `Scrabble.REPLHelpers` containing predefined `WordPut`
+  data and other helpfule values. Use the `MakeWordPut` function from
+  the earlier exercise to create a function
+  
+  ```haskell
+  wordPutStarting :: Pos -> Game -> WordPut
+  ```
+  
+  which creates a `WordPut` starting at the given position, in the
+  given direction and based on the contents of the current player's
+  rack. Any sequence of letters will do; it doesn't have to be a
+  dictionary word as we aren't checking words against the dictionary
+  in development.
++ Use the `wordPutStarting` function to create a test that plays several 
+  moves by each player.
+
+
 
 [Contents](../README.md) | [Chapter Five](Chapter5.md)

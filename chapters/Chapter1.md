@@ -16,9 +16,9 @@ There is a notoriously big gap between learning the basics of Haskell
 listed above, which mostly means a lot of fiddling about with lists,
 and finding yourself making useful, nicely written and idiomatic
 software with Haskell. For beginners the language can seem academic
-and removed from the tasks we normally want to achieve with
+and far removed from the tasks we normally want to achieve with
 programming languages. When they look at Haskell code in the wild it
-bears very little resemblance to their exercises.
+bears little resemblance to their exercises.
 
 This book is meant to go some way towards filling that gap. By the end
 you'll have been introduced to some major and widely used libraries,
@@ -184,7 +184,7 @@ type Tile = (Letter,Int)
 We will need to know a number of things about letters:
 
 + the score of each letter,
-+ how many of each letter should be in a full bag, and
++ how many tiles bearing each letter should be in a full bag, and
 + the `Char` value for printing.
 
 We will store this data in *maps*, using the `Data.Map` API. We could
@@ -273,11 +273,12 @@ type Pos = (Int,Int)
 ```
 ## Words 
 
-*Words* are lists of letters and both *racks* and *bags* are lists of tiles.
-Because the `Prelude` includes a type called `Word` we have a name clash here.
-We could call it `ScrabbleWord` or something like that, but it seems more 
-convenient to keep the short name and hide the type in the `Prelude`, which
-we don't need anyway.
+*Words*, *racks* and *bags* are all just lists of letters, but it's helpful to
+distinguish between them in type signatures so we make aliases for
+each of them.  Because the `Prelude` includes a type called `Word` we
+have a name clash here.  We could call our new type `ScrabbleWord` or
+something like that, but it seems more convenient to keep the short
+name and hide the type in the `Prelude`, which we don't need anyway.
 
 ```haskell
 import Prelude hiding Word
@@ -324,6 +325,28 @@ bonusSquaresList =
 bonusMap :: Map Pos Bonus
 bonusMap = Map.fromList bonusSquaresList
 ```
+
+## Dealing with blanks
+
+When a blank tile is played, the player nominates a letter that the blank should
+stand for, and the blank tile keeps that value for the rest of the game. The blank
+contributes zero to the score.
+
+There are several ways we could deal with blanks in the game. We could
+store blanks on the board like normal tiles and keep a map of
+positions and letters (`Map Pos Letter`) to lookup the letters blanks
+stand for. We choose to store a `Tile` with the letter the blank
+stands for on the board, with its score set to zero. Clients will take
+care of interrogating players for the letters to use when they play a
+blank. 
+
+This approach has the advantage that after being played the tile is
+treated like any other. A disadvantage is that it means we have to
+store the whole tile -- the letter and its score -- on the board,
+rather than just storing the letter and looking up its score when we
+need it. But it means we don't need to check for and accomodate blanks
+on the board in a lot of code that we'll write later.
+
 
 ## The dictionary
 
@@ -478,8 +501,8 @@ getDirection w = let r1 = fst $ fst $ head w
 ```
 
 Given an occupied position, if we know the direction we can find the
-beginning of the `WordPut` it is part of, the start of that WordPut
-retrieve the whole thing. To do so we need to transform positions by
+beginning of the `WordPut` it is part of. Given the start of a `WordPut`
+we can retrieve the whole thing. To do so we need to transform positions by
 decrementing or incrementing rows and columns. Functions that do this
 will have the type `Pos -> Pos`, and we give an alias to that type,
 `PosTransform`. See `Scrabble.Board` for the `incRow`, `decRow`,
@@ -679,8 +702,9 @@ means that we specify some property that we want our functions to have and
 the library generates arbitrary input that checks whether the property
 holds.
 
-The `test-suite` stanza in the config file deptermines what tests should
-be run and how. It points to the file `tests/Main.hs` as the entry point.
+The `test-suite` stanza in the config file deptermines what tests
+should be run and how. It points to the file `tests/Main.hs` as the
+entry point. Run the tests with `cabal run test-scrabble`.
 
 ```
 tests/
@@ -708,13 +732,48 @@ genTile = do
   pure (l, scoreLetter l)
 ```
 
-Tests that use these generators are in `Test.Chapter1`.
+Tests that use these generators are in `Test.Chapter1`. For instance,
+this test generates an arbitrary element of a `WordPut`, places it on the board
+then checks that it is there.
+
+```haskell
+-- | Test that using @updateSquare@ places one @WordPut@
+--   element on the board in the right place,
+prop_updateSquare :: Gen Bool 
+prop_updateSquare = do
+  (p,t) <- genWordPutElement
+  let b = updateSquare newBoard (p,t) 
+  pure $ Just t == b ! p
+```
 
 ## Exercises
 
-1. Write a test for `Scrabble.Board.startOfWord`. Your test should put a 
-   `WordPut`, `wp`, onto a board then call `startOfWord` on the last position
-   in `wp`, checking that the result is the same as the first position in `wp`.
-   Study the other tests to work out how to do it.
++ Write a function in the `Scrabble.Board` module that takes a
+  starting position, a direction and a list of letters then produces a
+  `WordPut`. Think about using the `PosTransform` functions.
+
+  ```haskell
+  makeWordPut :: Pos -> Dir -> Word -> WordPut
+  ```
++ Import the module `Debug.Trace` to `Scrabble.Board` and add one or
+  more `trace` statements to `makeWordPut`. This is the method used
+  for basic "printf debugging", i.e. tracing the flow of execution and
+  checking values that you are interested in, in pure code. This is an
+  extremely useful thing to do. In Java we would use
+  `System.out.println` to do it. But we can't just use an action like
+  `putStrLn` in this context because we can't mix pure code with `IO`;
+  `trace` allows us to get around this. It takes two arguments: the
+  message to print then a value which it returns unchanged. For
+  example,
+  
+  ```haskell
+  import Debug.Trace
+  
+  add :: Int -> Int -> Int
+  add x y = trace ("Adding " ++ show x ++ " to " ++ show y) $ x + y
+  ```
+
++ Write one or more tests for `makeWordPut` and add them to `Test.Chapter1`.
+  Make sure the test suite still runs.
 
 [Contents](../README.md) | [Chapter Two](Chapter2.md)
