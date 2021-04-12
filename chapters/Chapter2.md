@@ -3,12 +3,15 @@
 [Contents](../README.md)
 
 Now we can move on to think about **players** and the **game**
-itself. A player has a **name**, a **rack** and a **score**. Most of
-this code is going into a new module, `Scrabble.Game`.
+itself. A player has a **name**, a **rack**, a **score** and might
+be an **AI** player. A game will have two players, a **board**, a 
+`StdGen` for pseudo-randomness requirements, and several Boolean fields 
+to keep track of the progress of the game. Most of this code is going 
+into a new module, `Scrabble.Game`.
 
-We introduce two record types, `Player` and `Game`, that play a very
-important part in managing the state of games. The types themselves
-are simple, but we need to take a bit of a digression to explain the
+We introduce two record types, `Player` and `Game`, that embody 
+everything we need to know to manage the state of games. The types themselves
+are simple but we need to take a bit of a digression to explain the
 way we will working with them.
 
 The name of each player is stored as `Data.Text` rather than
@@ -83,7 +86,7 @@ as the field.
 > let p = Player { _name = "Bob", _rack = [A, B, C, D, E, F, G], _score = 0}
 > _name p
 "Bob"
-> p { _name = "Alice", score = 42 }
+> p { _name = "Alice", _score = 42 }
 Player
     { _name = "Alice"
     , _rack =
@@ -144,8 +147,8 @@ As we can see from the differences in their names, `score` and
 lenses. Give a record, `player`, with a field, `score`, we can get the
 value of `score` with `player ^. score` and set it to a new value,
 `x`, with `player & score .~ x`. The other main thing we want to do is
-to update the value of `score` by applying a function to it, say `g`. This
-looks like this: `player & score %~ g`.
+to update the value of `score` by applying a function to it, say `foo`. This
+looks like this: `player & score %~ foo`.
 
 The `(&)` operator is like `($)` but it takes its arguments in reverse
 order, so our original lens function,
@@ -414,15 +417,43 @@ actually playing the game.
 
 ## Testing
 
-To test functions involving games we obviously need to create new
+To test functions involving games we need to be able to create new
 (arbitrary) games. This involves `IO` because we need to supply a
-dictionary and a `StdGen` to the `newGame` function. As a result the
-tests in `Test.Chapter1` need to be rewritten to use functions from
-`Test.QuickCheck.Monadic` such as `monadicIO`. This allows us to run
-`IO` actions inside a `QuickCheck` test. The module `Test.Chapter2`
-adds some tests relating to bags and filling racks.
+dictionary and a `StdGen` to the `newGame` function. 
 
+The module `Test.Chapter2` adds some tests relating to bags and
+filling racks. As the `fillRack` function requires a `StdGen` as a
+parameter, clearly this has to do some `IO`. We can achieve this using
+functions from `Test.QuickCheck.Monadic` such as `monadicIO` then
+`liftIO` when we want to run an `IO` action.
+
+
+```haskell
+-- | Test that using @fillRack@ takes the tiles
+--   from the bag and puts them in the rack.
+prop_fillRack1 :: Property 
+prop_fillRack1 = monadicIO $ do
+  g <- liftIO getStdGen
+  let b = newBag
+      (r',b',_) = fillRack [] b g
+  assert $ (length r' == 7) && (length b' == length b - 7)
+
+```
 
 ## Exercises
+
++ In `Scrabble.Game`, write a function to return the lens for the
+  player whose turn it currently is. To make this type check you need
+  to add the Language pragma `Rank2Types` to the top of the file.
+
+  ```haskell
+  getPlayer :: Game -> Lens' Game Player
+  ```
++ Use `getPlayer` to write a function that uses lens operators to add
+  a value to the score of the current player.
+  
+  ```haskell
+  addToCurrentPlayerScore :: Game -> Int -> Game
+  ```
 
 [Contents](../README.md) | [Chapter Three](Chapter3.md)
