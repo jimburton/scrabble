@@ -2,10 +2,10 @@
 
 [Contents](../README.md)
 
-We now have enough resources to start playing the game. There is no UI
-as yet, and what we mean by "playing" is using the REPL to generate an
-initial game state then calling functions to "take turns" that generate
-new game states. 
+We now have enough resources to start playing the game. Not actually
+with a user interface -- what we mean by "playing" is using the REPL
+to generate an initial game state then calling functions to "take
+turns" that generate new game states.
 
 Code that takes turns repeatedly until the game is over is not part of
 this section. That functionality is the responsibility of clients,
@@ -15,153 +15,74 @@ library knows how to do is to use pure functions to produce a fresh
 game given some starting conditions, and to produce a new game based
 on an existing one, i.e. by playing a move.
 
-## Setting up the game
-
-To start a fresh game we need to create a full bag then two players,
-each with a rack that has been filled with tiles taken at "random" from
-the bag. Then the two players and the depleted bag are added to the
-game state.
-
-For the randomness, we are going to use a pseudo-random number
-generator (PRNGs). These are completely deterministic
-(i.e. non-renadom) data structures. They are created using a *seed*,
-and can produce a stream of values whose sequence is hard enough for
-humans to predict that it appears to be truly random. But there's
-nothing magical happening -- PRNGs created with the same seed return
-the same stream of values, and ones in the same state (i.e. in the
-same position in its stream of values) returns the same value
-next. 
-
-Every time we use the PRNG it returns the latest value and an updated
-version of itself, primed to return the next value. So our function
-that fills a rack needs to take a rack to be filled, a bag to fill the
-rack from and a PRNG as parameters, and return a triple of the filled
-rack, the depleted bag and, crucially, the updated PRNG. The type for
-PRNGs that we'll be using is `StdGen`. The function `randomR (n,m) g`
-takes an upper and lower bound and a `StdGen` then returns a number
-between `n` and `m` and the updated `StdGen`.
-
-```haskell
-getTile :: Bag -> StdGen -> (Letter, Bag, StdGen)
-getTile b g = let (i, g') = randomR (0, length b -1) g
-                  t = b !! i
-                  b' = take i b ++ drop (i+1) b in
-              (t, b', g')
-			  
-fillRack :: Rack -> Bag -> StdGen -> Evaluator (Rack, Bag, StdGen)
-fillRack r b g = pure $ fillRack' (7 - length r) r b g
-  where fillRack' 0 r' b' g' = (r', b', g')
-        fillRack' _ r' [] g' = (r', [], g')
-        fillRack' n r' b' g' =
-          let (t, b'', g'') = getTile b' g' in
-            fillRack' (n-1) (t:r') b'' g''
-```
-
-When we start a game we need to begin with a new `StdGen`. We can get
-one created with a seed based on the system time using `getStdGen ::
-IO StdGen` then keep updating it throughout the game. Because we don't
-want everything in our library to be polluted with `IO` we leave the
-call to `getStdGen` to clients and presume they can supply one to the
-`newGame` function below. Reading in the dictionary file is also an
-`IO` action that we presume is done elsewhere.
-
-```haskell
-numTilesList :: [(Letter,Int)]
-numTilesList = [
-  (A, 9), (B, 2), (C, 2), (D, 4), (E, 12), (F, 2), (G, 3),
-  (H, 2), (I, 9), (J, 1), (K, 1), (L, 4), (M, 2), (N, 6),
-  (O, 8), (P, 2), (Q, 1), (R, 6), (S, 4), (T, 6), (U, 4),
-  (V, 2), (W, 2), (X, 1), (Y, 2), (Z, 1), (Blank, 2) ]
-
-newBag :: Bag
-newBag = concatMap (\(l,n) -> replicate n l) numTilesList
-
-newGame :: Text -> Text -> StdGen -> Dict -> Game
-newGame p1Name p2Name theGen d = 
-  let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
-      p1 = Player { name  = p1Name
-                  , rack  = rack1
-                  , score = 0 }
-      Ev (Right (rack2, bag2, gen'')) = fillRack [] bag1 gen'
-      p2 = Player { name  = p2Name
-                  , rack  = rack2
-                  , score = 0 }
-      g  = Game { board     = newBoard
-                , bag       = bag2
-                , player1   = p1
-                , player2   = p2
-                , turn      = P1
-                , gen       = gen''
-                , firstMove = True
-                , dict      = d 
-				, gameOver  = False 
-				, lastMovePass = False} in
-    g
-``` 
-
-Note that we updated the `Game` type to include two new booleans, `gameOver`
-and `lastMovePass`. These relate to the two ways in which a game can end. 
-Normally the game ends when the bag is empty and one of the
-players has used all of their tiles. ALternatively, the game is over if each
-player passes their move. 
-
 We will deal first with the simplest way of playing a move, which is
-by *passing*. Then we consider the almost equally simple case of taking
-a move by *swapping tiles*, before looking at the "normal" way of taking
-a move by *playing a word* on the board.
+by *passing*. Then we consider the almost equally simple case of
+taking a move by *swapping tiles*, before looking at the "normal" way
+of taking a move by *playing a word* on the board.
 
 ## Passing a move
 
 A player can take a move by passing their turn. The rule is that if
 there are two passes in the row then the game is ended, so now we need
 to think about how to end games. All the library will do to end a game
-is to make some changes to the score then set `gameOver` to `True`. We
-will leave it up to clients to check this value and make an
-announcement to the players if necessary.
+is to make some changes to the score then set the `gameOver` field of
+the game to `True`. We will leave it up to clients to check this value
+and make an announcement to the players if necessary.
 
-The `lastMovePass` field is there to detect the situation where
-there have been two passes in a row. We set it to `True` when a player passes
-and to `False` when they take a move in any other way. When there are
-two passes in a row we pass the game to `endGame`, which sets the
-`gameOver` field and finalises the scores. Remaining tiles in each
-player's rack are subtracted from their score, and if one player has
-used all of their tiles, the tiles in the other player's rack are
-added to their score.
+The `lastMovePass` field of the game is there to detect the situation
+where there have been two passes in a row. We set it to `True` when a
+player passes and to `False` when they take a move in any other
+way. When there are two passes in a row we pass the game to `endGame`,
+which sets the `gameOver` field and finalises the scores. Remaining
+tiles in each player's rack are subtracted from their score, and if
+one player has used all of their tiles, the tiles in the other
+player's rack are added to their score.
 
 The other way that the game can end is if we run out of tiles in the
 bag and one player has used all of the tiles in their rack. This is
 checked in `checkEndOfGame`, which also calls `endGame` if necessary.
 
 ```haskell
+-- in Scrabble.Board.Board
+
 rackValue :: Rack -> Int
 rackValue = sum . map scoreLetter
 
+-- in Scrabble.Game.Game
+
+-- | Ends the game and subtracts the tiles in each players rack from their score. If
+--   one player has used all of their tiles the value of the opponent's tiles is added
+--   to their score.
 endGame :: Game -> Evaluator Game
 endGame g = do
-  let r1v = rackValue (rack (player1 g))
-      r2v = rackValue (rack (player2 g))
-      p1s = (score (player1 g) - r1v) + r2v
-      p2s = (score (player2 g) - r2v) + r1v
-  pure g { player1 = (player1 g) { score = p1s }
-         , player2 = (player2 g) { score = p2s }
-         , gameOver = True }
-		 
+  let r1v = rackValue $ g ^. (player1 . rack)
+      r2v = rackValue $ g ^. (player2 . rack)
+      p1s = (g ^. (player1 . score) - r1v) + r2v
+      p2s = (g ^. (player2 . score) - r2v) + r1v
+  pure (g & player1 . score .~ p1s 
+         & player2 . score .~ p2s 
+         & gameOver .~ True )
+
+-- | Checks whether this game has ended because the bag and one
+--   of the racks are empty, and calls endGame if so.
 checkEndOfGame :: Game -> Evaluator Game
 checkEndOfGame g =
-  let eog = null (bag g) &&
-        (null (rack (player1 g)) || null (rack (player2 g))) in
+  let eog = null (g ^. bag) &&
+        (null (g ^. (player1 . rack)) || null (g ^. (player2 . rack))) in
   if eog
   then endGame g
   else pure g
 
-toggleTurn :: Game -> Evaluator Game
-toggleTurn g = pure g { turn = if turn g == P1 then P2 else P1 }
+-- | Toggle the turn in the game (between P1 and P2)
+toggleTurn :: Game -- ^ The game in which to toggle the turn
+           -> Evaluator Game
+toggleTurn g = pure (g & turn %~ \t -> if t == P1 then P2 else P1)
 
+-- | Take a move by passing.
 pass :: Game -> Evaluator Game
-pass g = if lastMovePass g
+pass g = if g ^. lastMovePass
          then endGame g
-         else toggleTurn g { lastMovePass = True } >>= checkEndOfGame
-
+         else toggleTurn (g & lastMovePass .~ True ) >>= checkEndOfGame
 ```
 ## Swapping tiles
 
@@ -172,28 +93,32 @@ the rack, then add the old tiles from the rack back to the bag. The
 and `lastMovePass`.
 
 ```haskell
+-- | Finishes a move that is not a pass by updating the firstMove and lastMovePass fields
+--   then toggling the turn.
 endNonPassMove :: Game -> Evaluator Game
-endNonPassMove g = toggleTurn $ g { firstMove = False, lastMovePass = False }
+endNonPassMove g = toggleTurn $ g & firstMove .~ False & lastMovePass .~ False 
 
-swap :: Word -> Game -> Evaluator Game
+-- | Take a move by swapping tiles.
+swap :: Word -- ^ The tiles to swap.
+     -> Game -- ^ The game.
+     -> Evaluator Game
 swap ls g = do
-  let p      = getPlayer g
-      r      = rack p
-      theBag = bag g
-      theGen = gen g
+  let p      = g ^. getPlayer g
+      r      = p ^. rack
+      theBag = g ^. bag
+      theGen = g ^. gen
   takeFromRack r ls >>= \r' -> fillRack r' theBag theGen
-    >>= \(r'', theBag', theGen') -> setPlayer g (p { rack = r'' })
+    >>= \(r'', theBag', theGen') -> setPlayer g (p & rack .~ r'')
     >>= endNonPassMove >>= checkEndOfGame
-    >>= \g' -> pure g' { bag = ls++theBag'
-                       , gen = theGen'
-                       , lastMovePass = False }
-
+    >>= \g' -> pure (g' & bag .~ (ls++theBag')
+                      & gen .~ theGen'
+                      & lastMovePass .~ False )
 ```
 
 ## Playing a move
 
 Now we need to write a function that plays a word onto the board in
-the normal way. It will need a `Validator` to heck the move, a game,
+the normal way. It will need a `Validator` to check the move, a game,
 and a word to play. If all goes well it will return an updated game and a
 pair of a list of all new words and the score. Like the other ways of playing a
 move it will run in the `Evaluator` monad, so failure at any point is
@@ -216,11 +141,12 @@ each stage the game state is being updated or some other value is
 being calculated, such as the score. Some things to note:
 
 + Because the `Validator` is a parameter we can call `move` with
-  `valGameRules` only if we don't want to include a dictionary check,
+  `valGameRules` if we don't want to include a dictionary check,
   or `valGameRulesAndDict` to check everything.
 + To see how the score is calculated, study the functions `scoreWord`
   and `scoreWords` in `Scrabble.Board`. (*Disclaimer*: these functions
-  are unpleasantly messy, but this seems to be unavoidable.) 
+  are unpleasantly messy but this seems to be unavoidable, given the
+  algorithm for calculating the score.) 
   
   Every tile in a new word adds its face value multiplied by the
   letter-bonus of the square it is placed on, if any. Then the score
@@ -239,9 +165,8 @@ being calculated, such as the score. Some things to note:
   same as `(<$>)` but with the order of the arguments reversed:
   
   ```haskell
- (<&>) :: Functor f => f a -> (a -> b) -> f b 
-  ```
-  
+  (<&>) :: Functor f => f a -> (a -> b) -> f b 
+  ```  
   So it takes a functor (the game, wrapped up in the `Evaluator`
   functor) and a pure function as it's second argument, then applies
   that function within the functor. The pure function uses a *tuple
@@ -251,7 +176,7 @@ being calculated, such as the score. Some things to note:
   which is turned on at the top of the module and added to the `cabal`
   file. We could always have written this part of the code like this:
   
-  ```
+  ```haskell
   >>= checkEndOfGame >>= \g' -> pure (g',(map wordPutToWord (w:aw),sc))
   ```
  
@@ -459,6 +384,28 @@ In the next chapter we'll make it possible to play against the computer.
 
 ## Tests
 
-TODO
+There are tests for the `swap`, `pass` and `move` functions in `Test.Chapter4`.
+
+## Exercises
+
++ When exploring code in the REPL we now frequently have to set up a
+  lot of supporting data such as `WordPut`s to use in move. Create a
+  module called `Scrabble.REPLHelpers` containing predefined `WordPut`
+  data and other helpfule values. Use the `MakeWordPut` function from
+  the earlier exercise to create a function
+  
+  ```haskell
+  wordPutStarting :: Pos -> Game -> WordPut
+  ```
+  
+  which creates a `WordPut` starting at the given position, in the
+  given direction and based on the contents of the current player's
+  rack. Any sequence of letters will do; it doesn't have to be a
+  dictionary word as we aren't checking words against the dictionary
+  in development.
++ Use the `wordPutStarting` function to create a test that plays several 
+  moves by each player.
+
+
 
 [Contents](../README.md) | [Chapter Five](Chapter5.md)
