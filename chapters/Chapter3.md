@@ -2,21 +2,45 @@
 
 [Contents](../README.md)
 
-In this chapter we introduce monadic error checking, leading to a
-design for the entire application. It will allow us to thread the
-state of the game through a long and growing series of computations
-without having to worry at each stage about whether anything went
-wrong.
+In this chapter we introduce a change that will have a big influence
+on the internal design of the library from now on: monadic error
+checking. It will allow us to thread the state of the game through a
+long and growing series of computations without having to worry at
+each stage about whether anything went wrong.
 
-We are going to introduce a lot of functions that relate to games and
-boards. Rather than putting all of this code into `Scrabble.Game` and
-`Scrabble.Board`, we will break it out into separate cohesive modules.
-So we create directories `src/Scrabble/Game/` and `src/Scrabble/Board`
-and create the relevant modules within them. While we're at it we
-refactor the dictionary code into a new locaion too,
-`src/Scrabble/Lang/`.
+We are going to introduce a lot of functions that relate to validating
+moves in the context of games and boards. Rather than putting all of
+this code into `Scrabble.Game` and `Scrabble.Board`, we carry on
+breaking it all out into separate cohesive modules.  So we create
+directories `src/Scrabble/Game/` and `src/Scrabble/Board` and create
+the relevant modules within them. 
 
-**TODO source tree**
+While we're at it we refactor the dictionary code into code that
+builds the dictionary and code that searches it, in modules within
+`src/Scrabble/Lang/`. We'll put all code relating to letters and words
+in this area too.
+
+```
+src/
+├── Scrabble
+│   ├── Board
+│   │   ├── Bag.hs
+│   │   ├── Board.hs
+│   │   ├── Bonus.hs
+│   │   ├── Pretty.hs
+│   │   └── Validation.hs
+│   ├── Evaluator.hs
+│   ├── Game
+│   │   ├── Game.hs
+│   │   └── Validation.hs
+│   ├── Lang
+│   │   ├── Dict.hs
+│   │   ├── Letter.hs
+│   │   ├── Search.hs
+│   │   └── Word.hs
+│   └── Types.hs
+└── Scrabble.hs
+```
 
 ## Checking the structure and position of words
 
@@ -32,20 +56,11 @@ doing so is valid. The rules about word placement are as follows:
   dictionary.
   
 Two positions on the board, `(r1,c1)` and `(r2,c2)`, are in a
-coninuous straight line if either `r1==r2-1` and `c1==c2` or `r1==r2`
-and `c1==c2-1`. This indicates the need to know which direction a word
-is played in, so we can also make a datatype and function for
-that. One approach to writing `straight` would simply to return `True`
-if the word is straight:
+continuous straight line if either `r1==r2-1` and `c1==c2` or `r1==r2`
+and `c1==c2-1`. One approach to writing `straight` would simply to
+return `True` if the word is straight:
 
 ```haskell
-data Dir = HZ | VT deriving (Show, Read, Eq)
-
-getDirection :: WordPut -> Dir
-getDirection w = let r1 = fst $ fst $ head w
-                     r2 = fst $ fst $ head (tail w) in
-                   if  r1<r2 then VT else HZ
-				   
 straight :: WordPut -> Bool
 straight wp | length wp > 2 = 
                 let ps  = map fst wp
@@ -55,7 +70,7 @@ straight wp | length wp > 2 =
             | otherwise    = False
 ```
 
-But there are lots of ways in which a move might be invalid we'd
+But there are lots of ways in which a move might be invalid and we'd
 like to be able to let the user know exactly what went wrong. If we
 carry on with validation checks that return true or false we will need lots
 of `if` statements that work out what to report back to the user.
@@ -69,6 +84,8 @@ just return `Left e` for an error or `Right ()` if things went
 well. 
 
 ```haskell
+-- in Scrabble.Board.Validation
+
 straight :: WordPut -> Either String ()
 straight wp | length wp > 2 =
                 let ps      = map fst wp
@@ -86,19 +103,15 @@ neighbour has a tile in it. Since this only applies if this is not the first mov
 we pass a boolean parameter which is true if this is the first move.
 
 ```haskell
-onBoard :: Pos -> Bool
-onBoard (r,c) = r >= 0 && r < 15 && c >= 0 && c < 15
+-- in Scrabble.Board.Board
 
 neighbours :: Pos -> [Pos]
 neighbours (r,c) = filter onBoard [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
 
-getSquare :: Board -> Pos -> Maybe Tile
-getSquare b pos = if onBoard pos
-                    then b ! pos
-                    else Nothing
-
 occupiedNeighbours :: Board -> Pos -> [Pos]
 occupiedNeighbours b pos = filter (isJust . getSquare b) $ neighbours pos
+
+-- in Scrabble.Board.Validation
 
 connects :: WordPut -> Board -> Bool -> Either Text ()
 connects ws b fm =
@@ -111,7 +124,8 @@ Checking that a word is on the board just means checking that every position is 
 the board.
 
 ```haskell
-wordOnBoard :: WordPut -> Either String ()
+-- | Check that a WordPut is on the board.
+wordOnBoard :: WordPut -> Either Text ()
 wordOnBoard w = if all (onBoard . fst) w
                  then Right ()
                  else Left "Word not on board"
@@ -120,9 +134,11 @@ Checking that the first word touches the centre square is also
 straightforward with the `touches` function.
 
 ```haskell
+-- | Does the word touch the pos on the board?
 touches :: Pos -> WordPut -> Bool
 touches p = any ((==p) .  fst)
 
+-- If this is the first move, does it touch the centre square?
 firstMoveTouchesCentre :: WordPut -> Bool -> Either Text ()
 firstMoveTouchesCentre w fm = if (not fm || touches (7,7) w) 
                                then Right ()
@@ -132,6 +148,7 @@ We also need to check that the letters in the word to be played are actually in 
 rack or are already on the board.
 
 ```haskell
+-- The letter in this move are available in the player's rack or on the board.
 lettersAvailable :: WordPut -> Player -> Board -> Either Text ()
 lettersAvailable w p b = if all available w
                           then Right ()
@@ -150,20 +167,25 @@ ourselves doing a lot of case statements and pattern matching on
 migh validate move could look like this:
 	
 ```
+-- in Scrabble.Board.Validation
+
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
              -> Bool    -- ^ Is first move
              -> Either String Bool
-validateMove b p w fm = case connects w b fm of
-  Right _ -> case straight w of
-               Right _ -> case firstMoveTouchesCentre w fm of
-                            Right _ -> case lettersAvailable w p b of
-                                         Right -> Right ()
-                                         Left e -> Left e
-                            Left e -> Left e
-               Left e -> Left e
-  Left e -> Left e
+validateMove b p w fm = 
+    case wordOnBoard w of
+      Right _ -> case connects w b fm of
+                   Right _ -> case straight w of
+                                Right _ -> case firstMoveTouchesCentre w fm of
+                                             Right _ -> case lettersAvailable w p b of
+                                                          Right -> Right ()
+                                                          Left e -> Left e
+                                             Left e -> Left e
+                                Left e -> Left e
+                   Left e -> Left e
+      Left e -> Left e
  ```
  
 The technical term for this kind of code is "nasty". Such a deeply
@@ -178,6 +200,8 @@ We create a new type for arbitrary "evaluations" in the game, called
 `Evaluator`. 
 
 ```haskell
+-- in Scrabble.Types
+
 newtype Evaluator a = Ev (Either Text a)
 ```
 This type wraps up an `Either Text a` type where, as you
@@ -198,6 +222,8 @@ report the error**, while if we are dealing with a `Ev (Right _)`
 value we can **keep going**.
 
 ```haskell
+-- in Scrabble.Evaluator
+
 instance Functor Evaluator where
   -- fmap :: (a -> b) -> f a -> f b 
   fmap _ (Ev (Left e))  = Ev (Left e)      -- report the error
@@ -224,6 +250,8 @@ to return `Evaluator a`. The ones we have seen so far tested a boolean condition
 make an abstraction for this pattern.
 
 ```haskell
+-- in Scrabble.Evaluator
+
 evalBool :: Bool -> Text -> Evaluator ()
 evalBool b e = if b then pure () else fail (T.unpack e)
 ```
@@ -251,8 +279,9 @@ validateMove :: Board   -- ^ The board
              -> WordPut -- ^ The word to play
              -> Bool    -- ^ Is first move
              -> Evaluator ()
-validateMove b p w fm = 
-	   connects w b fm 
+validateMove b p w fm =
+	   wordOnBoard w
+	   >> connects w b fm 
 	   >> straight w 
 	   >> firstMoveTouchesCentre w fm 
 	   >> lettersAvailable w p b
@@ -263,7 +292,7 @@ ones like `connects` into larger ones like `validateMove` that check
 several things. Functions at the top level can run an evaluator then
 unpack the result in a single case statement to see if all went well
 or, if not, exactly what went wrong.
-								 
+				
 ## Checking words in the dictionary
 
 We have already seen how to check that a word is in the dictionary
@@ -312,38 +341,12 @@ BIT
 To find the additional words generated by a move we will first determine the 
 direction of the new word. All additional words will be in the opposite direction.
 Next we create a temporary board in which the word has been played and, for each position in the 
-word, we see if that position is part of a word in the opposite direction. This is what the
-functions `wordOnRow`, `wordOnCol`, `startOfWord` and `wordFromPos` do. We also define 
-some functions that transform positions and a convenient type for them, `PosTransform`. 
-The `catMaybes`function from `Data.Maybe` takes a list of `Maybe a` values and returns 
-the list of `a` values from everything that isn't `Nothing`.
+word, we see if that position is part of a word in the opposite direction. The `catMaybes`
+function from `Data.Maybe` takes a list of `Maybe a` values and returns the list of `a` 
+values from everything that isn't `Nothing`.
 
 ```haskell
 import Data.Maybe (catMaybes)
-
-type PosTransform = Pos -> Pos
-
-incRow :: PosTransform
-incRow (r,c) = (r+1,c)
-
-incCol :: PosTransform
-incCol (r,c) = (r,c+1)
-
-startOfWord :: Board -> PosTransform -> Pos -> Pos
-startOfWord b f pos = let pos' = f pos in
-  if not (onBoard pos') || isNothing (getSquare b pos')
-  then pos
-  else startOfWord b f pos'
-
-wordFromSquare :: Board -> PosTransform -> Pos -> Maybe WordPut
-wordFromSquare b f pos =  maybe [] (\t -> (pos, t) 
-                                     : wordFromSquare b f (f pos)) (getSquare b pos)
-
-wordOnRow :: Board -> Pos -> Maybe WordPut
-wordOnRow b pos = wordFromSquare b incCol (startOfWord b decCol pos)
-
-wordOnCol :: Board -> Pos -> Maybe WordPut
-wordOnCol b pos = wordFromSquare b incRow (startOfWord b decRow pos)
 
 additionalWords :: Board -> WordPut -> [WordPut]
 additionalWords b w = 
@@ -395,7 +398,8 @@ combine the various smaller checks we have into coherent blocks.
 ```haskell
 validateMove :: Board -> Player -> WordPut -> Bool -> Evaluator ()
 validateMove b p w fm =
-  connects w b fm
+  wordOnBoard w
+  >> connects w b fm
   >> straight w
   >> firstMoveTouchesCentre w fm
   >> lettersAvailable w p b
@@ -429,7 +433,38 @@ within the game.
 
 ## Tests
 
-TODO
+The tests from chapters one and two are refactored to work with the `Evaluator`
+type. We add a series of tests relating to validating words in `Test.Chapter3`.
+At this stage the tests start to look more complex. This is because when we
+call functions in the `Evaluator` monad we have to unwrap the result by pattern
+matching. Here is the test for the `wordOnBoard` validator.
+
+```haskell
+-- | Test the @wordOnBoard@ validation.
+prop_wordOnBoard :: Property 
+prop_wordOnBoard = monadicIO $ do
+  gen <- liftIO getStdGen
+  d   <- liftIO englishDictionary
+  g   <- pick $ genGame gen d
+  let wp = p1Word g
+  case validateMove (g ^. board) (g ^. player1) wp True of
+    Ev (Right _) -> assert True
+    Ev (Left e)  -> do liftIO $ print e
+                       assert False
+  let e = makeWordPut (wordToText $ g ^. (player1 . rack)) (10,7) HZ []
+  case validateMove (g ^. board) (g ^. player1) e False of
+    Ev (Right _) -> assert False
+    Ev (Left _)  -> assert True
+```
+
+## Exercises
+
++ Refactor the `straight` validator into two parts -- one called
+  `straight` that checks the tiles are placed horizontally or vertically, and
+  one called `continuous` that checks whether there are any gaps in the
+  something goes wrong.
++ Change the tests so that if a `Left` value is returned you make sure the right
+  error message is being received.
  
 [Contents](../README.md) | [Chapter Four](Chapter4.md)
 
