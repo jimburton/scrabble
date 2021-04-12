@@ -10,7 +10,6 @@ import System.Log.Logger
 import System.Log.Handler.Simple
 import System.Log.Handler (setFormatter)
 import System.Log.Formatter
-import System.IO
 
 import ScrabbleWeb.Game (gameStarter, aiGame)
 import ScrabbleWeb.Types (Msg(MsgJoin), Client)

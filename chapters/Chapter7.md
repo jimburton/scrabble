@@ -3,12 +3,12 @@
 [Contents](../README.md)
 
 Going a step beyond writing clients in Haskell that import the library
-directly, in this chapter we develop a server for remote
-clients. These can be written in any language so long as they can
-reach the server, send JSON objects representing requests to join a
-game, moves and so on. In this way the library is fully decoupled from
-clients, and we demonstrate this by writing a web-based client using
-HTML, CSS and Javascript.
+directly, we now develop a server for *remote* clients. These can be
+written in any language so long as they can reach the server, send
+JSON objects representing requests to join a game, moves and so on. In
+this way the library is fully decoupled from clients, and we
+demonstrate this by writing a web-based client using HTML, CSS and
+Javascript.
 
 ```
 web/
@@ -33,14 +33,14 @@ web/
 We will write the server using *websockets*. This is a modern protocol
 that allows full duplex communications (either side can send a message
 at any time) over TCP between clients and servers on a network such as
-the web. It is designed with web browsers in mind and it's easy to
-communicate over websockets with Javascript, but we can write servers
-and clients in any language that has a library for the
+the web. It is designed with web browsers in mind. It's particularly
+easy to communicate over websockets with Javascript, but we can write
+servers and clients in any language that has a library for the
 protocol. Messages are normally sent back and forth over the standard
-HTTP or HTTPS ports, meaning that there aren't likely to be firewall
-issues. We'll run our server on a higher port during development, as
-you need admin privileges to attach to ports below 1024. The handshake
-between client and server starts with a HTTP request/response. After
+`HTTP` or `HTTPS` ports, meaning that there aren't likely to be firewall
+issues (we'll run our server on a higher port during development, as
+you need admin privileges to attach to ports below 1024). The handshake
+between client and server starts with a `HTTP` request/response. After
 that, communication switches to a much more efficient binary protocol.
 
 To demonstrate how easy it is to get started, here is a self-contained
@@ -110,35 +110,39 @@ Here is a client that runs in a browser.
     <body onload="connect()">
       <label for="echoText">Text to echo:</label><br>
       <input type="text" id="echoText" name="echoText"><br>
-      <button onclick="socket.send(document.getElementById('echoText').value)">Echo</button> 
+      <button onclick="socket.send(document.getElementById('echoText').value)">
+		  Echo
+	  </button> 
     </body>
 </html>
 ```
 When the page is loaded the `connect` function runs. This creates a `WebSocket`
 object connected to the server. It uses the socket to create a `Client` object
 that defines event handlers for the lifecycle of the socket. The `onmessage`
-handler is called whenever a message comes in from the server. The form in the 
+handler is triggered whenever a message comes in from the server. The form in the 
 body of the page allows us to send messages to the server using `socket.send`.
 
-To write a server that allows users to play Scrabble, we can start with code like
-this. On the server side we need to replace `echo` with code that parses messages
-from the user and acts accordingly. Similarly, on the client side we need to add
-code to the `onmessage` handler that parses input from the server and uses it to 
-present the game.
+To write a server that allows users to play Scrabble, we can start
+with code like this. On the Haskell side (the server) we need to
+replace `echo` with code that parses messages from the user and acts
+accordingly. Similarly, on the Javascript side we need to add code to
+the `onmessage` handler that parses input from the server and uses it
+to present the game as a webpage.
 
 ## Serialising data
 
-The format we will use for the communication is JSON (Javascript
-Object Notation), which is nice and simple, human-readable and well
-supported in Javascript and Haskell. In fact, JSON is a subset of
-Javascript, so there's very little parsing to do on the client side. The
-parts of Javascript that are allowed in JSON are *numbers*, *strings*,
-*booleans*, *objects* (braces containing
-comma-separated key:value pairs, like `{"name":"James", "score": 42}`
-and *arrays* (comma-separated values within square brackets).
+Data sent over the network needs to be serialised. The format we will
+use for the communication is JSON (Javascript Object Notation). JSON
+is nice and simple, human-readable and well supported in Javascript
+and Haskell. In fact, JSON is a subset of Javascript so there's very
+little parsing to do on the client side. The parts of Javascript that
+are allowed in JSON are *numbers*, *strings*, *booleans*, *objects*
+(braces containing comma-separated key:value pairs, like
+`{"name":"James", "score": 42}` and *arrays* (comma-separated values
+within square brackets).
 
 We do have to turn Javascript objects into strings and back again
-though. We do this with `JSON.stringify` and `JSON.parse`.
+in the client though. We do this with `JSON.stringify` and `JSON.parse`.
 
 ```javascript
 // send a JSON object (an array of numbers) to the server
@@ -151,18 +155,19 @@ socket.onmessage = function (event) {
 }
 ```
 
-Thanks to the `aeson` library, it isn't that much more difficult on
+Thanks to the `aeson` library, life isn't that much more difficult on
 the Haskell side. `aeson` provides a powerful and neat way of converting
 Haskell values into JSON representations and back again. 
 
-Datatypes that need to be sent over the network are made into
-instances of the `ToJSON` and `FromJSON` typeclasses. We can do this
-ourselves by defining `encode` and `decode` functions for each type,
-but as we don't want to do anything special the instances can be
+Datatypes that need to be sent from the server to clients are made
+into instances of the `ToJSON` and `FromJSON` typeclasses. We can do
+this ourselves by defining `encode` and `decode` functions for each
+type, but as we don't want to do anything special the instances can be
 derived. In order to make this work we have to turn on two language
-extensions: `DeriveGeneric` and `DeriveAnyClass`. For each type we want
-to derive the `aeson` instances for, we also need to derive an instance
-of `Generic`, which is a typeclass the compiler uses internally. 
+extensions: `DeriveGeneric` and `DeriveAnyClass`. For each type we
+want to derive the `aeson` instances for, we also need to derive an
+instance of `Generic`, which is a typeclass the compiler uses
+internally.
 
 We will keep the data sent back and forth to an absolute
 minimum. There's no need to send entire boards, for instance. Clients
@@ -216,8 +221,8 @@ deriving instance FromJSON Turn
 deriving instance ToJSON   Turn
 ```
 
-Now we can turn a `Turn`, a `Letter` or a `MoveResult` into JSON with `encode`.
-We can read text into `Maybe`s of those type with `decode`.
+Now we can encode a `Turn`, a `Letter` or a `MoveResult` as JSON with `encode`.
+We can read text into `Maybe` values of those types with `decode`.
 	
 ```
 $ cabal repl scrabble-server
@@ -276,7 +281,7 @@ Just
     )
 ``` 
 
-As you can see, a record is encoded into a JSON object with key:value
+As you can see, a record is encoded into a JSON object with `key:value`
 pairs for the fields.  Algebraic datatypes (i.e. non-records) are
 encoded as an object with a key called "tag" with the name of the type
 in it and a key called "contents" with the data. For example, here is
@@ -294,7 +299,7 @@ out how it all works by [reading the tutorial](https://artyom.me/aeson).
 
 ## The protocol
 
-The protocol for our game consists of a definition of the data that
+The protocol for our game consists of the definition of the data that
 can be sent between client and server, the order in which it must be
 sent in order for a game to be played, and the expectations that each side
 can have about the behaviour of the other.
@@ -321,11 +326,15 @@ player is `P1`.
 Now the game is in play the following sequence, with possible
 variations explained below, is repeated until the game ends. The
 server sends the client the `TURN` message to tell them it is waiting
-for a move. If a legal move is received the server responds by sending
-the word itself, the list of additional words that were created and the 
-score. Then the server sends the new rack. The turn is passed to the other
-player and the sequence is repeated (except that when it is the AI player's
-turn no `MOVE` or `RACK` messages are sent of course).
+for a move and which player should make that move. If the contents of
+the `TURN` message match the client's identity the client should
+allow the user to enter a move. 
+
+If a legal move is subsequently received the server acknowledges it by
+sending a serialised `MoveResult`. Then the server sends the new
+rack. The turn is passed to the other player and the sequence is
+repeated (except that when it is the AI player's turn no `MOVE`, `MOVE
+ACK` or `RACK` messages are sent of course).
 
 ```
      |                                             |
@@ -333,17 +342,21 @@ turn no `MOVE` or `RACK` messages are sent of course).
      |                                             |
      |      -- MOVE [MOVE] -->                     |
      |                                             |
-     |      <- MOVE ACK [MOVE,P1] --               |
+     |      <- MOVE ACK [MOVERESULT] --            |
      |                                             |
      |      <- RACK [LETTERS] --                   |	 
+     |                                             |
+     |      <- TURN [P2] --                        |
 ```
 
-If the client sends an illegal move then, rather than receiving `MOVE ACK` 
-and a new rack, it receives a message explaining what was wrong with the
-move and the `TURN` sequence is repeated without the turn being passed to 
-the other player.
+If the client sends an illegal move then, rather than receiving `MOVE
+ACK` it receives a message explaining what was wrong with the move and
+the `TURN` sequence is repeated without the turn being passed to the
+other player.
 
 ```
+     |      <- TURN [P1] --                        |
+     |                                             |
      |      -- MOVE [P1] -->                       |
      |                                             |
      |      <- ANNOUNCE [ERROR]                    |
@@ -351,13 +364,13 @@ the other player.
      |      <- TURN [P1]                           |
      |                                             |
 ```
-Any time it is the client's turn they can send `PASS MOVE`. The server
-responds by giving the turn to P2.
+Any time it is the client's turn they can send the `PASS` message. The 
+server responds by giving the turn to the other player.
 
 ```
      |      <- TURN [P1] --                        |
      |                                             |
-     |      -- PASS MOVE [P1] -->                  |
+     |      -- PASS [P1] -->                       |
      |                                             |
      |      <- TURN [P2] --                        |
      |                                             |
@@ -422,24 +435,109 @@ data Msg =
          deriving ( Show, Read, Generic, FromJSON, ToJSON )
 ```
 
+## Logging
+
+Server applications are intended to run unattended for a long time. We
+want to capture information about how many people are using the
+service and we certainly want to know what happened when something
+goes wrong. So server applications typically create *logs*, writing
+the details of clients that access the server and/or errors to text
+files that can be analysed later.
+
+We will be using the `hslogger` framework. Like most logging
+frameworks it depends on two concepts: log messages can have differing
+*priorities*, and there may be several message *handlers*, each of
+which may be interested only in messages of a certain priority. 
+
+In the entry point to our application we create the "global logger":
+
+```haskell
+import System.Log.Logger 
+
+main = do updateGlobalLogger "Scrabble" (setLevel DEBUG)
+```
+
+This logger is called `"Scrabble"` and will accept messages with the
+lowest priority, `DEBUG`, or higher. The other priorities are, in
+order of increasing urgency, `INFO`, `NOTICE`, `WARNING`, `ERROR`,
+`CRITICAL`, `ALERT` and `EMERGENCY`. By default, all messages will be
+logged to `stdout`, and messages with a priority of `ERROR` or higher
+will be logged to `stderr`. If we start the server in a terminal
+without any further commands this means the same thing -- print the
+message to the terminal -- but there are [standard UNIX
+ways](https://linuxize.com/post/bash-redirect-stderr-stdout/) of
+reassigning `stdout` and `stderr`, thus redirecting the "good" and
+"bad" output.
+
+We want to write messages to the terminal the server was started in,
+but also to make a permanent record by writing them to a file. So we
+add a second handler to the global logger.
+
+```haskell
+import System.Log.Logger 
+import System.Log.Handler.Simple
+import System.Log.Handler (setFormatter)
+import System.Log.Formatter
+
+main = do updateGlobalLogger "Scrabble" (setLevel DEBUG)
+          h <- fileHandler "./log/scrabble.log" DEBUG >>= \lh -> return $
+              setFormatter lh (simpleLogFormatter "[$time : $loggername : $prio] $msg")
+          updateGlobalLogger "Scrabble" (addHandler h)
+```
+This code creates an additional handler for the `"Scrabble"` logger with the `DEBUG` 
+priority. If we only wanted to write errors (or worse) to file, we could set a
+different priority here. The handler writes its output to a file, `./log/scrabble.log`,
+that will be created if it does not exist. The call to `setFormatter` determines the 
+format of the messages. Ours will look something like this, where we log an `INFO` 
+message:
+
+```
+-- in the code, after setting up the logger
+infoM "Starting server."
+
+-- in ./log/scrabble.log
+[2021-04-06 12:47:52 BST : Scrabble : INFO] Starting server.
+```
+
+Now, instead of littering our code with calls to `trace` when we want
+to check the value of some variable during development, we can log a
+`DEBUG` level message using the `debugM` function from the framework
+(there are functions for each type of message). Note that this applies
+only to the server code, which is already `IO`-bound. In the pure code
+of the library, we still need to use `trace`. 
+
+When the code is ready (i.e. it "goes into production") we can change
+the priority of the logger and possibly its handlers to `INFO` or
+higher. `DEBUG` messages will then be ignored. We can easily create
+"children" of the `"Scrabble"` logger by writing to a logger with a
+name that begins `"Scrabble."`, e.g. `"Scrabble.Game"`. This enables
+us to know which parts of the code the messages are coming from, and
+also allows us to control the priorities and handlers of different
+loggers independently or in top-down ways. So, we could set the
+priority of the logger `"Scrabble.Game"` without affecting its parent,
+`"Scrabble"` or we could change the priority of the parent, affecting
+both it and its children.
+
 ## Writing the server
 
 Every time a connection comes in to our server it could be from a
-client that wants to play an AI game or from one that wants to play
-against another human.  Requests for AI games can be served straight
-away. Requests for games against humans need to be saved until there
-are two of them. So we need to manage a *buffered queue*, a concurrent
-data structure that can contain at most two clients. The main thread
-will add incoming requests for non-AI games to the queue and a
-separate thread, the `gameStarter` thread, will watch this queue,
-waiting until there are two requests then creating a new game in a
-separate thread and allowing them to play.
+client that wants to play an AI game, or from a client that wants to
+play an interactive game against a human.  Requests for AI games can
+be served straight away. Requests for interactive games need to be
+saved until there are two of them. 
 
-If there are already two requests for games in the queue, the main
-thread will have to wait until there are less than two before adding
-another. If there are less than two requests for games in the queue,
-obviously the `gameStarter` thread will have to wait before it can 
-create a game.
+We need to manage a *buffered queue*, a concurrent data structure that
+can contain at most two clients. This data is shared amongst several
+threads. The main thread will add incoming requests for non-AI games
+to the queue and a separate thread, the `gameStarter` thread, will
+watch the queue until there are two requests. It then creates a new
+game in a separate thread and begins the game.
+
+If there are already two requests for games in the queue the main
+thread will wait until there are less than two before adding
+another. If there are fewer than two requests in the queue, the
+`gameStarter` thread will wait until two arrive so that it can create
+a game.
 
 The `BoundedChan` type serves this purpose. It provide a *bounded
 channel*, or concurrent queue that can contain only a given number of
@@ -447,11 +545,11 @@ elements; threads that want to take from the queue are blocked if it
 is empty, and threads that want to add to a full queue are blocked
 until there is room for another element.
 
-The `main` function sets up some logging using the `hslogger` package,
-creates the bounded channel and forks a new thread to watch the
-channel, running the `gameStarter` thread.  It then runs the websocket
-application, called `enqueue`, passing in a reference to the bounded 
-channel.
+The `main` action starts by setting up the logging with the logging
+level to `DEBUG`. it then creates the bounded channel and forks a new
+thread running the `gameStarter` action, which watches the queue.
+Finally, it runs the websocket application, `enqueue`, passing in a
+reference to the bounded channel.
 
 ```haskell
 -- | Entry point for the server. It begins by setting up the logger.
@@ -578,7 +676,7 @@ AI player before trying to send any message.
 The client is written as a small, free-standing (i.e. one that doesn't
 require a webserver) web application, with most of the effort going in
 to the JavaScript. I'm not going to go into any detail about the code,
-as JavaScript techniques aren't the subject of this book.  Suffice to
+as JavaScript techniques aren't the subject of this book. Suffice to
 say, the event handler that receives incoming messages from the server
 has a `switch` statement (the equivalent of Haskell's `case`
 statement) that pattern matches on messages in a very similar way to
@@ -597,12 +695,50 @@ click on the checkbox to start a game against the computer. If you
 leave that unchecked the server will wait for a second connection,
 which you can supply by opening the index page in a second tab.
 
-In the final chapter we will add a configuration system to
-the server that allows you to change the hostname, port and other
-server details without needing to recompile it.
+You can also serve the same files over the web, allowing the client to
+be properly hosted. The code that does this is a very simple use of
+the `happstack` web application framework and is contained in
+`web/client/Main.hs`. In fact after the imports it is a one-liner.
+
+```haskell
+import Happstack.Server
+  ( Browsing(EnableBrowsing)
+  , nullConf
+  , serveDirectory
+  , simpleHTTP
+  )
+
+-- ================= the client web app just serves static files ================= --
+
+-- | Serves the static files in html/ on port 8000
+main :: IO ()
+main = simpleHTTP nullConf $ serveDirectory EnableBrowsing [] "web/client/html"
+```
+
+The following stanza is added to `cabal.config` allowing us to build
+and execute the client webserver.
+
+```
+executable scrabble-client
+  main-is:            Main.hs
+  other-modules:      
+  build-depends:      base >=4.12 && <4.13
+                    , happstack-server
+  hs-source-dirs:     web/client
+  default-extensions:
+  ghc-options: -Wall -fno-warn-orphans
+  default-language:   Haskell2010
+```
+
+The command `cabal run scrabble-client` will run the client webserver
+at the address http://localhost:8000.
 
 ## Tests
 
+TODO
+
 ## Exercises
+
+TODO
 
 [Contents](../README.md) | [Chapter Eight](Chapter8.md)
