@@ -158,9 +158,9 @@ g' = g & player1 . score %~ (+10)
 ```
 
 is the same as writing `(player1 . score %~ (+10)) g`.  So `g` is
-applied to a function which is a lens made up of `player1` and `score`
-composed with the usual composition operator, `(.)`.  Then comes the
-`(%~)` operator, which takes a lens as its first argument and a
+supplied as the parameter to a function which is a lens made up of 
+`player1` and `score` composed with the usual composition operator, `(.)`.  
+Then comes the `(%~)` operator, which takes a lens as its first argument and a
 function as its second, and supplies the value from the lens to the
 function. Haskell is still a purely functional language of course, so
 no change is made to `g`, but a new `Game` record is produced which we

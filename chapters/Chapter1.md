@@ -251,7 +251,7 @@ In many languages we would create an array of arrays to achieve this,
 where each element of the 15-element outer array is a 15-element array
 representing a row. However, Haskell supports true multi-dimensional
 arrays, so we can create one where the type of indices is `(Int,Int)`
-(for our purpose, `(row,column)`). The `Array` type constructor takes
+(for our purposes, `(row,column)`). The `Array` type constructor takes
 two arguments, the type of indices and the type of elements.
 
 ```haskell
@@ -275,7 +275,7 @@ type Pos = (Int,Int)
 
 *Words*, *racks* and *bags* are all just lists of letters, but it's helpful to
 distinguish between them in type signatures so we make aliases for
-each of them.  Because the `Prelude` includes a type called `Word` we
+each.  Because the `Prelude` includes a type called `Word` we
 have a name clash here.  We could call our new type `ScrabbleWord` or
 something like that, but it seems more convenient to keep the short
 name and hide the type in the `Prelude`, which we don't need anyway.

@@ -86,7 +86,7 @@ well.
 ```haskell
 -- in Scrabble.Board.Validation
 
-straight :: WordPut -> Either String ()
+straight :: WordPut -> Either Text ()
 straight wp | length wp > 2 =
                 let ps      = map fst wp
                     (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
