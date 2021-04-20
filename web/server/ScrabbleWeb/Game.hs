@@ -30,15 +30,9 @@ import ScrabbleWeb.Types
 import Scrabble.Types
   ( Evaluator(..)
   , Game
-  , turn
-  , score
-  , player1
-  , player2
-  , isAI
-  , gameOver
+  , turn, score, player1, player2, isAI, gameOver
   , Turn(..)
-  , rack
-  , name
+  , rack, name
   , Letter)
 import Scrabble.Lang.Dict (englishDictionary)
 import Scrabble.Lang.Search (makeWords)

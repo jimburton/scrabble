@@ -70,23 +70,7 @@ function Client(socket) {
 	console.log(d);
 	switch(d.tag) {
 	case "MsgJoinAck":
-	    player.name = d.contents.jaName;
-	    player.turn = d.contents.jaTurn;
-	    setRack(d.contents.jaRack);
-	    opponent.name = d.contents.jaOppName;
-	    opponent.turn = (player.turn === "P1") ? "P2" : "P1";
-	    serverMessage("Joined game!");
-	    serverMessage("Your name is "+player.name+" and you are "+turnString(player.turn));
-	    serverMessage("Your opponent is "+opponent.name);
-	    $('#playerDisplayName').text(player.name);
-	    $('#playerDisplayScore').text(0);
-	    $('#opponentDisplayName').text(opponent.name);
-	    $('#opponentDisplayScore').text(0);
-	    displayRack();
-	    break;
-	case "MsgMove": // TODO REMOVE
-	    serverMessage("Opponent played : "+d.contents.word+", "+d.contents.score);
-	    addMoveToBoard(d.contents.word);
+	    doMsgJoinAck(d);
 	    break;
 	case "MsgHint":
 	    doHints(d.contents);
@@ -99,47 +83,10 @@ function Client(socket) {
 	    setRack(d.contents);
 	    break;
 	case "MsgMoveAck":
-	    console.log("Received move response.");
-	    if (d.contents.Left != null) {
-		serverMessage("Error! "+d.contents.Left);
-		returnToRack();
-	    } else {
-		var additionalWords = "";
-		var wp = d.contents.Right.mrWord;
-		var w  = wordPutToWord(wp)
-		var aw = d.contents.Right.mrAdditionalWords;
-		var bs = d.contents.Right.mrBlanks;
-		var sc = d.contents.Right.mrScore;
-		if (aw.length > 0) {
-		    additionalWords = " ("+w+","+aw.map(a => a.join(''))+")";
-		}
-		serverMessage(wordPutToWord(wp)+": " + sc + additionalWords);
-		if (isCurrentPlayer()) {
-		    $('.tempInPlay').addClass("permInPlay");
-		    $('.tempInPlay').removeClass("tempInPlay");
-		    $('.emptyRackSpace div').attr('display','inline-block');
-		    $('.emptyRackSpace').text('');
-		    $('.emptyRackSpace').removeClass('emptyRackSpace');
-		} else {
-		    addMoveToBoard(wp);
-		}
-	    }
-	    break;
-	case "MsgScore":
-	    var plSc = (player.turn==="P1") ? d.contents[0].theScore : d.contents[1].theScore;
-	    var opSc = (player.turn==="P1") ? d.contents[1].theScore : d.contents[0].theScore;
-	    console.log("Player score: "+plSc);
-	    console.log("Opponent score: "+opSc);
-	    $('#playerDisplayScore').text(plSc);
-	    $('#opponentDisplayScore').text(opSc);
+	    doMsgMoveAck(d);
 	    break;
 	case "MsgTurn":
-	    console.log("Received turn.");
-	    turn = d.contents;
-	    toggleActive(turn===player.turn);
-	    if (isCurrentPlayer()) {
-		serverMessage("It's your turn!");
-	    }
+	    doMsgTurn(d);
 	    break;
 	case "MsgEog":
 	    console.log("Received Game Over");
@@ -148,6 +95,66 @@ function Client(socket) {
 	default:
 	    console.log("Couldn't match the tag: "+d.tag);
 	} 
+    }
+}
+
+// Respond to MsgJoinAck.
+function doMsgJoinAck(msg) {
+    player.name = msg.contents.jaName;
+    player.turn = msg.contents.jaTurn;
+    setRack(msg.contents.jaRack);
+    opponent.name = msg.contents.jaOppName;
+    opponent.turn = (player.turn === "P1") ? "P2" : "P1";
+    serverMessage("Joined game!");
+    serverMessage("Your name is "+player.name+" and you are "+turnString(player.turn));
+    serverMessage("Your opponent is "+opponent.name);
+    $('#playerDisplayName').text(player.name);
+    $('#playerDisplayScore').text(0);
+    $('#opponentDisplayName').text(opponent.name);
+    $('#opponentDisplayScore').text(0);
+    displayRack();
+}
+
+// Respond to MsgMoveAck.
+function doMsgMoveAck(msg) {
+    console.log("Received move response.");
+    if (msg.contents.Left != null) {
+	serverMessage("Error! "+msg.contents.Left);
+	returnToRack();
+    } else {
+	var additionalWords = "";
+	var wp = msg.contents.Right.mrWord;
+	var w  = wordPutToWord(wp)
+	var aw = msg.contents.Right.mrAdditionalWords;
+	var bs = msg.contents.Right.mrBlanks;
+	var sc = parseInt(msg.contents.Right.mrScore,10);
+	var tn = msg.contents.Right.mrTurn;
+	if (aw.length > 0) {
+	    additionalWords = " ("+w+","+aw.map(a => a.join(''))+")";
+	}
+	serverMessage(wordPutToWord(wp)+": " + sc + additionalWords);
+	if (isCurrentPlayer()) {
+	    $('.tempInPlay').addClass("permInPlay");
+	    $('.tempInPlay').removeClass("tempInPlay");
+	    $('.emptyRackSpace div').attr('display','inline-block');
+	    $('.emptyRackSpace').text('');
+	    $('.emptyRackSpace').removeClass('emptyRackSpace');
+	} else {
+	    addMoveToBoard(wp);
+	}
+	var displayScore = (tn===player.turn) ? $('#playerDisplayScore') : $('#opponentDisplayScore');
+	console.log(tn + "score: "+sc);
+	displayScore.text(parseInt(displayScore.text(),10)+sc);
+    }
+}
+
+// Respond to MsgTurn.
+function doMsgTurn(msg) {
+    console.log("Received turn.");
+    turn = msg.contents;
+    toggleActive(turn===player.turn);
+    if (isCurrentPlayer()) {
+	serverMessage("It's your turn!");
     }
 }
 

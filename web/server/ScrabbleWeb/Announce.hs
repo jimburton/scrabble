@@ -96,7 +96,7 @@ msgMoveAck wg mv = msg wg (MsgMoveAck (MoveAck (Right mv)))
 {-msgScores :: WebGame -> IO ()
 msgScores wg = do
   let ss = getScores wg
-  msg wg (MsgScore ss)
+  msg wg (MsgScore ss) 
 -}
 -- | Send the End of Game message to both players
 msgEog :: WebGame -> IO ()

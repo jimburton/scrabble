@@ -6,6 +6,7 @@ import Control.Concurrent (forkIO, threadDelay)
 import qualified Network.WebSockets as WS
 import Control.Concurrent.BoundedChan
 import qualified Data.Text as T
+import qualified Data.ByteString.Lazy.Char8 as B
 import System.Log.Logger 
 import System.Log.Handler.Simple
 import System.Log.Handler (setFormatter)
@@ -53,7 +54,8 @@ enqueue state pending = do
     conn <- WS.acceptRequest pending
     msg  <- WS.receiveData conn
     case decode msg of
-      Nothing -> WS.sendTextData conn ("Bad input: " <> msg)
+      Nothing -> do infoM "Scrabble" ("Bad request: " ++ B.unpack msg)
+                    WS.sendTextData conn ("Bad input: " <> msg)
       Just (MsgJoin (name,ai)) -> do
         infoM "Scrabble" ("[Client] " <> T.unpack name <> " [AI] " <> show ai)
         -- If the client wants an AI game, start right away. Otherwise, put them in the queue.

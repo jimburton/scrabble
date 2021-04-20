@@ -88,6 +88,7 @@ executable scrabble
                      , containers
                      , haskeline
                      , lens-simple
+                     , bytestring
   hs-source-dirs:      cli
                      , src
   default-extensions: OverloadedStrings
@@ -132,6 +133,7 @@ executable scrabble-server
                     , hslogger
                     , config-value
                     , config-schema
+                    , bytestring
   hs-source-dirs:     web/server
                     , src
   ghc-options: -Wall -fno-warn-orphans
@@ -186,7 +188,7 @@ test-suite test-scrabble
   ghc-options:         -Wall
   default-extensions: OverloadedStrings
                     , TemplateHaskell
-  build-depends:       base
+  build-depends:       base >= 4.12 && <4.13
                      , random
                      , aeson
                      , text

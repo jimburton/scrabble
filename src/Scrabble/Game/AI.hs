@@ -29,9 +29,7 @@ import Scrabble.Evaluator (Evaluator(..))
 import Scrabble.Types
   ( Dict
   , Game(..)
-  , dict
-  , playable
-  , firstMove
+  , dict, playable, firstMove, turn
   , Player(..)
   , rack
   , FreedomDir(..)
@@ -118,11 +116,11 @@ moveAI g = do
   let r  = g ^. (getPlayer g . rack)
       mw = findWord g (filter (/=Blank) r)  
   case mw of
-    Nothing -> pass g >>= \g' -> pure (g', MoveResult [] [] [] 0)
+    Nothing -> pass g >>= \g' -> pure (g', MoveResult (g ^. turn) [] [] [] 0)
     Just (w,aw)  -> scoreWords g w aw >>=
                     \i -> setScore (g & firstMove .~ False) i >>= updatePlayer w
                     >>= updatePlayables w >>= updateBoard w
-                    >>= toggleTurn <&> (, MoveResult w (map wordPutToWord (w:aw)) [] i)
+                    >>= toggleTurn <&> (, MoveResult (g ^. turn) w (map wordPutToWord (w:aw)) [] i)
 
 -- Pick a word for the AI to play, along with the additional words it generates. 
 findWord :: Game     -- The game.

@@ -110,6 +110,6 @@ data Msg =
   | MsgAnnounce Text        -- ^ CLIENT <-  SERV   A general purpose announcement.
   | MsgRack Rack            -- ^ CLIENT <-  SERV   Send rack to client.
   | MsgMoveAck MoveAck      -- ^ CLIENT <-  SERV   Was the move acceptable? If so, score and word. 
- -- | MsgScore (Score, Score) -- ^ CLIENT <-  SERV   The scores of both players.
+--  | MsgScore (Score, Score) -- ^ CLIENT <-  SERV   The scores of both players.
   | MsgEog (Score,Score)    -- ^ CLIENT <-  SERV   End of game.
          deriving ( Show, Read, Generic, FromJSON, ToJSON )

@@ -39,9 +39,7 @@ import Scrabble.Game.Internal
   , endNonPassMove )  
 import Scrabble.Types
   ( Game(..)
-  , lastMovePass
-  , gen
-  , bag
+  , lastMovePass, gen, bag, turn
   , Turn(..)
   , WordPut
   , Player(..)
@@ -109,7 +107,7 @@ move validate g w is = additionalWords g w >>= \aw -> setBlanks w is g
   >>= \g' -> validate (w:aw) g' >> scoreWords g w aw
   >>= \sc -> setScore g' sc 
   >>= updatePlayer w >>= updatePlayables w >>= updateBoard w
-  >>= endNonPassMove >>= checkEndOfGame <&> (,MoveResult w (map wordPutToWord aw) is sc)
+  >>= endNonPassMove >>= checkEndOfGame <&> (,MoveResult (g ^. turn) w (map wordPutToWord aw) is sc)
 
 -- | Take a move by swapping tiles.
 swap :: Word -- ^ The tiles to swap.

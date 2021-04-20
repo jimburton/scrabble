@@ -144,14 +144,11 @@ type Validator = [WordPut] -> Game -> Evaluator ()
 
 -- | The Record returned by move functions.
 data MoveResult = MoveResult
-                  { mrWord            :: WordPut -- ^ The word that was played.
+                  { mrTurn            :: Turn    -- ^ The player that made this move.
+                  , mrWord            :: WordPut -- ^ The word that was played.
                   , mrAdditionalWords :: [Word]  -- ^ The additional words.
                   , mrBlanks          :: [Int]   -- ^ The positions in the word that were blank.
                   , mrScore           :: Int     -- ^ The score.
                   }
                 deriving (Read, Eq)
-
-
-
-
 
