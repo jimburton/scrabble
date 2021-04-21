@@ -387,7 +387,7 @@ Similarly, if it the client's turn they can use it by swapping tiles.
      |                                             |
 ```
 
-Finally, if it is the clients turn they can ask for hints.
+Finally, if it is the client's turn they can ask for hints.
 
 ```
      |      <- TURN [P1] --                        |
