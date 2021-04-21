@@ -666,7 +666,7 @@ takeTurnManual wg = do
 
 The functions that send feedback to clients are defined in the module
 `ScrabbleWeb.Announce`. Note that at this level `MoveAck` is sent to
-both clients without checking whether this an AI game. The `send`
+both clients without checking whether either of them is an AI game. The `send`
 function in `ScrabbleWeb.Announce` will check whether a client is an
 AI player before trying to send any message.
 
