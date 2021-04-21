@@ -138,6 +138,16 @@ The `playGame` action prints the details of the two players then passes the game
 to the `takeTurn` function. This is the top level of the loop that actually plays 
 the game.
 
+To make the process of entering text nicer we use the `haskeline`
+library. That means we can use the backspace and arrow keys when
+entering a move -- otherwise we would have to type everything
+perfectly the first try. `haskeline` reads input from users into its
+own monadic type, `InputT`. Any time we want to run an `IO` action
+inside an `InputT` action we need to "lift" the `IO` action using 
+`liftIO` which has the type `MonadIO m => IO a -> m a`. `InputT` is
+an instance of `MonadIO`, which is the class of types in which `IO`
+actions can be embedded.
+
 The `takeTurn` function prints the current state of the board then
 checks whether the game is over. If so, it prints the result. If not,
 it checks whether the player whose turn it is is an AI player. If the
@@ -161,16 +171,6 @@ takeTurn g msc = runInputT defaultSettings loop
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
 ```
-
-To make the process of entering text nicer we use the `haskeline`
-library. That means we can use the backspace and arrow keys when
-entering a move -- otherwise we would have to type everything
-perfectly the first try. `haskeline` reads input from users into its
-own monadic type, `InputT`. Any time we want to run an `IO` action
-inside an `InputT` action we need to "lift" the `IO` action using 
-`liftIO` which has the type `MonadIO m => IO a -> m a`. `InputT` is
-an instance of `MonadIO`, which is the class of types in which `IO`
-actions can be embedded.
 
 The second argument to `takeTurn` is a `Maybe Text` that allows us to
 display an optional message to the user. Within the function the
