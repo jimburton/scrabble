@@ -5,9 +5,8 @@
 We now have enough resources to start playing the game. Not actually
 with a user interface -- what we mean by "playing" is using the REPL
 to generate an initial game state then calling functions to "take
-turns" that generate new game states.
-
-Code that takes turns repeatedly until the game is over is not part of
+turns" that generate new game states. Similarly, code that takes turns 
+repeatedly until the game is over is not part of
 this section. That functionality is the responsibility of clients,
 because it will necessarily involve IO, and the desired response when
 something goes wrong will be different for each client. All the
