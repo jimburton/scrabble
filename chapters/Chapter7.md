@@ -650,7 +650,7 @@ takeTurnManual wg = do
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
-      MsgHint _         -> doHints wg >> takeTurn wg 
+      MsgHint           -> doHints wg >> takeTurn wg 
       MsgPass           -> doPass wg >>= takeTurn 
       MsgSwap w         -> doSwap wg w >>= takeTurn 
       MsgMove (Move wp bs) -> do
