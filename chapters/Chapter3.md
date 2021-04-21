@@ -167,8 +167,6 @@ ourselves doing a lot of case statements and pattern matching on
 might validate a move could look like this:
 	
 ```
--- in Scrabble.Board.Validation
-
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
@@ -188,7 +186,7 @@ validateMove b p w fm =
       Left e -> Left e
  ```
  
-The technical term for this kind of code is "nasty". Such a deeply
+The technical term for this kind of code is "nasty"! Such a deeply
 nested and indented structure is hard to read, hard to maintain and
 hard to extend.  Fortunately, what we can do here is to use a monad to
 encapsulate the checks for `Left` and `Right`. We make our `Either`
