@@ -203,8 +203,8 @@ We create a new type for arbitrary "evaluations" in the game, called
 newtype Evaluator a = Ev (Either Text a)
 ```
 This type wraps up an `Either Text a` type where, as you
-may expect, the `Text` is an error message and the `a` value is
-whatever is being evaluated. For instance, `a` could be `()` in cases 
+may expect, the `Text` is an error message and `a` is
+the type of whatever is being evaluated. For instance, `a` could be `()` in cases 
 where moves are being checked for validity, or `Game` when a function 
 either fails or returns an updated version of the game, or `Int` when
 a function either fails or calculates the score of a word. A value of
