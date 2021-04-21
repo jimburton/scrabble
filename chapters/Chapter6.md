@@ -566,5 +566,9 @@ in any language, and we'll write one in Javascript.
 
 TODO
 
+## Exercises
+
+TODO
+
 
 [Contents](../README.md) | [Chapter Seven](Chapter7.md)
