@@ -304,7 +304,7 @@ doSwap (g, mLn) = do
     Ev (Left e)   -> do T.putStrLn e
                         pure (g,mLn)
 ```
-The `doSwap` function is very similar.
+The `doPass` function is very similar.
 
 ```haskell
 -- | Take a move by passing.
