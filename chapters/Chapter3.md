@@ -161,7 +161,7 @@ So, we already have lots of things to check about the validity of a
 move. We need to check whether the word is straight, whether it
 touches another word and whether the tile are available, and this is
 before we have even got onto checking the dictionary. Each of these
-function calls will return an `Either String a` and we may find
+function calls will return an `Either Text a` and we may find
 ourselves doing a lot of case statements and pattern matching on
 `Either` values. A function that puts together the various ways we
 migh validate move could look like this:
