@@ -203,7 +203,7 @@ clauses to `web/server/ScrabbleWeb/Types.hs`, which is nothing to do
 with the library and where it does make sense to add the `aeson`
 dependency.
 
-```
+```haskell
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass, StandaloneDeriving #-}
 
 -- ==== Make types from Scrabble.Types serialisable in JSON ========== --
