@@ -314,7 +314,7 @@ doPass (g, mLn) = case pass g of
   Ev (Left e)   -> do T.putStrLn e
                       pure (g,mLn)
 ```
-The hints function calls `findPrefixes` to find all of the words in the 
+The `hints` function calls `findPrefixes` to find all of the words in the 
 dictionary that can be made with the current player's rack.
 
 ```haskell
