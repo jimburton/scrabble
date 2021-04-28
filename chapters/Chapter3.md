@@ -166,7 +166,7 @@ ourselves doing a lot of case statements and pattern matching on
 `Either` values. A function that puts together the various ways we
 might validate a move could look like this:
 	
-```
+```haskell
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
@@ -272,7 +272,7 @@ are all replaced by the one in the definition of the monad
 instance. If any of the validation functions encounters an error, the
 appropriate message is delivered.
 
-```
+```haskell
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
