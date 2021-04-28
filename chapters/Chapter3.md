@@ -171,7 +171,7 @@ validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
              -> Bool    -- ^ Is first move
-             -> Either String Bool
+             -> Either Text ()
 validateMove b p w fm = 
     case wordOnBoard w of
       Right _ -> case connects w b fm of
@@ -235,6 +235,7 @@ instance Applicative Evaluator where
   Ev (Right f)  <*>  r  =  fmap f r    -- keep going
 
 instance Monad Evaluator where
+    -- (>>=) :: m a -> (a -> m b) -> m b
     (Ev ev) >>= k =
         case ev of
           Left msg -> Ev (Left msg) -- report the error
