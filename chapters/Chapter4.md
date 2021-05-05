@@ -188,11 +188,12 @@ this:
 ```
 $ cabal repl 
 > :m + Scrabble
-> :m System.Random
+> :m + System.Random
+> :m + Lens.Simple
 > theGen <- getStdGen
 > d <- englishDictionary
 > let g = newGame "Bob" "Alice" theGen d
-> player1 g
+> g ^. player1
 Player
     { name = "Bob"
     , rack =
@@ -227,7 +228,7 @@ which has to touch the centre square:
 We take a move as Alice:
 
 ```
-> player2 g2
+> g2 ^. player2
 Player
     { name = "Alice"
     , rack =
@@ -244,7 +245,7 @@ Player
     }
 > let w2 = [((7,7),(P,3)), ((8,7),(E,1)), ((9,7),(T,1))]
 > let (Ev (Right (g3,(ws,sc)))) = move valGameRules g2 w2 []
-> showBoard False (board g3)
+> showBoard False (g3 ^. board)
 "  | 0| 1| 2| 3| 4| 5| 6| 7| 8| 9|10|11|12|13|14|
 ------------------------------------------------
  0|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
@@ -268,9 +269,9 @@ Player
 We swap some tiles:
 
 ```
-> turn g3
+> g3 ^. turn
 P1
-> player1 g3
+> g3 ^. player1
 Player
     { name = "Bob"
     , rack =
@@ -286,7 +287,7 @@ Player
     , isAI = False
     }
 > let (Ev (Right g4)) = swap [M,N,S,O] g3
-> player1 g4
+> g4 ^. player1
 Player
     { name = "Bob"
     , rack =
@@ -301,22 +302,20 @@ Player
     , score = 10
     , isAI = False
     }
-> turn g4
+> g4 ^. turn
 P2
 ```
 Finally we pass the move:
 
 ```
 > let (Ev (Right g6)) = pass g5
-> turn g6
+> g6 ^. turn
 P1
 ```
 Let's try playing some bad moves:
 
 ```
-> turn g6
-P1
-> player1 g6
+> g6 ^. player1
 Player
     { name = "Ted"
     , rack =
