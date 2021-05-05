@@ -1,3 +1,13 @@
+* Presentation
+
+[[./chapters/images/freedoms0.png]]
+
+* Code
+#+BEGIN_SRC haskell
+main = do putStrLn "Hi"
+          bananas >>= foldl foo
+#+END_SRC
+
 * Refactoring
 ** DONE Moving all move updates into one function in main
    CLOSED: [2021-03-02 Tue 13:50]
