@@ -14,6 +14,7 @@ module Scrabble.Evaluator
   , evalBool )
   where
 
+import Control.Monad (unless)
 import Data.Text (Text)
 import qualified Data.Text as T (pack, unpack)
 import Scrabble.Types (Evaluator(..))
@@ -33,6 +34,7 @@ instance Applicative Evaluator where
   Ev (Right f)  <*>  r  =  fmap f r
 
 instance Monad Evaluator where
+    -- (>>=) :: m a -> (a -> m b) -> m b
     (Ev ev) >>= k =
         case ev of
           Left msg -> Ev (Left msg)
@@ -44,4 +46,4 @@ instance Monad Evaluator where
 evalBool :: Bool         -- ^ The condition to be tested.
          -> Text         -- ^ The error message.
          -> Evaluator () -- ^ Returns () unless it fails.
-evalBool b e = if b then pure () else fail (T.unpack e)
+evalBool b e = unless b $ fail (T.unpack e)
