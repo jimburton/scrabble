@@ -203,7 +203,7 @@ clauses to `web/server/ScrabbleWeb/Types.hs`, which is nothing to do
 with the library and where it does make sense to add the `aeson`
 dependency.
 
-```
+```haskell
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass, StandaloneDeriving #-}
 
 -- ==== Make types from Scrabble.Types serialisable in JSON ========== --
@@ -387,7 +387,7 @@ Similarly, if it the client's turn they can use it by swapping tiles.
      |                                             |
 ```
 
-Finally, if it is the clients turn they can ask for hints.
+Finally, if it is the client's turn they can ask for hints.
 
 ```
      |      <- TURN [P1] --                        |
@@ -650,7 +650,7 @@ takeTurnManual wg = do
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
-      MsgHint _         -> doHints wg >> takeTurn wg 
+      MsgHint           -> doHints wg >> takeTurn wg 
       MsgPass           -> doPass wg >>= takeTurn 
       MsgSwap w         -> doSwap wg w >>= takeTurn 
       MsgMove (Move wp bs) -> do
@@ -666,7 +666,7 @@ takeTurnManual wg = do
 
 The functions that send feedback to clients are defined in the module
 `ScrabbleWeb.Announce`. Note that at this level `MoveAck` is sent to
-both clients without checking whether this an AI game. The `send`
+both clients without checking whether either of them is an AI game. The `send`
 function in `ScrabbleWeb.Announce` will check whether a client is an
 AI player before trying to send any message.
 

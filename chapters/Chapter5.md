@@ -8,16 +8,15 @@ the computer.
 Most of the code in this chapter will go into a new module
 `Scrabble.Game.AI`.  This needs to share a lot of code with
 `Scrabble.Game.Game`, so common code is moved into its own module,
-`Scrabble.Game.Internal`. Similar to the benefits of having seperate 
+`Scrabble.Game.Internal`. Similar to the benefits of having a separate 
 `Types` module, this helps with avoiding circular imports and is a 
 pretty common practice in Haskell development. To make it easier for
 clients to find functions, `Scrabble.Game.Game` will re-export the 
 important functions from `Scrabble.Game.Internal`.
 
 A similar change is made to the `Board` code, adding `Scrabble.Board.Internal`.
-This is the last major refactoring we'll need to do to the library.
-	
-The final state of files in the library:
+This is the last major refactoring we'll need to do to the library. The final 
+state of files in the library is this:
 	
 ```
 src

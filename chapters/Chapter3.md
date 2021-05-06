@@ -161,19 +161,17 @@ So, we already have lots of things to check about the validity of a
 move. We need to check whether the word is straight, whether it
 touches another word and whether the tile are available, and this is
 before we have even got onto checking the dictionary. Each of these
-function calls will return an `Either String a` and we may find
+function calls will return an `Either Text a` and we may find
 ourselves doing a lot of case statements and pattern matching on
 `Either` values. A function that puts together the various ways we
-migh validate move could look like this:
+might validate a move could look like this:
 	
-```
--- in Scrabble.Board.Validation
-
+```haskell
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
              -> Bool    -- ^ Is first move
-             -> Either String Bool
+             -> Either Text ()
 validateMove b p w fm = 
     case wordOnBoard w of
       Right _ -> case connects w b fm of
@@ -188,7 +186,7 @@ validateMove b p w fm =
       Left e -> Left e
  ```
  
-The technical term for this kind of code is "nasty". Such a deeply
+The technical term for this kind of code is "nasty"! Such a deeply
 nested and indented structure is hard to read, hard to maintain and
 hard to extend.  Fortunately, what we can do here is to use a monad to
 encapsulate the checks for `Left` and `Right`. We make our `Either`
@@ -205,8 +203,8 @@ We create a new type for arbitrary "evaluations" in the game, called
 newtype Evaluator a = Ev (Either Text a)
 ```
 This type wraps up an `Either Text a` type where, as you
-may expect, the `Text` is an error message and the `a` value is
-whatever is being evaluated. For instance, `a` could be `()` in cases 
+may expect, the `Text` is an error message and `a` is
+the type of whatever is being evaluated. For instance, `a` could be `()` in cases 
 where moves are being checked for validity, or `Game` when a function 
 either fails or returns an updated version of the game, or `Int` when
 a function either fails or calculates the score of a word. A value of
@@ -237,6 +235,7 @@ instance Applicative Evaluator where
   Ev (Right f)  <*>  r  =  fmap f r    -- keep going
 
 instance Monad Evaluator where
+    -- (>>=) :: m a -> (a -> m b) -> m b
     (Ev ev) >>= k =
         case ev of
           Left msg -> Ev (Left msg) -- report the error
@@ -273,7 +272,7 @@ are all replaced by the one in the definition of the monad
 instance. If any of the validation functions encounters an error, the
 appropriate message is delivered.
 
-```
+```haskell
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
