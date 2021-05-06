@@ -80,7 +80,7 @@ takeTurn g msc = runInputT defaultSettings loop
      liftIO $ printBoard False (g ^. board) msc
      if g ^. gameOver
        then liftIO $ doGameOver g
-       else if g ^. (getPlayer g) ^. isAI
+       else if g ^. getPlayer g . isAI
             then liftIO $ takeTurnAI g
             else liftIO $ takeTurnManual g
 
@@ -186,6 +186,6 @@ help = T.putStrLn "HELP: TODO"
 -- | Print some word suggestions based on the current player's rack.
 hints :: Game -> IO ()
 hints g = do
-  let w = g ^. getPlayer g ^. rack
+  let w = g ^. getPlayer g . rack
   T.putStrLn "HINTS:"
   mapM_ print $ makeWords g w
