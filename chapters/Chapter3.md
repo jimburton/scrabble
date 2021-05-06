@@ -4,7 +4,7 @@
 
 In this chapter we introduce a change that will have a big influence
 on the internal design of the library from now on: monadic error
-checking. It will allow us to thread the state of the game through a
+checking. It will allow us to elegantly chain together a
 long and growing series of computations without having to worry at
 each stage about whether anything went wrong.
 
