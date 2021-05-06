@@ -249,19 +249,27 @@ to return `Evaluator a`. The ones we have seen so far tested a boolean condition
 make an abstraction for this pattern.
 
 ```haskell
--- in Scrabble.Evaluator
-
 evalBool :: Bool -> Text -> Evaluator ()
 evalBool b e = if b then pure () else fail (T.unpack e)
 ```
-(Note that the `fail` function takes a `String` so we have to `unpack` the `Text`.) 
+Note that the `fail` function takes a `String` so we have to `unpack` the message.
+Actually, the structure of this function is identical to `Control.Monad.unless`, so
+let's write it using that. 
+
+```haskell
+-- in Scrabble.Evaluator
+
+evalBool :: Bool -> Text -> Evaluator ()
+evalBool b e = unless b $ fail (T.unpack e)
+```
+
 Now our validation functions will all have a similar structure to the new version 
 of `lettersAvailable` below -- a call to `evalBool` where the first argument is a boolean 
 condition and the second is an error message.
 
 ```haskell
 lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
-lettersAvailable w p b = all available w `evalBool`"Letters not in rack or not on board."
+lettersAvailable w p b = all available w `evalBool` "Letters not in rack or not on board."
   where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
 
 ``` 
