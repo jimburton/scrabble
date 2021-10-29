@@ -340,7 +340,7 @@ stands for on the board, with its score set to zero. Clients will take
 care of interrogating players for the letters to use when they play a
 blank. 
 
-This approach has the advantage that after being played the tile is
+This approach has the advantage that after being played the blank tile is
 treated like any other. A disadvantage is that it means we have to
 store the whole tile -- the letter and its score -- on the board,
 rather than just storing the letter and looking up its score when we
