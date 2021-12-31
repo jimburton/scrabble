@@ -112,7 +112,7 @@ to increase the score of Player 1 by 10:
 ```
 
 Oof! Haskell is meant to be elegant...considering that in an OO
-language we could probably do something like `p.player1.score += 10`,
+language we could probably do something like `g.player1.score += 10`,
 this is very cumbersome. This is the problem that *lenses* overcome.
 
 Lenses are first class getters and setters for records (and tuples,
