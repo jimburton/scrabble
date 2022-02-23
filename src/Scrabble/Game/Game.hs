@@ -18,7 +18,7 @@ module Scrabble.Game.Game
   , pass )
   where
 
-import System.Random
+import System.Random ( StdGen )
 import Prelude hiding
   ( Word
   , words )

@@ -25,9 +25,9 @@ import Data.Functor ((<&>))
 import Data.Text (Text)
 import System.Random (StdGen)
 import Lens.Simple ((^.),(.~),(&))
-import Scrabble.Evaluator (Evaluator(..))
 import Scrabble.Types
-  ( Dict
+  ( Evaluator(..)
+  , Dict
   , Game(..)
   , dict, playable, firstMove, turn
   , Player(..)
@@ -55,7 +55,7 @@ import Scrabble.Board.Bag
 import Scrabble.Lang.Word
   ( wordToText
   , wordPutToText )
-import Scrabble.Game.Game (pass)
+import Scrabble.Game.Game ( pass )
 import Scrabble.Game.Internal
   ( toggleTurn
   , getPlayer
