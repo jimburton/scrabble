@@ -1,0 +1,305 @@
+* Scrabble: Developing software in Haskell
+
+[[./images/scrabble.jpeg]]
+
+* Validating moves
+
+We now introduce a change that will have a big influence on the
+internal design of the library from now on: *monadic error checking*. 
+
+It will allow us to elegantly chain together a long and growing series
+of computations without having to worry at each stage about whether
+anything went wrong.
+
+The code in these slides corresponds to ~chapter3~
+
+* Checking the structure and position of words
+
+The rules about word placement are as follows:
+
++ Words are at least two letters long.
++ Words must be actually on the board.
++ A word must be continuous and either horizontal or vertical.
++ The first word must cross the centre square, while subsequent words
+  must connect with an existing word.
++ The word and all additional words that it generates must be in the
+  dictionary.
+  
+* Checking the structure and position of words
+
+Checking that a word is on the board means checking that every
+position is on the board.
+
+The ~onBoard~ function takes a ~Pos~ and returns true if the row and
+column are both between 0 and 8. 
+
+#+BEGIN_SRC haskell
+-- | Check that a WordPut is on the board.
+wordOnBoard :: WordPut -> Bool
+wordOnBoard w = all (onBoard . fst) w
+#+END_SRC
+
+* Checking the structure and position of words
+
+But there are lots of ways in which a move might be invalid and we'd
+like to be able to let the user know exactly what went wrong. 
+
+If we carry on with validation checks that return /true/ or /false/ we
+will need lots of ~if~ statements that work out what to report back to
+the user.
+
+* Validating moves
+
+A common solution to writing a function that can fail is to use the
+type ~Either Text a~. 
+
+Values of this type are either ~Left e~, where ~e~ is an error
+message, or ~Right x~ where ~x~ has type ~a~. 
+
+In ~wordOnBoard~ returns any kind of ~Right~ value then we know things
+went well.
+
+So there's no need to return a ~Bool~, we can just return ~Left e~ for
+an error or ~Right ()~ if things went well.
+
+* Validating moves
+
+#+BEGIN_SRC haskell
+-- | Check that a WordPut is on the board.
+wordOnBoard :: WordPut -> Either Text ()
+wordOnBoard w = if all (onBoard . fst) w
+                 then Right ()
+                 else Left "Word not on board"
+#+END_SRC
+
+* Validating moves
+
+Now we can write validation functions for the other constraints that
+need to hold for a new move. 
+
+They will all return ~Either Text ()~.
+
+To validate a new move, we check that they all return ~()~.
+
+* Validating moves
+	
+#+BEGIN_SRC haskell
+validateMove :: Board   -- ^ The board
+             -> Player  -- ^ The player making the move
+             -> WordPut -- ^ The word to play
+             -> Bool    -- ^ Is first move
+             -> Either Text ()
+validateMove b p w fm = 
+    case wordOnBoard w of
+      Right _ -> case connects w b fm of
+                   Right _ -> case straight w of
+                                Right _ -> case firstMoveTouchesCentre w fm of
+                                             Right _ -> case lettersAvailable w p b of
+                                                          Right -> Right ()
+                                                          Left e -> Left e
+                                             Left e -> Left e
+                                Left e -> Left e
+                   Left e -> Left e
+      Left e -> Left e
+#+END_SRC
+
+* Validating moves
+ 
+*Nasty!*
+
+Such a deeply nested and indented structure is hard to read, hard to
+maintain and hard to extend.  
+
+Fortunately, what we can do here is to use a monad to encapsulate the
+checks for ~Left~ and ~Right~.
+
+We make our ~Either~ type into a monad, where the monad instance says
+what to do when we encounter a ~Left~ value (an error), and then when
+we use the monad we can carry on as if everything is a ~Right~ value
+-- no more case statements.
+
+* Monadic error checking
+
+We create a new type for arbitrary "evaluations" in the game, called
+~Evaluator~. 
+
+#+BEGIN_SRC haskell
+-- in Scrabble.Types
+
+newtype Evaluator a = Ev (Either Text a)
+#+END_SRC
+
+Note that this is polymorphic in ~a~, the type wrapped in the ~Right~
+constructor and which is returned when things went well.
+
+* Monadic error checking
+
+Now we need to make a monad instance for ~Evaluator~. 
+
+That requires us to first define the ~Functor~ and ~Applicative~
+instances, since every monad is an applicative and every applicative
+is a functor. 
+
+The spirit of these definitions is that if we are dealing with an ~Ev
+(Left _)~ value we want to *stop what we are doing and report the
+error*, while if we are dealing with a ~Ev (Right _)~ value we can
+*keep going*.
+
+*Demo:* ~Scrabble.Evaluator~
+
+* Monadic error checking
+
+Now we can rewrite all of the validation functions that returned
+~Either Text a~ to return ~Evaluator a~. 
+
+The ones we have seen so far tested a boolean condition, ~b~, and
+returned ~Right ()~ if ~b~ succeeded or ~Left Text~ if ~b~ failed. 
+
+We can make an abstraction for this pattern.
+
+#+BEGIN_SRC haskell 
+evalBool :: Bool -> Text -> Evaluator ()
+evalBool b e = unless b $ fail (T.unpack e) 
+#+END_SRC
+
+* Monadic error checking
+
+Now our validation functions will all have a similar structure to the
+new version of ~wordOnBoard~ -- a call to ~evalBool~ where
+the first argument is a boolean condition and the second is an error
+message.
+
+#+BEGIN_SRC haskell
+wordOnBoard :: WordPut -> Evaluator ()
+wordOnBoard w = all (onBoard . fst) w `evalBool` "Word not on board"
+#+END_SRC
+
+* Monadic error checking
+
+Monadic style allows us to remove all those case statments and write
+~validateMove~ in a far nicer style. 
+
+#+BEGIN_SRC haskell
+validateMove :: Board   -- ^ The board
+             -> Player  -- ^ The player making the move
+             -> WordPut -- ^ The word to play
+             -> Bool    -- ^ Is first move
+             -> Evaluator ()
+validateMove b p w fm =
+	   wordOnBoard w
+	   >> connects w b fm 
+	   >> straight w 
+	   >> firstMoveTouchesCentre w fm 
+	   >> lettersAvailable w p b
+#+END_SRC
+
+* Monadic error checking
+
+The validation functions are now *combinators*. 
+
+We can combine small ones like ~wordOnBoard~ into larger ones like
+~validateMove~ that check several things. 
+
+Functions at the top level can run an evaluator then unpack the result
+in a single case statement to see if all went well or, if not, exactly
+what went wrong.
+				
+* Checking words in the dictionary
+
+We have already seen how to check that a word is in the dictionary
+using ~dictContainsWord~. 
+
+Instead of returning a boolean we now want this to fit in with the
+combinator style of validation, so we alter it to run in the
+~Evaluator~ monad.
+
+#+BEGIN_SRC haskell
+dictContainsWord :: Dict -> Text -> Evaluator ()
+dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t)
+#+END_SRC
+
+* Additional words generated by a move
+
+We need to apply this function to the new word and all /additional
+words/ generated by the move. 
+
+The classic instructions give the example of this board:
+
+
+   F
+   A
+ HORN 
+   M
+ PASTE
+
+* Additional words generated by a move
+
+In the next move the word MOB is played, generating two additional words,
+NOT and BE. 
+
+   F
+   A
+ HORN 
+   MOB
+ PASTE
+
+Any bonus squares under the new letters (O and B) add to the score but no bonuses 
+are counted for the letters that are already on the board. 
+
+* Additional words generated by a move
+
+
+In the next move the word BIT is played, generating the additional
+words PI and AT.
+
+   F
+   A
+ HORN 
+   MOB
+ PASTE
+BIT
+
+* Putting it all together
+
+We have lots of ways in which we can validate moves and a nice neat
+way of combining them.  
+
+Validating that a move follows the most basic rules (e.g. the tiles
+are actually on the board) is different from checking the words are in
+the dictionary, something we may or may not want to do every time. 
+
+It could be handy to turn off dictionary checking during development,
+and if an AI player finds a word in the dictionary there's no point in
+checking it again.
+
+* Putting it all together
+
+We can turn the idea of validation into an abstraction (a type) and
+combine the various smaller checks we have into coherent blocks.
+
+Here we validate against the game's rules but not the dictionary: 
+
+#+BEGIN_SRC haskell
+type Validator = [WordPut] -> Game -> Evaluator ()
+
+valGameRules :: Validator
+valGameRules ws g = do
+  let b  = board g
+      p  = getPlayer g
+      w  = head ws
+      fm = firstMove g
+  validateRack b (rack p) w >> validateMove b p w fm
+#+END_SRC
+
+* Putting it all together
+
+And here we reuse the previous validator then check against the
+dictionary.
+
+#+BEGIN_SRC haskell
+valGameRulesAndDict :: Validator
+valGameRulesAndDict ws g = do
+  let d  = dict g
+      ts = map (wordToText . map (fst .snd)) ws
+  valGameRules ws g >> wordsInDictM d ts 
+#+END_SRC
