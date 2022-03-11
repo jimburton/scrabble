@@ -25,7 +25,7 @@ import Scrabble.Types
   , Letter(..) )
 import Scrabble.Evaluator (Evaluator)
 
--- ============ Functions relating to a bag of tiles ============= --
+-- * Functions relating to a bag of tiles
 
 -- The number of each tile that is in a new bag.
 numTilesList :: [(Letter,Int)]

@@ -14,7 +14,7 @@ module Scrabble.Board.Pretty
   , showPlayer )
   where
 
-import Data.Array
+import Data.Array ( elems )
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Data.Text (Text)
@@ -33,13 +33,13 @@ import Scrabble.Lang.Letter
   ( scoreLetter
   , letterToChar ) 
 
--- ========== Show instances for Player and Game ======== --
+-- * Show instances for Player and Game
 
 instance Show Game where
   show g = T.unpack (showBoard False (g ^. board)) ++ "\n"
            ++ show (g ^. player1) ++ "\n" ++ show (g ^. player2)
            
--- =============== Functions for turning boards into text =========== --
+-- * Functions for turning boards into text
 
 -- Get all rows from the board
 rows :: Board -> [[Maybe Tile]]
@@ -89,4 +89,3 @@ showPlayer p = top <> playerLine <> rackLine <> bottom where
                  T.intercalate ", " strs <> "\n"
                  <> T.intercalate ", " scores <> "\n"
   bottom     = line '*'
-

@@ -37,14 +37,14 @@ module Scrabble.Types
 where
 
 import Prelude hiding (Word)
-import Data.Array
+import Data.Array ( Array )
 import Data.Trie.Text (Trie)
 import Data.Text (Text)
 import qualified Data.Map as Map
 import System.Random (StdGen)
-import Lens.Simple 
+import Lens.Simple ( makeLenses ) 
 
--- ============ Types for the application ================ --
+-- * Types for the application
 
 -- | Letters.
 data Letter =
@@ -151,4 +151,3 @@ data MoveResult = MoveResult
                   , mrScore           :: Int     -- ^ The score.
                   }
                 deriving (Read, Eq)
-

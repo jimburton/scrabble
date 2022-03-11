@@ -18,7 +18,7 @@ import Scrabble.Types
   ( Pos
   , Bonus(..) )
 
--- ========== Bonuses ============ --
+-- * Bonuses
 
 -- Data for the bonus map.
 bonusSquaresList :: [(Pos, Bonus)] -- ((Row, Column), Bonus)

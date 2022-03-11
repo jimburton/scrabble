@@ -32,7 +32,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Maybe (fromJust)
-import Data.Array
+import Data.Array ( array )
 import Data.Char (toUpper)
 import Data.List (splitAt)
 import Lens.Simple ((^.),(.~),(&))
@@ -49,7 +49,7 @@ import Scrabble.Types
   , Dir(..)
   , Rack
   , Tile ) 
-import Scrabble.Evaluator (Evaluator(..))
+import Scrabble.Types ( Evaluator(..) )
 import Scrabble.Board.Internal
   ( incCol
   , incRow
@@ -66,7 +66,7 @@ import Scrabble.Board.Internal
   , wordPutToWord )
 import Scrabble.Board.Bonus (bonusMap)
 
--- =============== Boards ================== --
+-- * Boards
 
 -- | A new, empty board.
 newBoard :: Board

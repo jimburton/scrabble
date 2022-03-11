@@ -58,7 +58,7 @@ import Scrabble.Board.Bag
 import Scrabble.Lang.Word (wordToString)
 import Scrabble.Evaluator () -- for instances.
 
--- ======== Internal for games ========= --
+-- * Internal for games
 
 -- | Show instance for MoveResult 
 instance Show MoveResult where
@@ -164,6 +164,3 @@ endGame g = do
   pure (g & player1 . score .~ p1s 
          & player2 . score .~ p2s 
          & gameOver .~ True )
-
-  
-

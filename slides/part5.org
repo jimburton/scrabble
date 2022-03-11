@@ -1,0 +1,470 @@
+#+LATEX_HEADER: \setbeamertemplate{headline}{}
+* Scrabble
+
+  [[./images/scrabble.jpeg]]
+
+* Recap
+
++ Data types
++ Lenses for records
++ ~Evaluator~ monad for validating moves
++ Playing moves within the game
++ Creating an AI player
+
+* Finally, a user interface
+
+The library has been created with *no IO*.
+
+Anything that /must/ involve ~IO~, such as /randomness/
+and /reading the dictionary file/, must be handled
+by *clients*.
+
+Compared to the library, creating clients is easy.
+
+They need to create a *user interface*, then
+interact with the library to enable users to play a game.
+
+* The CLI client
+
+The easiest way to begin is by creating a *CLI* (command
+line interface) client.
+
+It won't be much use for a two-player game but it is fine
+for single players.
+
+The code lives separately to the library.
+
+In the ~chapter6~ branch we add a new cabal stanza.
+
+*Demo:* source tree, cabal file, and playing the game.
+
+*  Taking turns to play a game
+
+The entry point asks the user which kind of game they want.
+
+It then calls the appropriate function in ~ScrabbleCLI.Game~.
+
+*Demo:* ~ScrabbleCLI.Game~ and playing in the REPL.
+
+* The web client
+
+Now for a more interesting client: one in which users can play
+against each other /over the network/.
+
+There are two parts to it:
+
++ A *server*, that loads the library and interacts with it on behalf
+  of clients. (*Haskell*)
+
++ A *client* that interacts with the server and a *user*. (*HTML/CSS/JS*)
+
+* The web UI
+
+[[./images/webgame.png]]
+
+* Building a server
+
+The server will be based on /WebSockets/.
+
+This is a modern, efficient standard, well-supported in browsers and
+most modern languages.
+
+It is very easy to get started with a simple server...
+
+*Demo:* Echo server.
+
+* Sending moves over the wire
+
+We need to send /structured data/ between the server and clients.
+
+We want to a format that can be easily encoded and decoded at each end.
+
+We could invent our own format, or use XML, but *JSON* has some
+obvious advantages.
+
+It is /native Javascript/ so the client-side is easy, and there is
+excellent Haskell support for it too.
+
+* JSON in Javascript
+
+JSON is a subset of Javascript so there's very little parsing to do on
+the client side.
+
+The parts of Javascript that are allowed in JSON are
+
++ /numbers/,
++ /strings/,
++ /booleans/,
++ /objects/ (braces containing comma-separated ~key:value~ pairs,
+  like ~{"name":"James", "score": 42}~, and
++ /arrays/ (comma-separated values within square brackets).
+
+* JSON example
+
+#+BEGIN_SRC js
+var data = {"rooms":
+   [{"name":"C204",
+     "available": true,
+     "desks": 11},
+    {"name":"C206",
+     "available": false,
+     "desks": 17}
+   ]
+}
+var desks = 0;
+data.rooms.forEach(room ​=​​>
+     if (room.available) desks ​+​= room.desks);
+
+#+END_SRC
+
+* JSON in Javascript
+
+We have to turn Javascript objects into strings and back again
+to send them over the network. We do this with ~JSON.stringify~ and
+~JSON.parse~.
+
+#+BEGIN_SRC js
+// send a JSON object to the server
+socket.send(JSON.stringify([1, 2, 3, 4]));
+
+// receive a message from the server
+socket.onmessage = function (event) {
+   // parse the message as JSON
+   var d = JSON.parse(event.data);
+	....
+}
+#+END_SRC
+
+* JSON in Haskell
+
+The ~aeson~ library provides a powerful and neat way of converting
+Haskell values into JSON representations and back again.
+
+#+BEGIN_SRC haskell
+> encode [A, B, C]
+"[\"A\",\"B\",\"C\"]"
+> decode it :: Maybe [Letter]
+Just [A,B,C]
+#+END_SRC
+
+(Nb: ~it~ is a special identifier in ~ghci~ that holds the value of the last
+expression to be evaluated.)
+* JSON in Haskell
+
+Datatypes that need to be sent from the server to clients are made into
+instances of the ~ToJSON~ and ~FromJSON~ typeclasses.
+
+That means defining two functions: ~encode~ (turn a Haskell value into a
+Text value representing JSON) and ~decode~ (the other direction).
+
+We can do this ourselves for each type, but as we don't want to do anything
+special the instances can be /derived/.
+
+* Where to put the JSON dependency?
+
+The normal place to say that we want the compiler to derive
+typeclass instances for our types is /immediately after their definition/.
+
+That would be in ~src/Scrabble/Types.hs~.
+
+However, we *don't* want to add the ~aeson~ dependency to the library.
+
+It doesn't know anything about how clients might be implemented and we want
+to keep it that way.
+
+* ~StandaloneDeriving~
+
+So we want to make things like ~MoveResult~ into instances of some typeclasses,
+but we don't want to do it where the types are defined.
+
+There is a language extension that does what we need, ~StandaloneDeriving~.
+
+By turning this on we can add the ~deriving~ clauses to the /client/, where it
+makes more sense to have the ~aeson~ dependency.
+
+*Demo:* ~ScrabbleWeb.Types~ and REPL.
+
+* The protocol
+
+Now we need to define /what/ JSON messages will be sent between server and
+clients, and in what order.
+
+This definition forms a simple *protocol*
+
+It's important to document this, as it will make the work of anyone
+wanting to write a client far easier.
+
+* Protocol: starting an (AI) game
+
+When a request to join a game is acknowledged, the server sends the name the
+player has been assigned, the name of their opponent, their first rack and
+their turn (P1 or P2).
+
+In an AI game the human player is P1.
+
+
+#+BEGIN_EXAMPLE
+ --------                                       --------
+| CLIENT |                                     | SERVER |
+ --------                                       --------
+     |      -- REQUEST FOR AI GAME [NAME] -->      |
+     |                                             |
+     |      <- ACK [NAME,OPPNAME,RACK,TURN] --     |
+     |                                             |
+#+END_EXAMPLE
+
+* Protocol: in-game
+
+Now the game is in play the following sequence, with possible variations
+to be explained, is repeated until the game ends.
+
+
+#+BEGIN_EXAMPLE
+     |                                             |
+     |      <- TURN [P1]                           |
+     |                                             |
+     |      -- MOVE [MOVE] -->                     |
+     |                                             |
+     |      <- MOVE ACK [MOVERESULT] --            |
+     |                                             |
+     |      <- RACK [LETTERS] --                   |
+     |                                             |
+     |      <- TURN [P2] --                        |
+#+END_EXAMPLE
+
+* Protocol: in-game play
+
+If the client sends an illegal move then, rather than receiving MOVE ACK it
+receives a message explaining what was wrong with the move and the TURN
+sequence is repeated without the turn being passed to the other player.
+
+
+#+BEGIN_EXAMPLE
+     |      <- TURN [P1] --                        |
+     |                                             |
+     |      -- MOVE [P1] -->                       |
+     |                                             |
+     |      <- ANNOUNCE [ERROR]                    |
+     |                                             |
+     |      <- TURN [P1]                           |
+     |                                             |
+#+END_EXAMPLE
+
+* Protocol: in-game play
+
+Any time it is the client's turn they can send the PASS message. The server
+responds by giving the turn to the other player.
+
+
+#+BEGIN_EXAMPLE
+     |      <- TURN [P1] --                        |
+     |                                             |
+     |      -- PASS [P1] -->                       |
+     |                                             |
+     |      <- TURN [P2] --                        |
+     |                                             |
+#+END_EXAMPLE
+
+* Protocol: in-game play
+
+Similarly, if it the client's turn they can use it by swapping tiles.
+
+
+#+BEGIN_EXAMPLE
+     |      <- TURN [P1] --                        |
+     |                                             |
+     |      -- SWAP [TILES] -->                    |
+     |                                             |
+     |      <- TURN [P2] --                        |
+     |                                             |
+#+END_EXAMPLE
+
+* Protocol: in-game play
+
+If it is the client's turn they can ask for hints.
+
+
+#+BEGIN_EXAMPLE
+     |      <- TURN [P1] --                        |
+     |                                             |
+     |      -- HINT -->                            |
+     |                                             |
+     |      <- HINT [HINTS] --                     |
+     |                                             |
+#+END_EXAMPLE
+
+* Protocol: in-game play
+
+Finally, whenever the client is expecting the TURN message it could
+alternatively receive the news that the game is ended.
+
+
+#+BEGIN_EXAMPLE
+     |      <- END OF GAME [SCORES] --             |
+#+END_EXAMPLE
+
+* The ~Message~ type
+
+The protocol is embodied in the ~Message~ type in ~ScrabbleWeb.Types~.
+
+This type is serialised as JSON and sent between server and clients.
+
+*Demo*
+
+* Writing the server
+
+Every time a connection comes in to our server it could be from a client
+that wants to play an AI game, or from a client that wants to play an
+interactive game against a human.
+
+Requests for AI games can be served straight away.
+
+Requests for interactive games need to be saved until there are two of them.
+
+* Writing the server
+
+We need to manage a /buffered queue/, a concurrent data structure that can
+contain at most two clients.
+
+This data is shared amongst several threads.
+
+The main thread will add incoming requests for non-AI games to the queue
+and a separate thread, the ~gameStarter~ thread, will watch the queue until
+there are two requests.
+
+* Writing the server
+
+It then creates a new game in a separate thread and begins the game.
+
+If there are already two requests for games in the queue the main thread will
+wait until there are less than two before adding another.
+
+If there are fewer than two requests in the queue, the ~gameStarter~ thread
+will wait until two arrive so that it can create a game.
+
+* The queue for game requests
+
+This queue needs to be accessed by two threads, one putting attempting to put
+requests in and one attempting to take requests out.
+
+Each of these threads needs to stop and wait if it can't complete its task.
+
+                     +----------------------------------+			     
+ New Request --->    +  Request 2      | Request 1    |  <-- ~gameStarter~
+                     +-------------- -------------------+
+
+* Writing the server
+
+The ~BoundedChan~ type serves this purpose.
+
+It provide a bounded channel, or concurrent queue that 
+can contain only a given number of elements.
+
+Threads that want to take from the queue are blocked 
+if it is empty.
+
+Threads that want to add to a full queue are blocked 
+until there is room for another element.
+
+* Writing the server
+
+*Demo:* ~Main~, ~main~, ~ServerWeb.Game~, ~enqueue~ and ~gameStarter~.
+
+* Writing the server
+
+From this point onwards, the functions we write are very similar
+to the versions from the CLI client.
+
+The biggest difference is of course that non-AI clients interact
+with the server using JSON.
+
+*demo:* ~ScrabbleWeb.Game~, ~playGame~, ~takeTurn~, ~takeTurnManual~
+and ~takeTurnAI~.
+
+* Writing the client
+
+The client is written as a small, free-standing (i.e. one 
+that doesn't require a webserver) web application, with 
+most of the effort going in to the JavaScript.
+
+The event handler that receives incoming messages from the 
+server has a switch statement that pattern matches on messages 
+in a very similar way to the one in ~takeTurnManual~.
+
+*Demo:* ~main.js~
+
+* Writing the client
+
+The client can be simply opened in a browser by opening 
+~index.html~, or we can serve it over the web.
+
+An executable stanza is added to the cabal file and 
+~Happstack~ is used to serve the static files.
+
+*Demo:* cabal file and ~web/client/Main.hs~.
+
+* Wrapping up
+
+We have covered a *lot* of ground:
+
++ data types to model a problem with several moving parts, 
+  some of them basic (arrays), some more advanced (tries),
++ /lenses/,
++ monadic error-checking,
+
+* Wrapping up
+
++ writing an AI player,
++ coding and decoding JSON with ~aeson~
++ writing a websocket server.
+
+The book (https://github.com/jimburton/scrabble) covers additional 
+topics, e.g. *logging* and *configuration*.
+
+
+* Wrapping up
+
+Despite providing quite a bit of functionality, there are fewer than *2400*
+lines of Haskell code in the final project.
+
+This says something about /the conciseness of Haskell/ in particular and /the
+power of the functional approach/ in general.
+
+Functional style, allows us to express things that would take a lot more
+code in an imperative language.
+
+* Wrapping up
+
+The idea has not really been to explain how to implement 
+Scrabble in Haskell, but to talk you through the entire design 
+and implementation of a reasonably-sized project using best practices.
+
+Getting the hang of that involves developing skills at many 
+different levels.
+
+* Wrapping up
+
+You need /an eye for detail/, taking advantage of the strengths of the
+language to write code that is both /elegant/ and /correct/, and
+
+You need an eye for /broader issues/ of software design, designing APIs that
+expose just the right functionality and are nice to use,
+protocols that determine robust communication between remote components
+of an application, and so on.
+
+* Wrapping up
+
+IMO the main things a person needs to be a good programmer are
+
++ the capacity to /jump easily between different levels of abstraction/, and
++ the ability to /keep the differing requirements of the levels in their head/
+   simultaneously.
+
+* Wrapping up
+
+The only way to learn these skills is by *practising* them, which means *writing
+a lot of code*.
+
+It's a continuous process, and one of the great things about being
+a programmer is that (like it or not) you never stop learning, especially
+if you're using Haskell :-)

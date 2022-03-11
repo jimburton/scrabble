@@ -1,0 +1,260 @@
+* Scrabble: Developing software in Haskell
+
+[[./images/scrabble.jpeg]]
+
+* Getting started
+
+This lecture and the ones that follow it are based on the repository
+https://github.com/jimburton/scrabble.
+
+This repository contains a one- or two-player implementation of the
+*Scrabble* boardgame.
+
+The emphasis is not so much on how to implement scrabble but on
+developing a Haskell project with several parts and a decent amount of
+code.
+
+* Getting started
+
+We produce a library that knows how to play the game (including an AI
+player) and is able to run on a server, fully decoupled from clients
+with which it communicates over the network using JSON.
+
+[[./images/webgame.png]]
+
+* Getting started
+
+Commonly used data structures and libraries like ~Data.Text~, /maps/,
+/arrays/, /aeson/ and /lens/ are explained, as well as /monadic error
+checking/ and building a WebSocket client to the game that shows how
+to use /threads/ and other concurrency abstractions safely.
+
+Each chapter refines the initial solution, ending up with something
+that is (hopefully) a clean, functional design that can easily be
+extended.
+
+* Where are we now?
+
+So far, you have learned the basics of Haskell:
+
++ written lots of (small) functions,
++ learned about recursion, folds, etc,
++ practised some ~IO~ and heard about typeclasses like ~Functor~ and
+  ~Monad~,
++ used ~cabal~ a little bit.
+    
+* The next steps
+
+There is a notoriously big gap between learning the basics listed
+above, which mostly means a lot of fiddling about with lists, and
+finding yourself making useful, nicely written and idiomatic software
+with Haskell.
+
+For beginners the language can seem academic and far removed from the
+tasks we normally want to achieve with programming languages.
+
+When they look at Haskell code in the wild it bears little resemblance
+to their exercises.
+
+* The next steps
+
+The Scrabble project is meant to go some way towards filling that gap.
+
+By the end you'll have been introduced to some major and widely used
+libraries, sophisticated data structures, functional design patterns,
+and means for structuring a Haskell project so that you can keep on
+top of it as it grows.
+
+* The next steps
+
+I won't say it will take you from being a beginner-level to an
+intermediate-level Haskell programmer; Haskell is a deep language and
+if /Intermediate/ is halfway between /Beginner/ and /Expert/ then
+that's a bit of a stretch.
+  
+But you won't be a beginner any more.
+
+* The repository
+
+The repository is structured as a book in 8 chapters.
+
+We won't have time to go through all of them in detail, but you can do
+this as independent learning.
+
+There is a branch in the repository for each chapter, named
+~chapter1~, ~chapter2~, etc, up to ~chapter7~.
+
+As you read each chapter you should check out the corresponding branch
+and study the code. There are exercises at the end of each chapter
+which expect you to be working on the code from the right branch.
+
+* Managing the code
+
+We're using ~cabal~ to manage the project.
+
+~cabal~ deals in /libraries/ and /executables/.
+
+We will eventually be making several executables but the core code for
+playing the game is contained in a library stanza.
+
+As such, there isn't an entry point or any way for users to run the
+code. It is there for ourselves and others to import into code that
+*does* provide an interface for users.
+
+*Demo:* ~scrabble.cabal~
+
+* Building blocks
+
+When you start writing any software you need to think about modelling the
+problem in hand.
+
+When we think of a game of Scrabble we can immediately anticipate that we'll
+need to handle:
+
++ a *board*,
++ a number of *tiles*,
++ several *racks* containing tiles, and
++ a *bag*, also containing tiles.
+
+* Building blocks
+
+We also need to account for some things that we can't see:
+
++ the *game* itself, which consists of the objects mentioned plus
+    + several *players*,
+    + some additional state (e.g. whose *turn* it is).
++ the *score* of each player,
++ the *rules* of the game,
++ a *dictionary*.
+    
+* Letters and tiles
+
+[[./images/tile.jpg]]
+
+A tile consists of a *letter* and a *value*. We could create a type
+alias such as
+
+#+BEGIN_SRC haskell
+type Tile = (Char,Int)
+#+END_SRC
+
+* Letters and tiles
+
+But then the type system wouldn't be able to rule out nonsense values
+like ~('£',0)~, we might find ourselves needing to distinguish between
+'a' and 'A', and so on.
+
+So we create an enumeration of all possible letters and make the
+datatype derive some useful typeclasses:
+
+#+BEGIN_SRC haskell
+-- | Letters.
+data Letter = A | B | C ... Z | Blank
+              deriving (Show, Read, Enum, Eq, Ord)
+
+-- | A tile is a pair of a letter and a value.
+type Tile = (Letter,Int)
+#+END_SRC
+
+* Letters and tiles
+
+We will need to know a number of things about letters:
+
++ the score of each letter,
++ how many tiles bearing each letter should be in a full bag, and
++ the ~Char~ value for printing.
+
+* Letters and tiles
+
+We will store this data in /maps/, using the ~Data.Map~ API.
+
+We could use a simple list of pairs with the type ~[(Letter,Int)]~ but
+maps are much more efficient (O(log n)) lookup tables.
+
+Because it contains many functions whose names clash with those of
+functions in the ~Prelude~, like ~filter~ and ~map~, this is normally
+imported with a qualified name.
+
+*Demo:* ~Scrabble.Board~
+
+* The board
+
+A Scrabble board is a 15x15 matrix of rows and columns, so a natural
+way to model it is as a two-dimensional array.
+
+The values stored in the array will be ~Maybe Tile~ values
+(i.e. either ~Nothing~ for an empty square, or something like ~Just
+(A,1)~ for a square with an 'A' tile on it).
+
+* The board
+
+In many languages we would create an array of arrays to achieve this,
+where each element of the 15-element outer array is a 15-element array
+representing a row.
+
+#+BEGIN_SRC haskell
+-- in Scrabble.Types
+
+import Data.Array
+
+-- | The board, a 2D array of Maybe letters and their scores.
+type Board = Array (Int,Int) (Maybe Tile)
+#+END_SRC
+
+However, Haskell supports true multi-dimensional arrays, so we can
+create one where the type of indices is ~(Int,Int)~ (for our purpose,
+~(row,column)~).
+
+* The board
+
+Then, if we have a board called ~b~ we can access the value in row
+~r~, column ~c~, by ~b ! (r,c)~.
+
+These ~(r,c)~ pairs are going to be used a lot so we make a type for
+those too.
+
+#+BEGIN_SRC haskell
+-- | A position on the board.
+type Pos = (Int,Int)
+#+END_SRC
+
+* Words
+
+/Words/, /racks/ and /bags/ are all just lists of letters, but it's
+helpful to distinguish between them in type signatures so we make
+aliases for each of them.
+
+Because the ~Prelude~ includes a type called ~Word~ we have a name
+clash here.
+
+We could call our new type ~ScrabbleWord~ or something like that, but
+it seems more convenient to keep the short name and hide the type in
+the ~Prelude~, which we don't need anyway.
+
+*Demo:* ~Scrabble.Types~
+
+* Words on the board
+
+A word we want to place on the board is a list of pairs of ~Pos~ and
+~Tile~ values.
+
+We'll call this a ~WordPut~.
+
+#+BEGIN_SRC haskell
+-- | A word placed on the board (tiles plus positions).
+type WordPut = [(Pos, Tile)]
+#+END_SRC
+
+* Bonus squares
+
+Last up for the board are the /bonus squares/.
+
+These are either double or triple word bonuses, or double or triple
+letter bonuses.
+
+We make a datatype for bonuses and a map of their positions.
+
+We will put everything other than the type for bonuses in its own
+module to keep things tidy.
+
+*Demo:* ~Scrabble.Types~ and ~Scrabble.Bonus~

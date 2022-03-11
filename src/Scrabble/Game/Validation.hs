@@ -26,7 +26,7 @@ import Scrabble.Board.Validation
   ( validateRack
   , validateMove )
 
--- ======== Validation of games ======== --
+-- * Validation of games
 
 -- | Validate a set of words against the rules of the game and the dictionary. 
 valGameRulesAndDict :: Validator
