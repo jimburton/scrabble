@@ -1,0 +1,145 @@
+* Scrabble: Developing software in Haskell
+
+[[./images/scrabble.jpeg]]
+
+* The dictionary
+
+A copy of the standard English Scrabble dictionary as a text file with
+one word per line is stored at ~dict/en.txt~.
+
+It is a big file, with more than 260,000 entries.
+
+Obviously we need to store this in a data structure which is as
+efficient as possible, especially when it comes to being searched.
+
+* The dictionary
+
+If we only ever wanted to look up words to see if they exist then a
+/hashtable/ would be the best choice, with search taking O(1)
+time.
+
+However, we want to search in more flexible ways than this.
+
+We are going to build a computer player at some point, so we might
+want to find all words that can be made based on a collection of
+letters, words that include existing tiles on the board, all words
+that are prefixes of some other word and so on.
+
+* The dictionary
+
+There are several data structures that store words (or any sequence of
+values) in ways that allow prefixes to be shared.
+
+This not only saves a lot of space but allows the flexibility in
+searching that we need.
+
+The /trie/ [1] allows us to find a word and all of its prefixes very
+quickly (in O(m) time, where /m/ is the length of the word --
+i.e. independently of /n/, the size of the dictionary).
+
+  [1] https://en.wikipedia.org/wiki/Trie
+
+* The trie
+
+Here is an illustration of a trie storing the words /their/, /there/,
+/answer/, /any/ and /bye/.
+#+BEGIN_SRC
+     root
+   /  |   \
+  t   a    b
+  |   |    |
+  h   n    y
+  |   | \  |
+  e   s  y e
+ /|   |
+i r   w
+| |   |
+r e   e
+      |
+      r    
+#+END_SRC
+  
+* The dictionary
+
+We don't actually care what is stored at the leaves of the trie, as we
+only need to know which paths in the trie exist.
+
+So in each leaf we just store () ("unit"), which is the type with
+exactly one value in it (also called (), "unit").
+
+*Demo:* ~Scrabble.Types~ and ~Scrabble.Dict~
+
+* Putting a word on the board
+
+To create the initial empty board we can use the ~array~ function to
+turn a list of pairs of indices and ~Nothing~ values into a 15x15
+array.
+
+Then we can put a ~WordPut~ onto the board.
+
+The ~updateBoard~ function uses a fold to update the array with each
+element of the ~WordPut~ in turn. The ~(//)~ operator is used in
+~updateSquare~ to update the array.
+
+*Demo:* ~Scrabble.Board~
+
+* Retrieving a word from the board}
+
+We can check whether a position on the board is occupied by a tile
+with the functions ~onBoard~ and ~getSquare~ in ~Scrabble.Board~.
+
+See also the ~Dir~ type and ~getDirection~.
+  
+* Retrieving a word from the board
+
+Given an occupied position, if we know the direction we can find the
+beginning of the ~WordPut~ it is part of.
+
+Given the start of a ~WordPut~ we can retrieve the whole thing.
+
+See ~Scrabble.Board~ and the functions ~wordOnRow~ and ~wordOnCol~.
+
+*Demo* of querying board in ghci.
+
+* Pretty-printing boards
+
+We want a function that turns a board into text that looks something
+remotely like a Scrabble board.
+
+See ~Scrabble.Pretty~.
+
+*Demo* of adding a word to the board and printing it.
+
+* Testing
+
+We need to think about what we want to be always true about the types
+and functions we have created.
+
+We use the ~QuickCheck~ library for property-based testing.
+
+This means that we specify some property that we want our functions to
+have and the library generates arbitrary input that checks whether the
+property holds.
+
+* Testing
+
+The ~test-suite~ stanza in the config file deptermines what tests
+should be run and how.
+
+It points to the file ~tests/Main.hs~ as the entry point.
+
+Run the tests with ~cabal run test-scrabble~.
+
+* Testing
+
+To test functions relating to boards we need to be able to generate
+arbitrary values of ~Pos~, ~Letter~, ~WordPut~ and so on.
+
+We write generators that use the ~QuickCheck~ library to do that in
+~Test.Gen~.
+
+*Demo:* ~Test.Gen~ and ~Test.Chapter1~
+
+* Exercises
+
+Have a go at the exercises at the end of Chapter 1!
