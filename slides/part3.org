@@ -53,11 +53,11 @@ the user.
 A common solution to writing a function that can fail is to use the
 type ~Either Text a~. 
 
-Values of this type are either ~Left e~, where `e` is an error
+Values of this type are either ~Left e~, where ~e~ is an error
 message, or ~Right x~ where ~x~ has type ~a~. 
 
-In the case of ~straight~, if it returns any kind of ~Right~ value
-then we know things went well. 
+In ~wordOnBoard~ returns any kind of ~Right~ value then we know things
+went well.
 
 So there's no need to return a ~Bool~, we can just return ~Left e~ for
 an error or ~Right ()~ if things went well.
@@ -165,7 +165,7 @@ evalBool b e = unless b $ fail (T.unpack e)
 * Monadic error checking
 
 Now our validation functions will all have a similar structure to the
-new version of ~wordOnBoard~ -- a call to `evalBool` where
+new version of ~wordOnBoard~ -- a call to ~evalBool~ where
 the first argument is a boolean condition and the second is an error
 message.
 
@@ -207,7 +207,7 @@ what went wrong.
 * Checking words in the dictionary
 
 We have already seen how to check that a word is in the dictionary
-using `dictContainsWord`. 
+using ~dictContainsWord~. 
 
 Instead of returning a boolean we now want this to fit in with the
 combinator style of validation, so we alter it to run in the
@@ -277,6 +277,8 @@ checking it again.
 We can turn the idea of validation into an abstraction (a type) and
 combine the various smaller checks we have into coherent blocks.
 
+Here we validate against the game's rules but not the dictionary: 
+
 #+BEGIN_SRC haskell
 type Validator = [WordPut] -> Game -> Evaluator ()
 
@@ -287,7 +289,14 @@ valGameRules ws g = do
       w  = head ws
       fm = firstMove g
   validateRack b (rack p) w >> validateMove b p w fm
-  
+#+END_SRC
+
+* Putting it all together
+
+And here we reuse the previous validator then check against the
+dictionary.
+
+#+BEGIN_SRC haskell
 valGameRulesAndDict :: Validator
 valGameRulesAndDict ws g = do
   let d  = dict g

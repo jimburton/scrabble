@@ -68,9 +68,10 @@ top of it as it grows.
 * The next steps
 
 I won't say it will take you from being a beginner-level to an
-intermediate-level Haskell programmer; Haskell is a deep language and
-if /Intermediate/ is halfway between /Beginner/ and /Expert/ then
-that's a bit of a stretch.
+intermediate-level Haskell programmer; 
+
+Haskell is a deep language and if /Intermediate/ is halfway between
+/Beginner/ and /Expert/ then that's a bit of a stretch.
   
 But you won't be a beginner any more.
 
@@ -85,10 +86,12 @@ There is a branch in the repository for each chapter, named
 ~chapter1~, ~chapter2~, etc, up to ~chapter7~.
 
 As you read each chapter you should check out the corresponding branch
-and study the code. There are exercises at the end of each chapter
-which expect you to be working on the code from the right branch.
+and study the code. 
 
-* Managing the code
+There are exercises at the end of each chapter which expect you to be
+working on the code from the right branch.
+
+n* Managing the code
 
 We're using ~cabal~ to manage the project.
 
@@ -98,8 +101,10 @@ We will eventually be making several executables but the core code for
 playing the game is contained in a library stanza.
 
 As such, there isn't an entry point or any way for users to run the
-code. It is there for ourselves and others to import into code that
-*does* provide an interface for users.
+code. 
+
+It is there for ourselves and others to import into code that *does*
+provide an interface for users.
 
 *Demo:* ~scrabble.cabal~
 
@@ -192,6 +197,10 @@ In many languages we would create an array of arrays to achieve this,
 where each element of the 15-element outer array is a 15-element array
 representing a row.
 
+However, Haskell supports true multi-dimensional arrays, so we can
+create one where the type of indices is ~(Int,Int)~ (for our purpose,
+~(row,column)~).
+
 #+BEGIN_SRC haskell
 -- in Scrabble.Types
 
@@ -201,9 +210,6 @@ import Data.Array
 type Board = Array (Int,Int) (Maybe Tile)
 #+END_SRC
 
-However, Haskell supports true multi-dimensional arrays, so we can
-create one where the type of indices is ~(Int,Int)~ (for our purpose,
-~(row,column)~).
 
 * The board
 

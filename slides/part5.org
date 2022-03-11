@@ -1,4 +1,3 @@
-#+LATEX_HEADER: \setbeamertemplate{headline}{}
 * Scrabble
 
   [[./images/scrabble.jpeg]]
@@ -117,7 +116,7 @@ data.rooms.forEach(room ​=​​>
 
 #+END_SRC
 
-* JSON in Javascript
+n* JSON in Javascript
 
 We have to turn Javascript objects into strings and back again
 to send them over the network. We do this with ~JSON.stringify~ and
