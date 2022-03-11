@@ -49,7 +49,7 @@ import Scrabble.Types
   , Dir(..)
   , Rack
   , Tile ) 
-import Scrabble.Types ( Evaluator(..) )
+import Scrabble.Evaluator ( Evaluator )
 import Scrabble.Board.Internal
   ( incCol
   , incRow
