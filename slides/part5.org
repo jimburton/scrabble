@@ -116,13 +116,15 @@ data.rooms.forEach(room ​=​​>
 
 #+END_SRC
 
-n* JSON in Javascript
+* JSON in Javascript
 
 We have to turn Javascript objects into strings and back again
 to send them over the network. We do this with ~JSON.stringify~ and
 ~JSON.parse~.
 
 #+BEGIN_SRC js
+socket = new WebSocket("ws://localhost:9160/")
+
 // send a JSON object to the server
 socket.send(JSON.stringify([1, 2, 3, 4]));
 
@@ -153,8 +155,10 @@ expression to be evaluated.)
 Datatypes that need to be sent from the server to clients are made into
 instances of the ~ToJSON~ and ~FromJSON~ typeclasses.
 
-That means defining two functions: ~encode~ (turn a Haskell value into a
-Text value representing JSON) and ~decode~ (the other direction).
+That means defining two functions:
+
++ ~encode~ (turn a Haskell value into a Text value representing JSON) and
++ ~decode~ (the other direction).
 
 We can do this ourselves for each type, but as we don't want to do anything
 special the instances can be /derived/.
@@ -195,9 +199,9 @@ wanting to write a client far easier.
 
 * Protocol: starting an (AI) game
 
-When a request to join a game is acknowledged, the server sends the name the
-player has been assigned, the name of their opponent, their first rack and
-their turn (P1 or P2).
+When a request to join a game is acknowledged, the server sends the
+name the player has been assigned, the name of their opponent, their
+first rack and their turn (P1 or P2).
 
 In an AI game the human player is P1.
 
@@ -214,13 +218,13 @@ In an AI game the human player is P1.
 
 * Protocol: in-game
 
-Now the game is in play the following sequence, with possible variations
-to be explained, is repeated until the game ends.
+Now the game is in play the following sequence, with possible
+variations to be explained, is repeated until the game ends.
 
 
 #+BEGIN_EXAMPLE
      |                                             |
-     |      <- TURN [P1]                           |
+     |      <- TURN [P1] --                        |
      |                                             |
      |      -- MOVE [MOVE] -->                     |
      |                                             |
@@ -233,9 +237,10 @@ to be explained, is repeated until the game ends.
 
 * Protocol: in-game play
 
-If the client sends an illegal move then, rather than receiving MOVE ACK it
-receives a message explaining what was wrong with the move and the TURN
-sequence is repeated without the turn being passed to the other player.
+If the client sends an illegal move then, rather than receiving MOVE
+ACK it receives a message explaining what was wrong with the move and
+the TURN sequence is repeated without the turn being passed to the
+other player.
 
 
 #+BEGIN_EXAMPLE
@@ -243,7 +248,7 @@ sequence is repeated without the turn being passed to the other player.
      |                                             |
      |      -- MOVE [P1] -->                       |
      |                                             |
-     |      <- ANNOUNCE [ERROR]                    |
+     |      <- ANNOUNCE [ERROR] --                 |
      |                                             |
      |      <- TURN [P1]                           |
      |                                             |
@@ -251,8 +256,8 @@ sequence is repeated without the turn being passed to the other player.
 
 * Protocol: in-game play
 
-Any time it is the client's turn they can send the PASS message. The server
-responds by giving the turn to the other player.
+Any time it is the client's turn they can send the PASS message. The
+server responds by giving the turn to the other player.
 
 
 #+BEGIN_EXAMPLE
@@ -322,33 +327,33 @@ Requests for interactive games need to be saved until there are two of them.
 
 * Writing the server
 
-We need to manage a /buffered queue/, a concurrent data structure that can
-contain at most two clients.
+We need to manage a /buffered queue/, a concurrent data structure that
+can contain at most two clients.
 
 This data is shared amongst several threads.
 
-The main thread will add incoming requests for non-AI games to the queue
-and a separate thread, the ~gameStarter~ thread, will watch the queue until
-there are two requests.
+The main thread will add incoming requests for non-AI games to the
+queue and a separate thread, the ~gameStarter~ thread, will watch the
+queue until there are two requests.
 
 * Writing the server
 
 It then creates a new game in a separate thread and begins the game.
 
-If there are already two requests for games in the queue the main thread will
-wait until there are less than two before adding another.
+If there are already two requests for games in the queue the main
+thread will wait until there are less than two before adding another.
 
-If there are fewer than two requests in the queue, the ~gameStarter~ thread
-will wait until two arrive so that it can create a game.
+If there are fewer than two requests in the queue, the ~gameStarter~
+thread will wait until two arrive so that it can create a game.
 
 * The queue for game requests
 
-This queue needs to be accessed by two threads, one putting attempting to put
-requests in and one attempting to take requests out.
+This queue needs to be accessed by two threads, one putting attempting
+to put requests in and one attempting to take requests out.
 
 Each of these threads needs to stop and wait if it can't complete its task.
 
-                     +----------------------------------+			     
+                     +----------------------------------+
  New Request --->    +  Request 2      | Request 1    |  <-- ~gameStarter~
                      +-------------- -------------------+
 
@@ -356,13 +361,13 @@ Each of these threads needs to stop and wait if it can't complete its task.
 
 The ~BoundedChan~ type serves this purpose.
 
-It provide a bounded channel, or concurrent queue that 
+It provide a bounded channel, or concurrent queue that
 can contain only a given number of elements.
 
-Threads that want to take from the queue are blocked 
+Threads that want to take from the queue are blocked
 if it is empty.
 
-Threads that want to add to a full queue are blocked 
+Threads that want to add to a full queue are blocked
 until there is room for another element.
 
 * Writing the server
@@ -382,22 +387,22 @@ and ~takeTurnAI~.
 
 * Writing the client
 
-The client is written as a small, free-standing (i.e. one 
-that doesn't require a webserver) web application, with 
+The client is written as a small, free-standing (i.e. one
+that doesn't require a webserver) web application, with
 most of the effort going in to the JavaScript.
 
-The event handler that receives incoming messages from the 
-server has a switch statement that pattern matches on messages 
+The event handler that receives incoming messages from the
+server has a switch statement that pattern matches on messages
 in a very similar way to the one in ~takeTurnManual~.
 
 *Demo:* ~main.js~
 
 * Writing the client
 
-The client can be simply opened in a browser by opening 
+The client can be simply opened in a browser by opening
 ~index.html~, or we can serve it over the web.
 
-An executable stanza is added to the cabal file and 
+An executable stanza is added to the cabal file and
 ~Happstack~ is used to serve the static files.
 
 *Demo:* cabal file and ~web/client/Main.hs~.
@@ -406,7 +411,7 @@ An executable stanza is added to the cabal file and
 
 We have covered a *lot* of ground:
 
-+ data types to model a problem with several moving parts, 
++ data types to model a problem with several moving parts,
   some of them basic (arrays), some more advanced (tries),
 + /lenses/,
 + monadic error-checking,
@@ -417,7 +422,7 @@ We have covered a *lot* of ground:
 + coding and decoding JSON with ~aeson~
 + writing a websocket server.
 
-The book (https://github.com/jimburton/scrabble) covers additional 
+The book (https://github.com/jimburton/scrabble) covers additional
 topics, e.g. *logging* and *configuration*.
 
 
@@ -434,22 +439,22 @@ code in an imperative language.
 
 * Wrapping up
 
-The idea has not really been to explain how to implement 
-Scrabble in Haskell, but to talk you through the entire design 
+The idea has not really been to explain how to implement
+Scrabble in Haskell, but to talk you through the entire design
 and implementation of a reasonably-sized project using best practices.
 
-Getting the hang of that involves developing skills at many 
+Getting the hang of that involves developing skills at many
 different levels.
 
 * Wrapping up
 
 You need /an eye for detail/, taking advantage of the strengths of the
-language to write code that is both /elegant/ and /correct/, and
+language to write code that is both /elegant/ and /correct/.
 
-You need an eye for /broader issues/ of software design, designing APIs that
-expose just the right functionality and are nice to use,
-protocols that determine robust communication between remote components
-of an application, and so on.
+You need an eye for /broader issues/ of software design, designing
+APIs that expose just the right functionality and are nice to use,
+protocols that determine robust communication between remote
+components of an application, and so on.
 
 * Wrapping up
 
