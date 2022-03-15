@@ -91,7 +91,7 @@ and study the code.
 There are exercises at the end of each chapter which expect you to be
 working on the code from the right branch.
 
-n* Managing the code
+* Managing the code
 
 We're using ~cabal~ to manage the project.
 
