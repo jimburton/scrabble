@@ -1,0 +1,157 @@
+* Scrabble
+
+[[./images/scrabble.jpeg]]
+
+* Recap
+
++ Data types
++ Lenses for records
++ ~Evaluator~ monad for validating moves
+
+* ~Evaluator~ for everything
+
+As well as using the ~Evaluator~ monad for convenient error
+reporting, we can thread all sorts of "evaluations" through it.
+
+*Demo:* ~Scrabble.Lang.Dict~
+
+* Moving on 
+
+Now we can start hooking all of this together to "play" the game 
+by taking turns (but only in the REPL)...
+
+[[https://github.com/jimburton/scrabble/blob/main/chapters/Chapter4.md]]
+
+* But first, ending the game!
+
+Any time a move is played, it might be the end of the game.
+ 
+We need to detect and respond to that.
+
+Two ways the game can end:
+
++ Two passes in a row.
++ No tiles in the bag and at least one player has no tiles in their rack.
+
+*Demo:* ~Scrabble.Game.Game~, ~endGame~ etc.
+
+* Ways to take a turn
+
+A player can take a turn by:
+
++ passing,
++ swapping, or
++ playing a word.
+
+* Passing
+
+*Demo:* ~Scrabble.Game.Game~, ~toggleTurn~ and ~pass~.
+
+* Swapping
+
+*Demo:* ~Scrabble.Game.Game~, ~endNonPassMove~ and ~swap~.
+
+* Playing a word
+
+*Demo:* ~Scrabble.Game.Game~, ~move~.
+
+* In the REPL
+
+*Demo.*
+
+* Playing against the computer
+
+[[./images/robot.jpg]]
+
+* Playing against the computer
+
+In Chapter 5 we move onto creating an AI player. 
+
+We add a new module, ~Scrabble.Game.AI~, which will have its own 
+~move~ function.
+
+Based on the letters in its rack, the AI player needs to choose 
+a word that can be played on the board.
+
+The first challenge is in knowing /where/ a word can be played.
+
+* Playable spaces 
+
+After the first move, every new word needs to connect with
+an existing one.
+  
+A /playable/ position is one where the AI could play a word.
+
+We need to know the /letter/ at that position, the 
+/amount of space/ around it and the /direction/ of that space.
+
+We call that playable space a *freedom*.
+
+*Demo:* ~Scrabble.Types~, ~Freedom~, ~playables~ etc.
+
+* Playable spaces
+
+[[./images/freedoms0.png]]
+
+* Playable spaces
+
+[[./images/freedoms1.png]]
+
+* Calculating freedom
+
+For each new ~WordPut~, ~wp~, we have to calculate the freedoms from each 
+position in ~wp~. 
+
+For any given position we calculate the free space above and below it, 
+or to the right and left of it.
+
+*Demo:* ~Scrabble.Board.Internal~, ~rowFreedom~, ~colFreedom~. 
+~Scrabble.Game.Internal~, ~updatePlayables~.
+
+* Finding a word 
+
+Given a rack of letters we want to know all of the words that
+could be played, then pick one.
+
+We look for words that either /begin/ or /end/ with the letter 
+in a playable position.
+
+So we find all *permutations* of a rack then stick the letter
+in the playable position on the beginning or end.
+
+This code is in *~Scrabble.Lang.Search~*.
+
+* Finding a word
+
+We end up with a function with the following signature:
+
+#+BEGIN_SRC haskell
+-- Pick a word for the AI to play, along with the 
+-- additional words it generates. 
+findWord :: Game     -- The game.
+         -> Rack     -- The rack.
+         -> Maybe (WordPut, [WordPut])
+#+END_SRC
+
+* Enabling the AI to play a word
+
+Now we need to write a function like ~move~ but for the AI: ~moveAI~.
+
+We notice that ~move~ returns a pair with type ~(Game, ([Word],Int))~ 
+in the ~Evaluator~ monad, where the list of words is the word played 
+and all additional words and the int is the score. 
+
+This won't quite do for the AI version.
+
+* Enabling the AI to play a word
+
+~moveAI~ has to also say /where/ to play the move, and to distinguish 
+between the word played and the additional words generated.
+
+We make a type for this, ~MoveResult~.
+
+*Demo:* ~Scrabble.Types~, ~Scrabble.Game.AI~ and ~moveAI~.
+
+* Demo
+
+In the REPL...

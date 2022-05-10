@@ -26,7 +26,7 @@ import Scrabble.Types
   ( Word
   , WordPut )
 
--- ===== Words ===== --
+-- * Words
 
 -- | Stringify a @Word@.
 wordToString :: Word -> String

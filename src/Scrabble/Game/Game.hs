@@ -18,7 +18,7 @@ module Scrabble.Game.Game
   , pass )
   where
 
-import System.Random
+import System.Random ( StdGen )
 import Prelude hiding
   ( Word
   , words )
@@ -47,7 +47,8 @@ import Scrabble.Types
   , Dict
   , Word
   , Validator
-  , MoveResult(..) )
+  , MoveResult(..)
+  , Evaluator(..) )
 import Scrabble.Board.Board
   ( scoreWords
   , newBoard
@@ -58,9 +59,8 @@ import Scrabble.Board.Bag
   ( newBag
   , fillRack
   , takeFromRack )
-import Scrabble.Evaluator (Evaluator(..))
 
--- ============= Functions for playing the game =============== --
+-- * Functions for playing the game
 
 -- | Start a new game.
 newGame :: Text   -- ^ Name of Player 1
@@ -130,5 +130,3 @@ pass :: Game -> Evaluator Game
 pass g = if g ^. lastMovePass
          then endGame g
          else toggleTurn (g & lastMovePass .~ True ) >>= checkEndOfGame
-
-  

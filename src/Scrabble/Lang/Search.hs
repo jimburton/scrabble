@@ -38,7 +38,7 @@ import Scrabble.Lang.Word
   ( textToWord
   , wordToText ) 
 
-{- ===== Dictionary Search ===== -}
+-- * Dictionary Search
 
 -- | Find all the words in the given list of words that are in the dictionary.
 findWords :: Game   -- ^ The dictionary to search
@@ -120,5 +120,4 @@ dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t)
 
 -- | Returns true if the dict contains the given prefix
 dictContainsPrefix :: Dict -> Text -> Bool 
-dictContainsPrefix d t = not $ Trie.null $ Trie.submap t d 
-
+dictContainsPrefix d t = not $ Trie.null $ Trie.submap t d

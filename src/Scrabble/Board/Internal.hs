@@ -47,9 +47,9 @@ import Scrabble.Types
   , Freedom) 
 import Scrabble.Lang.Word (wordToText)
   
--- ======== Internal for Board ========== --
+-- * Internal for Board
 
--- * Neighbours
+-- ** Neighbours
 
 -- Find neighbouring squares to a position on the board.
 neighbours :: Pos -> [Pos]
@@ -70,7 +70,7 @@ adjacent (r1,c1) (r2,c2) = abs (r1-r2) <= 1 && abs (c1-c2) <= 1
 --adjacents (r,c) = neighbours (r,c) ++
 --  filter onBoard [(r-1,c-1), (r-1,c+1), (r+1,c-1), (r+1,c+1)]
 
--- * Playable spaces on the board
+-- ** Playable spaces on the board
 
 -- | The value of a Freedom
 freeness :: Freedom -> Int
@@ -136,7 +136,7 @@ formatWP w = wordToText (map (fst . snd) w) <> ": " <> T.pack (show (fst (head w
 wordPutToWord :: WordPut -> Word
 wordPutToWord = map (fst . snd)
 
--- * Manipulating and querying the board
+-- ** Manipulating and querying the board
 
 -- | Retrieve a position on the board.
 getSquare :: Board -> Pos -> Maybe Tile

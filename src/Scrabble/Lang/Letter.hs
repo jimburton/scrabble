@@ -22,7 +22,8 @@ import Data.Tuple (swap)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Scrabble.Types (Letter(..))
--- ===== Letters ===== --
+
+-- * Letters
 
 -- | Convert a @Char@ to a @Letter@, if the @Char@ is a valid @Letter@ (A-Blank).
 letterFromChar :: Char -> Maybe Letter

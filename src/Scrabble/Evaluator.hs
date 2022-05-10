@@ -19,7 +19,7 @@ import Data.Text (Text)
 import qualified Data.Text as T (pack, unpack)
 import Scrabble.Types (Evaluator(..))
 
--- ======== The Evaluator instances ========== --
+-- * The Evaluator instances
 
 instance Functor Evaluator where
   -- fmap :: (a -> b) -> f a -> f b 

@@ -25,9 +25,9 @@ import Data.Functor ((<&>))
 import Data.Text (Text)
 import System.Random (StdGen)
 import Lens.Simple ((^.),(.~),(&))
-import Scrabble.Evaluator (Evaluator(..))
 import Scrabble.Types
-  ( Dict
+  ( Evaluator(..)
+  , Dict
   , Game(..)
   , dict, playable, firstMove, turn
   , Player(..)
@@ -55,7 +55,7 @@ import Scrabble.Board.Bag
 import Scrabble.Lang.Word
   ( wordToText
   , wordPutToText )
-import Scrabble.Game.Game (pass)
+import Scrabble.Game.Game ( pass )
 import Scrabble.Game.Internal
   ( toggleTurn
   , getPlayer
@@ -67,7 +67,7 @@ import Scrabble.Lang.Search
   , findSuffixes
   , wordsInDict )
 
--- =========== AI functions ============ --
+-- * AI functions
 
 -- | Start a new game against the computer.
 newGame1P :: Text   -- ^ Name of Player
@@ -201,9 +201,3 @@ findWordOfSize g wf k r (fd,i) =
              Ev (Right aw) -> if not $ wordsInDict (g ^. dict) (map wordPutToText aw)
                               then Nothing
                               else Just (wp,aw)
-
-{-
-case additionalWords g wp of
-             Ev (Left _)   -> Nothing
-             Ev (Right aw) -> Just (wp,aw)
--}

@@ -34,7 +34,7 @@ import Scrabble.Board.Internal
   , getDirection
   , onBoard ) 
 
--- ================= Validation for boards ===============--
+-- * Validation for boards
 
 -- | Check that a move is valid: it touches at least one existing word (unless
 --   it is the first move, in which case check that it touches the centre square),
@@ -108,4 +108,4 @@ straight wp | length wp > 2 =
 -- Check that a word to be played incudes some tiles that aren't on the board.
 someNewTiles :: Board -> WordPut -> Evaluator ()
 someNewTiles b w = any (empty b . fst) w `evalBool`
-  ("You didn't play any new tiles: " <> formatWP w <> T.pack (show w)) 
+  ("You didn't play any new tiles: " <> formatWP w <> T.pack (show w))

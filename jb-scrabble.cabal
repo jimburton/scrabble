@@ -21,7 +21,8 @@ library
   hs-source-dirs:
       src
   ghc-options: -Wall
-  build-depends: base >=4.12 && <=4.13
+  -- base restriction <4.13 comes from text-trie as of Jan 2022. This means GHC 8.6 or lower
+  build-depends: base >=4.12 && <4.13 
                , random
                , array
                , containers
