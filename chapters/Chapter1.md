@@ -235,7 +235,7 @@ is *unsafe*, meaning that it can fail at runtime causing the program
 to crash. This happens when it is called on a value that isn't `Just x`, 
 i.e. which is `Nothing`. In this case, we know we won't get any
 errors because there is an entry in the map for every letter, so the
-`scoreLatter` function is safe. But whenever you use an unsafe
+`scoreLetter` function is safe. But whenever you use an unsafe
 function such as `fromJust` or `head`, ask yourself whether this is
 definitely safe to do.
 
