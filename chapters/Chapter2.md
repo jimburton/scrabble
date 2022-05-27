@@ -144,7 +144,7 @@ gobbledegook for now. Let's go through it bit by bit.
 
 As we can see from the differences in their names, `score` and
 `player1` are not the accessor functions we saw before. They are
-lenses. Give a record, `player`, with a field, `score`, we can get the
+lenses. Given a record, `player`, with a field, `score`, we can get the
 value of `score` with `player ^. score` and set it to a new value,
 `x`, with `player & score .~ x`. The other main thing we want to do is
 to update the value of `score` by applying a function to it, say `foo`. This
