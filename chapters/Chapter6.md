@@ -216,8 +216,8 @@ That's it. The library takes care of everything else.
 
 ## Taking a turn as the human player
 
-The case of the human player taking a turn is more complex, as there
-are more things to consider. First, need to read some input from the user
+When a human player takes a turn there
+are more things to consider. First, we need to read some input from the user
 in an `InputT` action. If they enter an empty line, we keep looping. Otherwise,
 we try to parse the input. 
 
