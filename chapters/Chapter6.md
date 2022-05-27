@@ -568,7 +568,18 @@ TODO
 
 ## Exercises
 
-TODO
+1. The code that reads input from the user in `takeTurnManual` is too fragile. 
+   If the user does not enter four strings corresponding to a word, column number,
+   row number and direction, the pattern matching will fail and the game will crash. 
+   Refactor the function to check the following conditions:
+   
+   1. `words wdStr` returns a list of four strings,
+   2. the first string (the word) contains only letters,
+   3. the second and third contain only digits,
+   4. the fourth (the direction) is either "H" or "V".
+
+   If any of these conditions is not true, print a helpful message and call 
+   `takeTurnManual` again.
 
 
 [Contents](../README.md) | [Chapter Seven](Chapter7.md)
