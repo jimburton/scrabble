@@ -76,18 +76,18 @@ makeWords :: Game   -- ^ The game.
           -> [Word] -- ^ The words from the dictionary.
 makeWords g ls = findWords g (map wordToText (perms ls))
 
--- | Find all the prefixes in the dictionary that end with the given letter.
+-- | Find all words in the dictionary that end with the given letter.
 findPrefixes :: Game    -- ^ The game.
-              -> Letter -- ^ The suffix.
-              -> Word   -- ^ The letters to build the words from.
-              -> [Word] -- ^ The prefixes.
+             -> Letter -- ^ The suffix.
+             -> Word   -- ^ The letters to build the words from.
+             -> [Word] -- ^ The prefixes.
 findPrefixes g l ls = findWords g (map (wordToText . (++[l])) (perms ls))
 
--- | Find all the prefixes in the dictionary that begin with the given letter.
+-- | Find all words in the dictionary that begin with the given letter.
 findSuffixes :: Game    -- ^ The game.
-                      -> Letter -- ^ The suffix.
-                      -> Word   -- ^ The letters to build the words from.
-                      -> [Word] -- ^ The suffixes.
+             -> Letter -- ^ The suffix.
+             -> Word   -- ^ The letters to build the words from.
+             -> [Word] -- ^ The suffixes.
 findSuffixes g l ls = findWords g (map (wordToText . (l:)) (perms ls))
 
 -- | Find all the words that can be made with the letters on the board
@@ -95,11 +95,18 @@ findSuffixes g l ls = findWords g (map (wordToText . (l:)) (perms ls))
 --   PREFIX + SUFFIX is a partition of the letters in the hand
 --   and L is a letter on the board.
 --   TODO: get this working! 
-wordPlaysT :: Dict   -- ^ Dictionary to search
-         -> [Letter] -- ^ Letters in hand
-         -> [Letter] -- ^ Letters on board
-         -> [Word]   -- ^ The list of words. 
-wordPlaysT = undefined -- map (\(i,t) -> i ++ 'L':t) $ zip (inits str) (tails str)
+wordPlaysT :: Game     -- ^ The game.
+           -> [Letter] -- ^ Letters in hand
+           -> [Letter] -- ^ Letters on board
+           -> [Word]   -- ^ The list of words. 
+wordPlaysT g ls b = undefined -- findWords g ((map parts ls) (perms ls))
+
+-- Interpsperse a letter into all positions within a word, not including the prefix and suffix.
+-- parts "abc" 'X' == ["aXbc", "abXc"]
+parts :: a -> [a] -> [[a]]
+parts c str = parts' 1 []
+  where parts' n xs | n == length str = xs
+                    | otherwise = parts' (n+1) ((take n str ++ [c] ++ drop n str) : xs)
 
 -- | Check whether a list of words are all in the dictionary.
 wordsInDictM :: Dict        -- ^ The dictionary.

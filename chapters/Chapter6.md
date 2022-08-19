@@ -568,7 +568,7 @@ TODO
 
 ## Exercises
 
-1. The code that reads input from the user in `takeTurnManual` is too fragile. 
+1. The code that parses input from the user in `takeTurnManual` is too fragile. 
    If the user does not enter four strings corresponding to a word, column number,
    row number and direction, the pattern matching will fail and the game will crash. 
    Refactor the function to check the following conditions:
@@ -579,7 +579,7 @@ TODO
    4. the fourth (the direction) is either "H" or "V".
 
    If any of these conditions is not true, print a helpful message and call 
-   `takeTurnManual` again.
+   `loop` again.
 
 
 [Contents](../README.md) | [Chapter Seven](Chapter7.md)

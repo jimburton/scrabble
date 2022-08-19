@@ -73,8 +73,8 @@ import Scrabble.Lang.Search
 
 -- | Start a new game against the computer.
 newGame1P :: Text   -- ^ Name of Player
-          -> StdGen   -- ^ The random generator
-          -> Dict -- ^ The dictionary
+          -> StdGen -- ^ The random generator
+          -> Dict   -- ^ The dictionary
           -> Game
 newGame1P pName theGen d = 
   let Ev (Right (rack1, bag1, gen')) = fillRack [] newBag theGen
