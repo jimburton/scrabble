@@ -29,7 +29,8 @@ import Scrabble.Types
   ( Evaluator(..)
   , Dict
   , Game(..)
-  , dict, playable, firstMove, turn
+  , Board
+  , dict, playable, firstMove, turn, board
   , Player(..)
   , rack
   , FreedomDir(..)
@@ -48,7 +49,8 @@ import Scrabble.Board.Board
   , newBoard
   , additionalWords
   , scoreWords
-  , wordPutToWord ) 
+  , wordPutToWord
+  , empty) 
 import Scrabble.Board.Bag
   ( newBag
   , fillRack )
@@ -198,6 +200,14 @@ findWordOfSize g wf k r (fd,i) =
              wp = makeWordPut (wordToText w) pos dir [] in           
            case additionalWords g wp of
              Ev (Left _)   -> Nothing
-             Ev (Right aw) -> if not $ wordsInDict (g ^. dict) (map wordPutToText aw)
+             Ev (Right aw) -> if not $ freeButOne (g ^. board) wp
+                                 && wordsInDict (g ^. dict) (map wordPutToText aw)
                               then Nothing
                               else Just (wp,aw)
+
+-- Check that all positions but one are free in a Wordput.
+-- This would need to be changed if we make the AI smart enough to select
+-- words that reuse more than one tile at the very beginning or ending of the new word.
+freeButOne :: Board -> WordPut -> Bool
+freeButOne b wp = let bs = map (empty b . fst) wp in
+  and (tail bs) || and (init bs)
