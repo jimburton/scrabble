@@ -15,7 +15,7 @@ game given some starting conditions, and to produce a new game based
 on an existing one, i.e. by playing a move.
 
 We will deal first with the simplest way of playing a move, which is
-by *passing*. Then we consider the almost equally simple case of
+by *passing* (i.e. giving up your turn). Then we consider the almost equally simple case of
 taking a move by *swapping tiles*, before looking at the "normal" way
 of taking a move by *playing a word* on the board.
 
@@ -59,8 +59,8 @@ endGame g = do
       p1s = (g ^. (player1 . score) - r1v) + r2v
       p2s = (g ^. (player2 . score) - r2v) + r1v
   pure (g & player1 . score .~ p1s 
-         & player2 . score .~ p2s 
-         & gameOver .~ True )
+          & player2 . score .~ p2s 
+          & gameOver .~ True )
 
 -- | Checks whether this game has ended because the bag and one
 --   of the racks are empty, and calls endGame if so.
@@ -367,8 +367,9 @@ Note that we aren't distinguishing between being straight and being continuous.
 We could fix that by refactoring `straight` into `straight` and a new check,
 `continuous`, if we thought it mattered. 
 
-Finally, using a different validator, we try to play a word which is all OK except 
-that it doesn't exist:
+Finally, we try to play a word which is all OK except 
+that it doesn't exist. For this to work we need a validator which will check that
+the word is in the dictionary:
 
 ```
 > let notAWord = [((7,10),(S,1)), ((8,10),(V,4)), ((9,10),(N,1))]
