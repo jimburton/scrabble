@@ -57,7 +57,7 @@ doing so is valid. The rules about word placement are as follows:
   
 Two positions on the board, `(r1,c1)` and `(r2,c2)`, are in a
 continuous straight line if either `r1==r2-1` and `c1==c2` or `r1==r2`
-and `c1==c2-1`. One approach to writing `straight` would simply to
+and `c1==c2-1`. The most obvious approach to writing `straight` would be to
 return `True` if the word is straight:
 
 ```haskell
@@ -77,7 +77,7 @@ of `if` statements that work out what to report back to the user.
 
 A common solution to writing a function that can fail is to use the
 type `Either Text a`. Values of this type are either `Left e`, where
-`e` is an error message, or `Right x` where `x` is any type. In the
+`e` is an error message, or `Right x` where `x` is the result of a successful calculation and has type `a`. In the
 case of `straight`, if it returns any kind of `Right` value then we
 know things went well. So there's no need to return a `Bool`, we can
 just return `Left e` for an error or `Right ()` if things went
@@ -161,7 +161,7 @@ So, we already have lots of things to check about the validity of a
 move. We need to check whether the word is straight, whether it
 touches another word and whether the tile are available, and this is
 before we have even got onto checking the dictionary. Each of these
-function calls will return an `Either Text a` and we may find
+function calls will return an `Either Text ()` and we may find
 ourselves doing a lot of case statements and pattern matching on
 `Either` values. A function that puts together the various ways we
 might validate a move could look like this:
@@ -243,7 +243,7 @@ instance Monad Evaluator where
     return   = pure
     fail msg = Ev (Left (T.pack msg))
 ```
-Now we need to rewrite all of the functions that returned `Either Text a`
+Now we can rewrite all of the functions that returned `Either Text a`
 to return `Evaluator a`. The ones we have seen so far tested a boolean condition,
 `b`, and returned `Right ()` if `b` succeeded or `Left Text` if `b` failed. We can
 make an abstraction for this pattern.
