@@ -68,7 +68,11 @@ library
       Scrabble
       Scrabble.Types
 	  Scrabble.Board
+	  Scrabble.Bonus
 	  Scrabble.Dict
+	  Scrabble.Game
+	  Scrabble.Pretty
+	  Scrabble.Types
 
   default-extensions: OverloadedStrings
   
@@ -119,7 +123,7 @@ it tells you where it has stored the output:
 $ cabal haddock
 ...
 Documentation created:
-<path-to-docs>/jb-scrabble/index.html
+<path-to-docs>/scrabble/index.html
 ```
 
 However, only those functions and types that are exported by a module
@@ -165,7 +169,8 @@ type Tile = (Char,Int)
 
 but then the type system wouldn't be able to rule out nonsense values
 like `('%',0)`, we might find ourselves needing to distinguish between
-'a' and 'A', and so on. So we create an enumeration of all possible
+'a' and 'A', and so on. The relevant slogan here is *make illegal states
+unrepresentable*. So we create an enumeration of all possible
 letters and make the datatype derive some useful typeclasses:
 
 ```haskell
@@ -193,10 +198,13 @@ more efficient (`O(log n)`) lookup tables.
 
 Because it contains many functions whose names clash with those of
 functions in the `Prelude`, like `filter` and `map`, `Data.Map` is
-normally imported with a qualified name (e.g. `Map`) like this:
+normally imported with a qualified name (e.g. `Map`). For convenience,
+we import the `Map` constructor directly, so we don't need to type
+`Map.Map`:
 
 ```haskell
 import qualified Data.Map as Map
+import           Data.Map (Map)
 ```
 Since `Data.Map` isn't in the `Prelude`, we need to tell `cabal` where
 to find it. If we try to import it without doing anything else, `cabal` 
@@ -211,6 +219,7 @@ you need on hackage and check which package it is part of.
 -- in Scrabble.Board
 
 import qualified Data.Map as Map
+import           Data.Map (Map)
 
 -- lookup table for the score of a letter. Not exported.
 letterToScoreList :: [(Letter,Int)]
@@ -277,7 +286,7 @@ type Pos = (Int,Int)
 distinguish between them in type signatures so we make aliases for
 each.  Because the `Prelude` includes a type called `Word` we
 have a name clash here.  We could call our new type `ScrabbleWord` or
-something like that, but it seems more convenient to keep the short
+something like that but it seems more convenient to keep the short
 name and hide the type in the `Prelude`, which we don't need anyway.
 
 ```haskell
@@ -296,7 +305,7 @@ A word we want to place on the board is a list of pairs of `Pos` and `Tile` valu
 We'll call this a `WordPut`.
 
 ```haskell
--- | A word placed on the board (tiles plus positions).
+-- | A word placed on the board (tiles * positions).
 type WordPut = [(Pos, Tile)]
 ```
 
@@ -310,7 +319,10 @@ things tidy.
 -- in Scrabble.Types
 
 -- | The datatype of bonuses on the board.
-data Bonus = W2 | W3 | L2 | L3
+data Bonus = W2 -- ^ Double-word bonus. 
+           | W3 -- ^ Triple-word bonus.
+	   | L2 -- ^ Double-letter bonus.
+	   | L3 -- ^ Triple-letter bonus
   deriving Show
 
 -- in Scrabble.Bonus
@@ -332,9 +344,9 @@ When a blank tile is played, the player nominates a letter that the blank should
 stand for, and the blank tile keeps that value for the rest of the game. The blank
 contributes zero to the score.
 
-There are several ways we could deal with blanks in the game. We could
+There are several ways we could deal with blanks. We could
 store blanks on the board like normal tiles and keep a map of
-positions and letters (`Map Pos Letter`) to lookup the letters blanks
+positions and letters (`Map Pos Letter`) to look up the letters blanks
 stand for. We choose to store a `Tile` with the letter the blank
 stands for on the board, with its score set to zero. Clients will take
 care of interrogating players for the letters to use when they play a
@@ -346,7 +358,6 @@ store the whole tile -- the letter and its score -- on the board,
 rather than just storing the letter and looking up its score when we
 need it. But it means we don't need to check for and accomodate blanks
 on the board in a lot of code that we'll write later.
-
 
 ## The dictionary
 
