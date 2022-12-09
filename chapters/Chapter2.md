@@ -4,12 +4,12 @@
 
 Now we can move on to think about **players** and the **game**
 itself. A player has a **name**, a **rack**, a **score** and might
-be an **AI** player. A game will have two players, a **board**, a 
-`StdGen` for pseudo-randomness requirements, and several Boolean fields 
+be a human or an **AI** player. A game will have two players, a **board**, a 
+`StdGen` for pseudo-randomness requirements, of which more anon, and several Boolean fields 
 to keep track of the progress of the game. Most of this code is going 
-into a new module, `Scrabble.Game`.
+into a the module `Scrabble.Game`.
 
-We introduce two record types, `Player` and `Game`, that embody 
+We introduce two record types, `Player` and `Game`, that encapsulate 
 everything we need to know to manage the state of games. The types themselves
 are simple but we need to take a bit of a digression to explain the
 way we will working with them.
@@ -25,8 +25,8 @@ convenience.
 ```haskell
 -- in Scrabble.Types
 
-import Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Text (Text)
 
 -- | A player has a name, a rack and a score.
 data Player = Player { _name  :: Text -- ^ The name of the player.
@@ -34,10 +34,10 @@ data Player = Player { _name  :: Text -- ^ The name of the player.
                      , _score :: Int  -- ^ The score.
                      } deriving (Show, Eq)
 ```
-The reason the field names begin with an underscore will become clear
-soon. 
+The reason the field names begin with an underscore will be explained
+below. 
 
-To make working with `Text` values easier, we turn on the
+To make working with `Text` values easier we turn on the
 `OverloadedStrings` extension in our code. This means that any literal
 strings in our code are treated as `Text`.  The extension is turned on
 in the `cabal` config file and by including a "language pragma" (an
@@ -68,7 +68,6 @@ data Game = Game { _board     :: Board    -- ^ The board
                  , _dict      :: DictTrie -- ^ The dictionary.
                  }
 ```
-
 
 Note that the game includes a `StdGen`, or generator for pseudo-random
 numbers. We need this because we want to supply players with tiles
@@ -144,10 +143,10 @@ gobbledegook for now. Let's go through it bit by bit.
 
 As we can see from the differences in their names, `score` and
 `player1` are not the accessor functions we saw before. They are
-lenses. Given a record, `player`, with a field, `score`, we can get the
-value of `score` with `player ^. score` and set it to a new value,
+lenses. Given a record, `player`, with a field, `_score`, we can get the
+value of `_score` with `player ^. score` and set it to a new value,
 `x`, with `player & score .~ x`. The other main thing we want to do is
-to update the value of `score` by applying a function to it, say `foo`. This
+to update the value of `_score` by applying a function to it, say `foo`. This
 looks like this: `player & score %~ foo`.
 
 The `(&)` operator is like `($)` but it takes its arguments in reverse
@@ -256,7 +255,7 @@ data Game = Game { _board     :: Board    -- ^ The board
 $(makeLenses ''Game)
 ```
 
-The `$` sign indicates that the call to `makeLenses` is Template
+The `$` character indicates that the call to `makeLenses` is Template
 Haskell. This is the language extension that provides
 *metaprogramming* ("code that writes code"). We need to include the
 pragma `{-# LANGUAGE TemplateHaskell #-}` at the top of each file that
@@ -383,8 +382,8 @@ call to `getStdGen` to clients and presume they can supply one to the
 -- | Start a new game.
 newGame :: Text   -- ^ Name of Player 1
         -> Text   -- ^ Name of Player 2
-        -> StdGen   -- ^ The random generator
-        -> Dict -- ^ The dictionary
+        -> StdGen -- ^ The random generator
+        -> Dict   -- ^ The dictionary
         -> Game
 newGame p1Name p2Name theGen d = 
   let (rack1, bag1, gen') = fillRack [] newBag theGen
