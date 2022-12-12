@@ -136,12 +136,7 @@ The `playGame` action prints the details of the two players then passes the game
 to the `takeTurn` function. This is the top level of the loop that actually plays 
 the game. Note the use of the `($>)` operator -- this performs the action from its
 first argument then lifts its second argument into the functor. So `f $> x` is the 
-same as 
-
-```haskell
-do f
-   pure x
-```
+same as `f >> pure x`.
 
 To make the process of entering text nicer we use the `haskeline`
 library. That means we can use the backspace and arrow keys when
