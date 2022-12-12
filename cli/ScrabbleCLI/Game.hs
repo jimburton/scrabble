@@ -39,6 +39,7 @@ import ScrabbleCLI.Out
   , printPlayer
   , showTurn )
 import ScrabbleCLI.Blanks (replaceBlanks)
+import Data.Functor (($>))
 
 -- =========== Playing a CLI game =============== --
 
@@ -49,8 +50,7 @@ startGame :: Text -- ^ Name of Player 1
 startGame p1Name p2Name = do
   theGen <- getStdGen
   d      <- englishDictionary
-  _ <- playGame (newGame p1Name p2Name theGen d)
-  return ()
+  playGame (newGame p1Name p2Name theGen d) $> ()
 
 -- | Start a new game against the computer.
 startGameAI :: Text -- ^ Name of Player 1
@@ -58,8 +58,7 @@ startGameAI :: Text -- ^ Name of Player 1
 startGameAI p1Name = do
   theGen <- getStdGen
   d      <- englishDictionary
-  _ <- playGame (newGame1P p1Name theGen d)
-  return ()
+  playGame (newGame1P p1Name theGen d) $> ()
 
 -- | Play the game.
 playGame :: Game -> IO Game
@@ -87,8 +86,7 @@ takeTurn g msc = runInputT defaultSettings loop
 takeTurnAI :: Game -> IO Game
 takeTurnAI g = case moveAI g of
   Ev (Right (g',mr)) -> takeTurn g' (Just (T.pack $ show mr))
-  Ev (Left e)       -> do T.putStrLn e
-                          pure g
+  Ev (Left e)        -> T.putStrLn e $> g
 
 -- | Take a turn manually.
 takeTurnManual :: Game -- ^ The game
@@ -136,7 +134,7 @@ doGameOver g = do
   T.putStrLn $ p2 ^. name <> ": " <> T.pack (show (p2 ^. score))
   if draw
     then T.putStrLn "It's a draw!" >> pure g
-    else T.putStrLn ("Congratulations " <> winner ^. name) >> pure g
+    else T.putStrLn ("Congratulations " <> winner ^. name) $> g
 
 -- | Datatype for commands entered by the user.
 data Cmd = Swap | Pass | Hint | Help | Unknown deriving (Show, Eq)
@@ -154,11 +152,9 @@ cmd :: (Text, Maybe Text, Game) -> IO (Game, Maybe Text)
 cmd (s, mLn, g) = case getCmd s of
                     Swap    -> doSwap (g, mLn)
                     Pass    -> doPass (g, mLn) 
-                    Hint    -> do hints g
-                                  return (g, mLn)
-                    Help    -> do help
-                                  return (g, mLn)
-                    Unknown -> return (g, mLn)
+                    Hint    -> hints g $> (g, mLn)
+                    Help    -> help $> (g, mLn)
+                    Unknown -> pure (g, mLn)
 
 -- | Take a move by swapping some tiles.
 doSwap :: (Game, Maybe Text) -> IO (Game, Maybe Text)
@@ -167,15 +163,13 @@ doSwap (g, mLn) = do
   ln <- getLine
   case swap (fromJust $ stringToWord (map toUpper ln)) g of
     Ev (Right g') -> pure (g',mLn)
-    Ev (Left e)   -> do T.putStrLn e
-                        pure (g,mLn)
+    Ev (Left e)   -> T.putStrLn e $> (g,mLn)
 
 -- | Take a move by passing.
 doPass :: (Game, Maybe Text) -> IO (Game, Maybe Text)
 doPass (g, mLn) = case pass g of
   Ev (Right g') -> pure (g', Just "Passed move")
-  Ev (Left e)   -> do T.putStrLn e
-                      pure (g,mLn)
+  Ev (Left e)   -> T.putStrLn e $> (g,mLn)
 
 -- | Print the help message.
 help :: IO ()

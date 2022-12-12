@@ -55,6 +55,7 @@ import ScrabbleWeb.Announce
   , msgOpponent
   , msgMoveAck
   , msgEog )
+import Data.Functor (($>))
 
 -- ========== Playing a game on the web ================ --
 
@@ -82,10 +83,7 @@ newGame :: Client -> Client -> Game -> WebGame
 newGame = WebGame
 
 playGame :: WebGame -> IO ()
-playGame wg = do
-  sendJoinAcks wg 
-  _ <- takeTurn wg 
-  return ()
+playGame wg = sendJoinAcks wg >> takeTurn wg $> ()
 
 -- | Start a new game against the computer.
 aiGame :: Client -> IO ()
@@ -94,8 +92,7 @@ aiGame (n,conn) = do
   theGen <- getStdGen
   d      <- englishDictionary
   let ig = newGame1P n theGen d
-  playGame (newGame (n,conn) ("Haskell",conn) ig)
-  return ()
+  playGame (newGame (n,conn) ("Haskell",conn) ig) $> ()
 
 -- | Take a turn.
 takeTurn :: WebGame    -- ^ The game
@@ -122,8 +119,7 @@ takeTurnAI wg = do
       takeTurn wg'
     Ev (Left e)       -> do
       errorM "Scrabble.Game.takeTurnAI" (T.unpack e)
-      announce wg e
-      pure wg
+      announce wg e $> wg
 
 -- | Take a turn manually.
 takeTurnManual :: WebGame -> IO WebGame
@@ -159,8 +155,8 @@ doGameOver wg = do
                           <>" : "<> T.unpack (pl2 ^. name))
   msgEog wg
   if draw
-    then announce wg "It's a draw!" >> pure wg
-    else announce wg ("Congratulations " <> winner ^. name) >> pure wg
+    then announce wg "It's a draw!" $> wg
+    else announce wg ("Congratulations " <> winner ^. name) $> wg
 
 -- | Send hints to a player.
 doHints :: WebGame -> IO ()
@@ -177,8 +173,7 @@ doPass wg = do
   msgOpponent wg (MsgAnnounce "Opponent passed.")
   case G.pass g of
     Ev (Right g') -> pure (wg & theGame .~ g')
-    Ev (Left e)   -> do errorM "Scrabble.Game.doPass" (T.unpack e)
-                        pure wg
+    Ev (Left e)   -> errorM "Scrabble.Game.doPass" (T.unpack e) $> wg
 
 -- | Let the player take a move by swapping some tiles.
 doSwap :: WebGame -> [Letter] -> IO WebGame
@@ -189,8 +184,7 @@ doSwap wg ls = do
                         sendRackOpponent wg'
                         announce wg' "Swapped tiles"
                         pure wg'
-    Ev (Left e)   -> do errorM "Scrabble.Game.doSwap" (T.unpack e)
-                        pure wg
+    Ev (Left e)   -> errorM "Scrabble.Game.doSwap" (T.unpack e) $> wg
 
 -- | Get client whose turn it is. 
 getClient :: WebGame -> Client
