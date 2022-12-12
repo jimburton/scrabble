@@ -72,8 +72,7 @@ gameStarter state = loop
           d <- englishDictionary
           theGen <- getStdGen
           let ig = G.newGame n1' n2' theGen d
-          _ <- forkIO $ playGame (newGame (n1',c1) (n2',c2) ig)
-          loop
+          (forkIO $ playGame (newGame (n1',c1) (n2',c2) ig)) >> loop
 
 distinctNames :: (Text,Text) -> (Text,Text)
 distinctNames (n1,n2) =

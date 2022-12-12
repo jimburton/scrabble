@@ -38,6 +38,7 @@ library
       Scrabble.Game.Game
       Scrabble.Game.AI
       Scrabble.Game.Validation
+      Scrabble.Game.Internal
       Scrabble.Lang.Letter
       Scrabble.Lang.Word
       Scrabble.Lang.Dict
@@ -47,6 +48,7 @@ library
       Scrabble.Board.Bonus
       Scrabble.Board.Pretty
       Scrabble.Board.Validation
+      Scrabble.Board.Internal
 
   default-extensions: OverloadedStrings
                     , TupleSections
@@ -185,13 +187,13 @@ test-suite test-scrabble
                      , Scrabble.Evaluator
   hs-source-dirs:      tests
                      , src
-                     , cli
   ghc-options:         -Wall
   default-extensions: OverloadedStrings
                     , TemplateHaskell
   build-depends:       base >= 4.12 && <=4.13
                      , random
                      , aeson
+                     , haskeline
                      , text
                      , array
                      , split

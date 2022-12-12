@@ -22,12 +22,10 @@ doManualGame = do
   T.putStrLn "Enter name of Player 1"
   p1Str <- T.getLine
   T.putStrLn "Enter name of Player 2"
-  p2Str <- T.getLine
-  startGame p1Str p2Str
+  T.getLine >>= startGame p1Str 
 
 doAIGame :: IO ()
 doAIGame = do
   T.putStrLn "Enter name of player"
-  pStr <- T.getLine
-  startGameAI pStr
+  T.getLine >>= startGameAI
 
