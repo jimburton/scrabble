@@ -94,14 +94,12 @@ doManualGame = do
   T.putStrLn "Enter name of Player 1"
   p1Str <- T.getLine
   T.putStrLn "Enter name of Player 2"
-  p2Str <- T.getLine
-  startGame p1Str p2Str
+  T.getLine >>= startGame p1Str
 
 doAIGame :: IO ()
 doAIGame = do
   T.putStrLn "Enter name of player"
-  pStr <- T.getLine
-  startGameAI pStr
+  T.getLine >>= startGameAI
 ```
 Most of the effort goes into `ScrabbleCLI.Game`. The other modules, `ScrabbleCLI.Blanks` and
 `ScrabbleCLI.Out`, handle blank tiles and output to the user respectively.
@@ -120,23 +118,30 @@ its result, which is of type `IO Game`, being discarded.)
 
 
 ```haskell
+import Data.Functor (($>))
+
 startGame :: Text -> Text -> IO ()
 startGame p1Name p2Name = do
   theGen <- getStdGen
   d      <- englishDictionary
-  _ <- playGame (newGame p1Name p2Name theGen d)
-  return ()
+  playGame (newGame p1Name p2Name theGen d) $> ()
 
 startGameAI :: Text -> IO ()
 startGameAI p1Name = do
   theGen <- getStdGen
   d      <- englishDictionary
-  _ <- playGame (newGame1P p1Name theGen d)
-  return ()
+  playGame (newGame1P p1Name theGen d) $> ()
 ```
 The `playGame` action prints the details of the two players then passes the game
 to the `takeTurn` function. This is the top level of the loop that actually plays 
-the game.
+the game. Note the use of the `($>)` operator -- this performs the action from its
+first argument then lifts its second argument into the functor. So `f $> x` is the 
+same as 
+
+```haskell
+do f
+   pure x
+```
 
 To make the process of entering text nicer we use the `haskeline`
 library. That means we can use the backspace and arrow keys when
@@ -191,8 +196,8 @@ doGameOver g = do
   T.putStrLn $ p1 ^. name <> ": " <> T.pack (show (p1 ^. score))
   T.putStrLn $ p2 ^. name <> ": " <> T.pack (show (p2 ^. score))
   if draw
-    then T.putStrLn "It's a draw!" >> pure g
-    else T.putStrLn ("Congratulations " <> winner ^. name) >> pure g
+    then T.putStrLn "It's a draw!" $> g
+    else T.putStrLn ("Congratulations " <> winner ^. name) $> g
 ```
 
 ## Taking a turn as the AI player
@@ -208,8 +213,7 @@ the score to `takeTurn.
 takeTurnAI :: Game -> IO Game
 takeTurnAI g = case moveAI g of
   Ev (Right (g',mr)) -> takeTurn g' (Just (T.pack $ show mr))
-  Ev (Left e)       -> do T.putStrLn e
-                          pure g
+  Ev (Left e)       -> T.putStrLn e $> g
 ```
 
 That's it. The library takes care of everything else.
@@ -283,11 +287,9 @@ cmd :: (Text, Maybe Text, Game) -> IO (Game, Maybe Text)
 cmd (s, mLn, g) = case getCmd s of
                     Swap    -> doSwap (g, mLn)
                     Pass    -> doPass (g, mLn) 
-                    Hint    -> do hints g
-                                  return (g, mLn)
-                    Help    -> do help
-                                  return (g, mLn)
-                    Unknown -> return (g, mLn)
+                    Hint    -> hints g $> (g, mLn)
+                    Help    -> help $> (g, mLn)
+                    Unknown -> pure (g, mLn)
 ```
 
 The `doSwap` function reads letters from the user until they enter an empty line
@@ -301,8 +303,7 @@ doSwap (g, mLn) = do
   ln <- getLine
   case swap (fromJust $ stringToWord (map toUpper ln)) g of
     Ev (Right g') -> pure (g',mLn)
-    Ev (Left e)   -> do T.putStrLn e
-                        pure (g,mLn)
+    Ev (Left e)   -> T.putStrLn e $> (g,mLn)
 ```
 The `doPass` function is very similar.
 
@@ -311,8 +312,7 @@ The `doPass` function is very similar.
 doPass :: (Game, Maybe Text) -> IO (Game, Maybe Text)
 doPass (g, mLn) = case pass g of
   Ev (Right g') -> pure (g', Just "Passed move")
-  Ev (Left e)   -> do T.putStrLn e
-                      pure (g,mLn)
+  Ev (Left e)   -> T.putStrLn e $> (g,mLn)
 ```
 The `hints` function calls `findPrefixes` to find all of the words in the 
 dictionary that can be made with the current player's rack.
