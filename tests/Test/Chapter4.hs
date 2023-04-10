@@ -8,7 +8,7 @@ import Test.QuickCheck (Property)
 import Test.QuickCheck.Monadic (assert, monadicIO, pick)
 import Control.Monad.IO.Class (liftIO)
 import System.Random (getStdGen)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Data.List (isInfixOf)
 import Scrabble.Types
   ( Evaluator(..)

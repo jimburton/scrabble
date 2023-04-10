@@ -19,12 +19,13 @@ module Scrabble.Lang.Search
   , dictContainsPrefix )
   where
 
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Data.List (nub, permutations)
 import Prelude hiding (Word)
 import Data.Text (Text)
 import Control.Monad (filterM)
-import qualified Data.Trie.Text as Trie
+import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Trie as Trie
 import Scrabble.Types
   ( Dict
   , Word
@@ -44,7 +45,7 @@ import Scrabble.Lang.Word
 findWords :: Game   -- ^ The dictionary to search
           -> [Text] -- ^ The letters to build the words from.
           -> [Word] -- ^ The words from the dictionary.
-findWords g ws = map textToWord $ filter (`Trie.member` (g ^. dict)) ws
+findWords g ws = map textToWord $ filter ((`Trie.member` (g ^. dict)) . encodeUtf8) ws
 
 -- Ordered list of values in a bounded enumeration.
 domain :: (Bounded a, Enum a) => [a]
@@ -112,13 +113,13 @@ wordsInDictM t ws = mconcat <$> mapM (dictContainsWord t) ws
 wordsInDict :: Dict   -- ^ The dictionary.
             -> [Text] -- ^ The list of words.
             -> Bool
-wordsInDict d = all (`Trie.member` d) 
+wordsInDict d = all ((`Trie.member` d) . encodeUtf8) 
 
 -- | Returns true if the dict contains the given word
 dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t) 
+dictContainsWord d t = Trie.member (encodeUtf8 t) d `evalBool` ("Not in dictionary: " <> t) 
 
 -- | Returns true if the dict contains the given prefix
 dictContainsPrefix :: Dict -> Text -> Bool 
-dictContainsPrefix d t = not $ Trie.null $ Trie.submap t d 
+dictContainsPrefix d t = not $ Trie.null $ Trie.submap (encodeUtf8 t) d 
 

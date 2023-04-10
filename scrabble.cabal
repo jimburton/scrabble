@@ -26,6 +26,8 @@ library
                , containers
                , text
                , split
+               , utf8-string
+               , bytestring
                , bytestring-trie
                , random
                , lens
@@ -84,6 +86,8 @@ test-suite test-scrabble
   build-depends:       base
                      , text
                      , array
+                     , utf8-string
+                     , bytestring
                      , bytestring-trie
                      , containers
                      , split

@@ -21,7 +21,7 @@ module Scrabble.Game.Internal
   where
 
 import qualified Data.Map as Map
-import Lens.Simple ((&),(^.),(.~),(%~))
+import Control.Lens ((&),(^.),(.~),(%~))
 import Scrabble.Types
   ( WordPut
   , Game
