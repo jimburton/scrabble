@@ -25,7 +25,7 @@ where
 
 import Prelude hiding (Word)
 import Data.Array
-import Data.Trie.Text (Trie)
+import Data.Trie (Trie)
 
 -- ============ Types for the application ================ --
 
