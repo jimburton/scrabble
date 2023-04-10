@@ -57,12 +57,12 @@ The library is defined in this stanza in the config file:
 library
   hs-source-dirs: src
   ghc-options: -Wall
-  build-depends: base >=4.12 && <4.17
+  build-depends: base>=4.9 && <5
                , random
                , array
                , containers
                , text
-               , text-trie
+               , bytestring-trie
   
   exposed-modules:
       Scrabble
@@ -414,28 +414,36 @@ it (also called `()`, "unit").
 ```haskell
 -- in Scrabble.Types
 
-import Data.Trie.Text
+import Data.Trie
 
 type Dict = Trie ()
 ```
 
-Now we can create the dictionary and check whether a word exists as
-follows:
+Now we can create the dictionary and check whether a word exists. Note
+that the trie actually stores its contents as *bytestrings*, an
+efficient and low-level binary datatype. So we have to convert string
+and text values to and from `ByteString`. In the `readDictionary`
+action below we use `encode` to convert a `String` to `[Word8]`, and in
+`dictContainsWord` we use `encodeUtf8` to convert `Text` to
+`ByteString`.
 
 ```haskell
 -- in Scrabble.Dict
 
 import Data.Char (toUpper)
-import qualified Data.Text as T
-import qualified Data.Trie.Text as Trie
+import Codec.Binary.UTF8.String (encode)
+import Data.Text.Encoding (encodeUtf8)
+import qualified Data.ByteString as B
+import qualified Data.Trie as Trie
+import Scrabble.Types (Dict)
 
 readDictionary :: FilePath -> IO Dict
 readDictionary dict = do
   ls <- lines <$> readFile dict
-  return (Trie.fromList [(T.pack (map toUpper l), ()) | l <- ls])
+  pure (Trie.fromList [(B.pack $ encode (map toUpper l), ()) | l <- ls])
 
 dictContainsWord :: Dict -> Text -> Bool
-dictContainsWord = flip Trie.member 
+dictContainsWord d t = Trie.member (encodeUtf8 t) d 
 
 ```
 

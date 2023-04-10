@@ -129,7 +129,7 @@ Each lens comes with two main functions: `view`, which gives the value
 of the field, and `over`, which modifies its value. Rather than using
 these functions by name we most often use one of the lens operators. If
 we define lenses for `Player` and `Game` with the same names as the
-fields and use one of the standard lens librarys, we can rewrite the
+fields and use one of the standard lens libraries, we can rewrite the
 the code above like this:
 
 ```
@@ -222,7 +222,7 @@ name = lens getName setName
 But doing this for every field is a lot of boilerplate code -- typing with no 
 real thought required. As we'll see we can get tools to do for us.
 
-We are going to use the `Lens.Simple` library, so we add it to the
+We are going to use the `Control.Lens` library, so we add it to the
 cabal dependencies. Rather than defining our own lenses for each field
 in the `Player` and `Game` records, we use the `makeLenses`
 function. To do this, we name each field beginning with an underscore

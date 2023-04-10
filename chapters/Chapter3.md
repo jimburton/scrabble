@@ -217,7 +217,8 @@ since every monad is an applicative and every applicative is a
 functor. The spirit of these definitions is that if we are dealing
 with an `Ev (Left _)` value we want to **stop what we are doing and
 report the error**, while if we are dealing with a `Ev (Right _)`
-value we can **keep going**.
+value we can **keep going**. We will sometimes want to force an 
+evaluation to fail, so we define an instance of `MonadFail` as well.
 
 ```haskell
 -- in Scrabble.Evaluator
@@ -241,6 +242,8 @@ instance Monad Evaluator where
           Left msg -> Ev (Left msg) -- report the error
           Right v  -> k v           -- keep going
     return   = pure
+
+instance MonadFail Evaluator where
     fail msg = Ev (Left (T.pack msg))
 ```
 Now we can rewrite all of the functions that returned `Either Text a`
@@ -309,7 +312,7 @@ monad.
 
 ```haskell
 dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t) 
+dictContainsWord d t = Trie.member (encodeUtf8 t) d `evalBool` ("Not in dictionary: " <> t)
 ```
 
 We need to apply this function to the new
