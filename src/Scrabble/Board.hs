@@ -21,7 +21,7 @@ module Scrabble.Board
 
 import Data.Maybe (isNothing)
 import Data.Array
-import Lens.Simple ((^.),(.~),(&))
+import Control.Lens ((^.),(.~),(&))
 import Scrabble.Types
   ( Board
   , Pos

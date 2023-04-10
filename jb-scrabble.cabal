@@ -26,9 +26,9 @@ library
                , containers
                , text
                , split
-               , text-trie
+               , bytestring-trie
                , random
-               , lens-simple
+               , lens
   
   exposed-modules:
       Scrabble
@@ -66,11 +66,11 @@ test-suite test-scrabble
   build-depends:       base
                      , text
                      , array
-                     , text-trie
+                     , bytestring-trie
                      , containers
                      , split
                      , random
-                     , lens-simple
+                     , lens
                      , QuickCheck
                      , test-framework
                      , test-framework-quickcheck2
