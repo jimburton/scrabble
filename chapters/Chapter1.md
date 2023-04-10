@@ -57,18 +57,22 @@ The library is defined in this stanza in the config file:
 library
   hs-source-dirs: src
   ghc-options: -Wall
-  build-depends: base >=4.12 && <4.17
+  build-depends: base>=4.9 && <5
                , random
                , array
                , containers
                , text
-               , text-trie
+               , bytestring-trie
   
   exposed-modules:
       Scrabble
       Scrabble.Types
 	  Scrabble.Board
+	  Scrabble.Bonus
 	  Scrabble.Dict
+	  Scrabble.Game
+	  Scrabble.Pretty
+	  Scrabble.Types
 
   default-extensions: OverloadedStrings
   
@@ -119,7 +123,7 @@ it tells you where it has stored the output:
 $ cabal haddock
 ...
 Documentation created:
-<path-to-docs>/jb-scrabble/index.html
+<path-to-docs>/scrabble/index.html
 ```
 
 However, only those functions and types that are exported by a module
@@ -165,7 +169,8 @@ type Tile = (Char,Int)
 
 but then the type system wouldn't be able to rule out nonsense values
 like `('%',0)`, we might find ourselves needing to distinguish between
-'a' and 'A', and so on. So we create an enumeration of all possible
+'a' and 'A', and so on. The relevant slogan here is *make illegal states
+unrepresentable*. So we create an enumeration of all possible
 letters and make the datatype derive some useful typeclasses:
 
 ```haskell
@@ -193,10 +198,13 @@ more efficient (`O(log n)`) lookup tables.
 
 Because it contains many functions whose names clash with those of
 functions in the `Prelude`, like `filter` and `map`, `Data.Map` is
-normally imported with a qualified name (e.g. `Map`) like this:
+normally imported with a qualified name (e.g. `Map`). For convenience,
+we import the `Map` constructor directly, so we don't need to type
+`Map.Map`:
 
 ```haskell
 import qualified Data.Map as Map
+import           Data.Map (Map)
 ```
 Since `Data.Map` isn't in the `Prelude`, we need to tell `cabal` where
 to find it. If we try to import it without doing anything else, `cabal` 
@@ -211,6 +219,7 @@ you need on hackage and check which package it is part of.
 -- in Scrabble.Board
 
 import qualified Data.Map as Map
+import           Data.Map (Map)
 
 -- lookup table for the score of a letter. Not exported.
 letterToScoreList :: [(Letter,Int)]
@@ -235,7 +244,7 @@ is *unsafe*, meaning that it can fail at runtime causing the program
 to crash. This happens when it is called on a value that isn't `Just x`, 
 i.e. which is `Nothing`. In this case, we know we won't get any
 errors because there is an entry in the map for every letter, so the
-`scoreLatter` function is safe. But whenever you use an unsafe
+`scoreLetter` function is safe. But whenever you use an unsafe
 function such as `fromJust` or `head`, ask yourself whether this is
 definitely safe to do.
 
@@ -251,7 +260,7 @@ In many languages we would create an array of arrays to achieve this,
 where each element of the 15-element outer array is a 15-element array
 representing a row. However, Haskell supports true multi-dimensional
 arrays, so we can create one where the type of indices is `(Int,Int)`
-(for our purpose, `(row,column)`). The `Array` type constructor takes
+(for our purposes, `(row,column)`). The `Array` type constructor takes
 two arguments, the type of indices and the type of elements.
 
 ```haskell
@@ -275,9 +284,9 @@ type Pos = (Int,Int)
 
 *Words*, *racks* and *bags* are all just lists of letters, but it's helpful to
 distinguish between them in type signatures so we make aliases for
-each of them.  Because the `Prelude` includes a type called `Word` we
+each.  Because the `Prelude` includes a type called `Word` we
 have a name clash here.  We could call our new type `ScrabbleWord` or
-something like that, but it seems more convenient to keep the short
+something like that but it seems more convenient to keep the short
 name and hide the type in the `Prelude`, which we don't need anyway.
 
 ```haskell
@@ -296,7 +305,7 @@ A word we want to place on the board is a list of pairs of `Pos` and `Tile` valu
 We'll call this a `WordPut`.
 
 ```haskell
--- | A word placed on the board (tiles plus positions).
+-- | A word placed on the board (tiles * positions).
 type WordPut = [(Pos, Tile)]
 ```
 
@@ -310,7 +319,10 @@ things tidy.
 -- in Scrabble.Types
 
 -- | The datatype of bonuses on the board.
-data Bonus = W2 | W3 | L2 | L3
+data Bonus = W2 -- ^ Double-word bonus. 
+           | W3 -- ^ Triple-word bonus.
+	   | L2 -- ^ Double-letter bonus.
+	   | L3 -- ^ Triple-letter bonus
   deriving Show
 
 -- in Scrabble.Bonus
@@ -332,21 +344,20 @@ When a blank tile is played, the player nominates a letter that the blank should
 stand for, and the blank tile keeps that value for the rest of the game. The blank
 contributes zero to the score.
 
-There are several ways we could deal with blanks in the game. We could
+There are several ways we could deal with blanks. We could
 store blanks on the board like normal tiles and keep a map of
-positions and letters (`Map Pos Letter`) to lookup the letters blanks
+positions and letters (`Map Pos Letter`) to look up the letters blanks
 stand for. We choose to store a `Tile` with the letter the blank
 stands for on the board, with its score set to zero. Clients will take
 care of interrogating players for the letters to use when they play a
 blank. 
 
-This approach has the advantage that after being played the tile is
+This approach has the advantage that after being played the blank tile is
 treated like any other. A disadvantage is that it means we have to
 store the whole tile -- the letter and its score -- on the board,
 rather than just storing the letter and looking up its score when we
 need it. But it means we don't need to check for and accomodate blanks
 on the board in a lot of code that we'll write later.
-
 
 ## The dictionary
 
@@ -403,28 +414,36 @@ it (also called `()`, "unit").
 ```haskell
 -- in Scrabble.Types
 
-import Data.Trie.Text
+import Data.Trie
 
 type Dict = Trie ()
 ```
 
-Now we can create the dictionary and check whether a word exists as
-follows:
+Now we can create the dictionary and check whether a word exists. Note
+that the trie actually stores its contents as *bytestrings*, an
+efficient and low-level binary datatype. So we have to convert string
+and text values to and from `ByteString`. In the `readDictionary`
+action below we use `encode` to convert a `String` to `[Word8]`, and in
+`dictContainsWord` we use `encodeUtf8` to convert `Text` to
+`ByteString`.
 
 ```haskell
 -- in Scrabble.Dict
 
 import Data.Char (toUpper)
-import qualified Data.Text as T
-import qualified Data.Trie.Text as Trie
+import Codec.Binary.UTF8.String (encode)
+import Data.Text.Encoding (encodeUtf8)
+import qualified Data.ByteString as B
+import qualified Data.Trie as Trie
+import Scrabble.Types (Dict)
 
 readDictionary :: FilePath -> IO Dict
 readDictionary dict = do
   ls <- lines <$> readFile dict
-  return (Trie.fromList [(T.pack (map toUpper l), ()) | l <- ls])
+  pure (Trie.fromList [(B.pack $ encode (map toUpper l), ()) | l <- ls])
 
 dictContainsWord :: Dict -> Text -> Bool
-dictContainsWord = flip Trie.member 
+dictContainsWord d t = Trie.member (encodeUtf8 t) d 
 
 ```
 
