@@ -15,8 +15,10 @@ module Scrabble.Lang.Dict (englishDictionary)
 import Prelude hiding (Word)
 import Data.Char (toUpper)
 import qualified Data.Text as T
+import qualified Data.ByteString as B
+import Codec.Binary.UTF8.String (encode)
 import Data.Text (Text)
-import qualified Data.Trie.Text as Trie
+import qualified Data.Trie as Trie
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
@@ -35,7 +37,7 @@ import Scrabble.Types
 readDictionary :: FilePath -> IO Dict
 readDictionary dict = do
   ls <- lines <$> readFile dict
-  pure (Trie.fromList [(T.pack (map toUpper l), ()) | l <- ls])
+  pure (Trie.fromList [(B.pack $ encode (map toUpper l), ()) | l <- ls])
 
 -- ===== English Dictionary ===== --
 

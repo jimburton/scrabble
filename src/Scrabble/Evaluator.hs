@@ -38,6 +38,8 @@ instance Monad Evaluator where
           Left msg -> Ev (Left msg)
           Right v  -> k v
     return   = pure
+
+instance MonadFail Evaluator where
     fail msg = Ev (Left (T.pack msg))
 
 -- | Test a bool in the monad
