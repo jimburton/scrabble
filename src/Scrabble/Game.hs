@@ -16,7 +16,7 @@ module Scrabble.Game
 import System.Random
 import Prelude hiding (Word)
 import Data.Text (Text)
-import Lens.Simple ((^.),(&),(.~),(%~),Lens')
+import Control.Lens ((^.),(&),(.~),(%~),Lens')
 import Scrabble.Types
   ( Game(..)
   , turn, player1, player2

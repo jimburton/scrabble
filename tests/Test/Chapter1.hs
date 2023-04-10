@@ -8,7 +8,7 @@ import Test.QuickCheck.Monadic (assert, monadicIO, pick)
 import Data.Bifunctor (first)
 import Test.Gen
 import Data.Array
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import System.Random (getStdGen)
 import Control.Monad.IO.Class (liftIO)
 

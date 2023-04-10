@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import qualified Data.Map as Map
 import Data.Array
 import Data.List.Split (chunksOf)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Scrabble.Dict (letterToChar)
 import Scrabble.Bonus (bonusMap)
 import Scrabble.Types
