@@ -4,7 +4,7 @@
 
 In this chapter we introduce a change that will have a big influence
 on the internal design of the library from now on: monadic error
-checking. It will allow us to thread the state of the game through a
+checking. It will allow us to elegantly chain together a
 long and growing series of computations without having to worry at
 each stage about whether anything went wrong.
 
@@ -57,7 +57,7 @@ doing so is valid. The rules about word placement are as follows:
   
 Two positions on the board, `(r1,c1)` and `(r2,c2)`, are in a
 continuous straight line if either `r1==r2-1` and `c1==c2` or `r1==r2`
-and `c1==c2-1`. One approach to writing `straight` would simply to
+and `c1==c2-1`. The most obvious approach to writing `straight` would be to
 return `True` if the word is straight:
 
 ```haskell
@@ -77,7 +77,7 @@ of `if` statements that work out what to report back to the user.
 
 A common solution to writing a function that can fail is to use the
 type `Either Text a`. Values of this type are either `Left e`, where
-`e` is an error message, or `Right x` where `x` is any type. In the
+`e` is an error message, or `Right x` where `x` is the result of a successful calculation and has type `a`. In the
 case of `straight`, if it returns any kind of `Right` value then we
 know things went well. So there's no need to return a `Bool`, we can
 just return `Left e` for an error or `Right ()` if things went
@@ -86,7 +86,7 @@ well.
 ```haskell
 -- in Scrabble.Board.Validation
 
-straight :: WordPut -> Either String ()
+straight :: WordPut -> Either Text ()
 straight wp | length wp > 2 =
                 let ps      = map fst wp
                     (s1,s2) = if getDirection wp == HZ then (fst,snd) else (snd,fst)
@@ -161,19 +161,17 @@ So, we already have lots of things to check about the validity of a
 move. We need to check whether the word is straight, whether it
 touches another word and whether the tile are available, and this is
 before we have even got onto checking the dictionary. Each of these
-function calls will return an `Either String a` and we may find
+function calls will return an `Either Text ()` and we may find
 ourselves doing a lot of case statements and pattern matching on
 `Either` values. A function that puts together the various ways we
-migh validate move could look like this:
+might validate a move could look like this:
 	
-```
--- in Scrabble.Board.Validation
-
+```haskell
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
              -> Bool    -- ^ Is first move
-             -> Either String Bool
+             -> Either Text ()
 validateMove b p w fm = 
     case wordOnBoard w of
       Right _ -> case connects w b fm of
@@ -188,7 +186,7 @@ validateMove b p w fm =
       Left e -> Left e
  ```
  
-The technical term for this kind of code is "nasty". Such a deeply
+The technical term for this kind of code is "nasty"! Such a deeply
 nested and indented structure is hard to read, hard to maintain and
 hard to extend.  Fortunately, what we can do here is to use a monad to
 encapsulate the checks for `Left` and `Right`. We make our `Either`
@@ -205,8 +203,8 @@ We create a new type for arbitrary "evaluations" in the game, called
 newtype Evaluator a = Ev (Either Text a)
 ```
 This type wraps up an `Either Text a` type where, as you
-may expect, the `Text` is an error message and the `a` value is
-whatever is being evaluated. For instance, `a` could be `()` in cases 
+may expect, the `Text` is an error message and `a` is
+the type of whatever is being evaluated. For instance, `a` could be `()` in cases 
 where moves are being checked for validity, or `Game` when a function 
 either fails or returns an updated version of the game, or `Int` when
 a function either fails or calculates the score of a word. A value of
@@ -219,7 +217,8 @@ since every monad is an applicative and every applicative is a
 functor. The spirit of these definitions is that if we are dealing
 with an `Ev (Left _)` value we want to **stop what we are doing and
 report the error**, while if we are dealing with a `Ev (Right _)`
-value we can **keep going**.
+value we can **keep going**. We will sometimes want to force an 
+evaluation to fail, so we define an instance of `MonadFail` as well.
 
 ```haskell
 -- in Scrabble.Evaluator
@@ -237,32 +236,43 @@ instance Applicative Evaluator where
   Ev (Right f)  <*>  r  =  fmap f r    -- keep going
 
 instance Monad Evaluator where
+    -- (>>=) :: m a -> (a -> m b) -> m b
     (Ev ev) >>= k =
         case ev of
           Left msg -> Ev (Left msg) -- report the error
           Right v  -> k v           -- keep going
     return   = pure
+
+instance MonadFail Evaluator where
     fail msg = Ev (Left (T.pack msg))
 ```
-Now we need to rewrite all of the functions that returned `Either Text a`
+Now we can rewrite all of the functions that returned `Either Text a`
 to return `Evaluator a`. The ones we have seen so far tested a boolean condition,
 `b`, and returned `Right ()` if `b` succeeded or `Left Text` if `b` failed. We can
 make an abstraction for this pattern.
 
 ```haskell
--- in Scrabble.Evaluator
-
 evalBool :: Bool -> Text -> Evaluator ()
 evalBool b e = if b then pure () else fail (T.unpack e)
 ```
-(Note that the `fail` function takes a `String` so we have to `unpack` the `Text`.) 
+Note that the `fail` function takes a `String` so we have to `unpack` the message.
+Actually, the structure of this function is identical to `Control.Monad.unless`, so
+let's write it using that. 
+
+```haskell
+-- in Scrabble.Evaluator
+
+evalBool :: Bool -> Text -> Evaluator ()
+evalBool b e = unless b $ fail (T.unpack e)
+```
+
 Now our validation functions will all have a similar structure to the new version 
 of `lettersAvailable` below -- a call to `evalBool` where the first argument is a boolean 
 condition and the second is an error message.
 
 ```haskell
 lettersAvailable :: WordPut -> Player -> Board -> Evaluator ()
-lettersAvailable w p b = all available w `evalBool`"Letters not in rack or not on board."
+lettersAvailable w p b = all available w `evalBool` "Letters not in rack or not on board."
   where available (pos,(t,_)) = maybe (t `elem` rack p) ((==t) . fst) (getSquare b pos)
 
 ``` 
@@ -273,7 +283,7 @@ are all replaced by the one in the definition of the monad
 instance. If any of the validation functions encounters an error, the
 appropriate message is delivered.
 
-```
+```haskell
 validateMove :: Board   -- ^ The board
              -> Player  -- ^ The player making the move
              -> WordPut -- ^ The word to play
@@ -302,7 +312,7 @@ monad.
 
 ```haskell
 dictContainsWord :: Dict -> Text -> Evaluator ()
-dictContainsWord d t = Trie.member t d `evalBool` ("Not in dictionary: " <> t) 
+dictContainsWord d t = Trie.member (encodeUtf8 t) d `evalBool` ("Not in dictionary: " <> t)
 ```
 
 We need to apply this function to the new
