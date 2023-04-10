@@ -22,7 +22,7 @@ module Scrabble.Game.Internal
 
 --import Debug.Trace
 import qualified Data.Map as Map
-import Lens.Simple ((&),(^.),(.~),(%~))
+import Control.Lens ((&),(^.),(.~),(%~))
 import Scrabble.Types
   ( WordPut
   , Game

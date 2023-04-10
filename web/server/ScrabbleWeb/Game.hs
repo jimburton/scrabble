@@ -13,7 +13,7 @@ import Data.List (find)
 import qualified Network.WebSockets as WS
 import Control.Concurrent (forkIO)
 import Control.Concurrent.BoundedChan
-import Lens.Simple ((^.),(.~),(&))
+import Control.Lens ((^.),(.~),(&))
 import System.Log.Logger (infoM, errorM)
 import Data.Aeson
 import System.Random (getStdGen)

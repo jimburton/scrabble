@@ -20,8 +20,8 @@ module Scrabble.Types
   , Player(..)
   , name, rack, score, isAI -- lenses for Player.
   , Game(..)
-  , board, bag, player1, player2, turn, gen, firstMove, --lenses for Game
-    dict, gameOver, playable, lastMovePass -- lenses for Game.
+  , board, bag, player1, player2, turn, gen, firstMove, -- lenses for Game.
+    dict, gameOver, playable, lastMovePass              -- lenses for Game.
   , Turn(..)
   , Bag
   , Dict
@@ -38,11 +38,11 @@ where
 
 import Prelude hiding (Word)
 import Data.Array ( Array )
-import Data.Trie.Text (Trie)
+import Data.Trie (Trie)
 import Data.Text (Text)
 import qualified Data.Map as Map
 import System.Random (StdGen)
-import Lens.Simple ( makeLenses ) 
+import Control.Lens ( makeLenses ) 
 
 -- * Types for the application
 

@@ -19,7 +19,7 @@ import Data.Aeson
 import GHC.Generics
 import qualified Network.WebSockets as WS
 import Data.Text (Text)
-import Lens.Simple
+import Control.Lens
 import Scrabble.Types
   ( WordPut
   , Rack

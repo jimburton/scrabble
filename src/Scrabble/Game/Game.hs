@@ -25,7 +25,7 @@ import Prelude hiding
 import Data.Functor ((<&>))
 import qualified Data.Map as Map
 import Data.Text (Text)
-import Lens.Simple ((.~),(^.),(&))
+import Control.Lens ((.~),(^.),(&))
 import Scrabble.Game.Internal
   ( getPlayer
   , setPlayer 

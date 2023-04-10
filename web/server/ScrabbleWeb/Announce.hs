@@ -13,6 +13,7 @@ module ScrabbleWeb.Announce
   where
 
 import Prelude hiding (Word)
+import Control.Lens ((^.))
 import qualified Network.WebSockets as WS
 import Data.Aeson
 import Data.Text (Text)
@@ -37,7 +38,6 @@ import ScrabbleWeb.Types
   , JoinAck(..)
   , MoveAck(..)
   , Client)
-import Lens.Simple((^.))
   
 -- ====== Sending messages to clients =========== --
 

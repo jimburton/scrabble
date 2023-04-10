@@ -15,6 +15,7 @@ module Scrabble.Evaluator
   where
 
 import Control.Monad (unless)
+import Control.Monad.Fail (MonadFail, fail)
 import Data.Text (Text)
 import qualified Data.Text as T (pack, unpack)
 import Scrabble.Types (Evaluator(..))
@@ -40,7 +41,9 @@ instance Monad Evaluator where
           Left msg -> Ev (Left msg)
           Right v  -> k v
     return   = pure
-    fail msg = Ev (Left (T.pack msg))
+
+instance MonadFail Evaluator where
+  fail msg = Ev (Left (T.pack msg))
 
 -- | Test a bool in the monad
 evalBool :: Bool         -- ^ The condition to be tested.

@@ -13,8 +13,9 @@ module Scrabble.Lang.Dict (englishDictionary)
   where
 
 import Data.Char (toUpper)
-import qualified Data.Text as T
-import qualified Data.Trie.Text as Trie
+import Codec.Binary.UTF8.String (encode)
+import qualified Data.ByteString as B
+import qualified Data.Trie as Trie
 import Scrabble.Types (Dict)
 
 -- * Dictionary
@@ -23,7 +24,7 @@ import Scrabble.Types (Dict)
 readDictionary :: FilePath -> IO Dict
 readDictionary dict = do
   ls <- lines <$> readFile dict
-  pure (Trie.fromList [(T.pack (map toUpper l), ()) | l <- ls])
+  pure (Trie.fromList [(B.pack $ encode (map toUpper l), ()) | l <- ls])
 
 -- * English Dictionary
 

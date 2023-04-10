@@ -19,7 +19,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.List.Split (chunksOf)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Scrabble.Board.Bonus (bonusMap)
 import Scrabble.Types
   ( Board
