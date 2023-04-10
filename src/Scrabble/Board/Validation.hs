@@ -14,7 +14,7 @@ module Scrabble.Board.Validation
 
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Scrabble.Types
   ( Board
   , Player(..)

@@ -7,7 +7,7 @@ module ScrabbleCLI.Out
 import Data.Text (Text)
 import qualified Data.Text.IO as T
 import Data.Foldable (forM_)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Scrabble.Types
   ( Game
   , Player

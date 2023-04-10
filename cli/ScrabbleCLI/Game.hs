@@ -7,7 +7,7 @@ import qualified Data.Text.IO as T
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromJust)
 import Data.Char (toUpper)
-import Lens.Simple
+import Control.Lens
 import System.Console.Haskeline
 import System.Random (getStdGen)
 import Scrabble.Lang.Search (makeWords)

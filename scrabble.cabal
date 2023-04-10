@@ -27,6 +27,8 @@ library
                , containers
                , text
                , split
+               , utf8-string
+               , bytestring
                , bytestring-trie
                , lens
   
@@ -83,6 +85,8 @@ executable scrabble
                      , random
                      , array
                      , text
+                     , utf8-string
+                     , bytestring
                      , bytestring-trie
                      , split
                      , containers
@@ -121,6 +125,8 @@ executable scrabble-server
                     , array
                     , random
                     , text
+                    , utf8-string
+                    , bytestring
                     , bytestring-trie
                     , split
                     , containers
@@ -193,6 +199,8 @@ test-suite test-scrabble
                      , text
                      , array
                      , split
+                     , utf8-string
+                     , bytestring
                      , bytestring-trie
                      , containers
                      , haskeline

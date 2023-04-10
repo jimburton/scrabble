@@ -17,7 +17,7 @@ import qualified Data.Text as T
 import Data.Text (Text)
 import System.Random (StdGen)
 import Data.Bifunctor (first)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Data.Functor ((<&>))
 import Scrabble.Types
   ( Game

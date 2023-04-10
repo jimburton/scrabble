@@ -12,7 +12,7 @@ module Scrabble.Game.Validation
   , valGameRules )
   where
 
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Scrabble.Types
   ( Validator
   , dict
