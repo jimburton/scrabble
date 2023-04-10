@@ -38,7 +38,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Map as Map
 import Data.Array
-import Lens.Simple ((^.),(.~),(&))
+import Control.Lens ((^.),(.~),(&))
 import Scrabble.Types
   ( Board
   , Pos
