@@ -3,7 +3,7 @@ cabal-version:       >=1.10
 -- init'.  For further documentation, see
 -- http://haskell.org/cabal/users-guide/
 
-name:                jb-scrabble
+name:                scrabble
 version:             0.1.0.0
 -- synopsis:
 description:         Code accompanying Chapter 1.
@@ -26,7 +26,9 @@ library
                , containers
                , text
                , split
-               , text-trie
+               , utf8-string
+               , bytestring
+               , bytestring-trie
   
   exposed-modules:
       Scrabble
@@ -59,11 +61,13 @@ test-suite test-scrabble
   build-depends:       base
                      , text
                      , array
-                     , text-trie
+                     , utf8-string
+                     , bytestring
+                     , bytestring-trie
                      , containers
                      , split
-                     , lens-simple
                      , random
+                     , lens
                      , QuickCheck
                      , test-framework
                      , test-framework-quickcheck2

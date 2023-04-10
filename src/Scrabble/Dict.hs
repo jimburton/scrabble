@@ -20,6 +20,9 @@ import Codec.Binary.UTF8.String (encode)
 import qualified Data.ByteString as B
 import Data.Char (toUpper)
 import qualified Data.Trie as Trie
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
@@ -123,7 +126,7 @@ wordPutToText = wordToText . map (\(_,(l,_)) -> l)
 findWords :: Dict   -- ^ The dictionary to search
           -> [Text] -- ^ The letters to build the words from.
           -> [Word] -- ^ The words from the dictionary.
-findWords d ws = map textToWord $ filter (`Trie.member` d) ws
+findWords d ws = map textToWord $ filter ((`Trie.member` d) . encodeUtf8) ws
 
 -- Ordered list of values in a bounded enumeration.
 domain :: (Bounded a, Enum a) => [a]
@@ -160,9 +163,9 @@ makeWords d ls = findWords d (map wordToText (perms ls))
 wordsInDict :: Dict   -- ^ The dictionary.
             -> [Text] -- ^ The list of words.
             -> Bool
-wordsInDict d = all (`Trie.member` d) 
+wordsInDict d = all ((`Trie.member` d) . encodeUtf8) 
 
 -- | Returns true if the dict contains the given prefix
 dictContainsPrefix :: Dict -> Text -> Bool 
-dictContainsPrefix d t = not $ Trie.null $ Trie.submap t d 
+dictContainsPrefix d t = not $ Trie.null $ Trie.submap (encodeUtf8 t) d 
 
