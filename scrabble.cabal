@@ -27,6 +27,8 @@ library
                , containers
                , text
                , split
+               , utf8-string
+               , bytestring
                , bytestring-trie
                , lens
   
@@ -83,6 +85,8 @@ executable scrabble
                      , random
                      , array
                      , text
+                     , utf8-string
+                     , bytestring
                      , bytestring-trie
                      , split
                      , containers
@@ -125,7 +129,10 @@ test-suite test-scrabble
                      , random
                      , aeson
                      , text
+                     , split
                      , array
+                     , utf8-string
+                     , bytestring
                      , bytestring-trie
                      , containers
                      , QuickCheck

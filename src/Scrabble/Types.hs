@@ -38,11 +38,11 @@ where
 
 import Prelude hiding (Word)
 import Data.Array
-import Data.Trie.Text (Trie)
+import Data.Trie (Trie)
 import Data.Text (Text)
 import qualified Data.Map as Map
 import System.Random (StdGen)
-import Lens.Simple 
+import Control.Lens 
 
 -- ============ Types for the application ================ --
 

@@ -1,4 +1,4 @@
-module Test.Chapter5 (prop_AIGame)
+module Test.Chapter6 (prop_AIGame)
   where
 
 import Test.QuickCheck (Property)

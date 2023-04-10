@@ -23,7 +23,7 @@ import Data.List (maximumBy)
 import Data.Functor ((<&>))
 import Data.Text (Text)
 import System.Random (StdGen)
-import Lens.Simple ((^.),(.~),(&))
+import Control.Lens ((^.),(.~),(&))
 import Scrabble.Evaluator (Evaluator(..))
 import Scrabble.Types
   ( Dict

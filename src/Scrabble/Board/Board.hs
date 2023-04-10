@@ -35,7 +35,7 @@ import Data.Maybe (fromJust)
 import Data.Array
 import Data.Char (toUpper)
 import Data.List (splitAt)
-import Lens.Simple ((^.),(.~),(&))
+import Control.Lens ((^.),(.~),(&))
 import Scrabble.Lang.Letter
   ( charToLetterMap
   , scoreLetter )
