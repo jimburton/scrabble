@@ -2,7 +2,7 @@
 {-|
 Module      : Scrabble.Game.AI
 Description : An AI scrabble player.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

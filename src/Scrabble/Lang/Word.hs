@@ -1,7 +1,7 @@
 {-|
 Module      : Scrabble.Lang.Word
 Description : Words for the Scrabble game.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

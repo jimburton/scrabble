@@ -2,7 +2,7 @@
 {-|
 Module      : Scrabble.Game.Game
 Description : Functions for playing a game of scrabble (for a human player).
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

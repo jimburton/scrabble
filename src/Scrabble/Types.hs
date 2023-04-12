@@ -2,7 +2,7 @@
 {-|
 Module      : Scrabble.Types
 Description : Types for the scrabble library.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

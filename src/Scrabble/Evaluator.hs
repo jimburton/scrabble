@@ -1,7 +1,7 @@
 {-|
 Module      : Scrabble.Evaluator
 Description : Typeclass instances for the @Evaluator@ type.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 
