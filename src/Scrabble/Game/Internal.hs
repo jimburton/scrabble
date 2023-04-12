@@ -1,7 +1,7 @@
 {-|
 Module      : Scrabble.Game.Internal
 Description : Internal functions shared by several game-related modules.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

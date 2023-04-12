@@ -1,7 +1,7 @@
 {-|
 Module      : Scrabble.Lang.Dict
 Description : Functions relating to the dictionary for the Scrabble game.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

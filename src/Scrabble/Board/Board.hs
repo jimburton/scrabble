@@ -1,7 +1,7 @@
 {-|
 Module      : Scrabble.Board.Board
 Description : Functions for the Scrabble board.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

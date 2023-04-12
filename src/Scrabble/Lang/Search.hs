@@ -1,7 +1,7 @@
 {-|
 Module      : Scrabble.Lang.Search
 Description : Functions relating to searching the dictionary for the Scrabble game.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 

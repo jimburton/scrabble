@@ -1,7 +1,7 @@
 {-|
 Module      : Scrabble.Board.Bonus
 Description : Functions for bonuses the scrabble library.
-Maintainer  : j.burton@brighton.ac.uk
+Maintainer  : jimburton1@gmail.com
 Stability   : experimental
 Portability : POSIX
 
