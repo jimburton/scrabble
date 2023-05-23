@@ -34,7 +34,6 @@ import qualified Data.Text as T
 import Data.Maybe (fromJust)
 import Data.Array ( array )
 import Data.Char (toUpper)
-import Data.List (splitAt)
 import Control.Lens ((^.),(.~),(&))
 import Scrabble.Lang.Letter
   ( charToLetterMap

@@ -15,7 +15,6 @@ module Scrabble.Evaluator
   where
 
 import Control.Monad (unless)
-import Control.Monad.Fail (MonadFail, fail)
 import Data.Text (Text)
 import qualified Data.Text as T (pack, unpack)
 import Scrabble.Types (Evaluator(..))

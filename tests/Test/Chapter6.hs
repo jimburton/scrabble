@@ -1,3 +1,11 @@
+-- |
+-- Module      : Test.Chapter6
+-- Description : Tests relating to Chapter 6.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+--
 module Test.Chapter6 (prop_AIGame)
   where
 
@@ -5,7 +13,7 @@ import Test.QuickCheck (Property)
 import Test.QuickCheck.Monadic (assert, monadicIO, pick)
 import Control.Monad.IO.Class (liftIO)
 import System.Random (getStdGen)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Scrabble.Types
   ( Evaluator(..)
   , turn, player2, isAI
@@ -20,7 +28,7 @@ import Test.Gen
   ( genGameAI
   , p1Word )
 
--- ========= Tests for Chapter 5 ========== --
+-- * Tests for Chapter 5
 
 -- | Test @test beginning an AI game.
 prop_AIGame :: Property 

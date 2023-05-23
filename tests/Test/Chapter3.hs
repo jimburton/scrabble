@@ -1,3 +1,11 @@
+-- |
+-- Module      : Test.Chapter3
+-- Description : Tests relating to Chapter 3.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+--
 module Test.Chapter3
   ( prop_straight
   , prop_wordOnBoard
@@ -10,7 +18,7 @@ import Test.QuickCheck (Property)
 import Test.QuickCheck.Monadic (assert, monadicIO, pick)
 import Control.Monad.IO.Class (liftIO)
 import System.Random (getStdGen)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Data.Bifunctor (first)
 import Scrabble.Types
   ( Evaluator(..)
@@ -28,7 +36,7 @@ import Scrabble.Board.Validation
 import Scrabble.Lang.Dict (englishDictionary)
 import Test.Gen (genGame, p1Word)
 
--- ========= Tests for Chapter 3 ========== --
+-- * Tests for Chapter 3
 
 -- | Test the @wordOnBoard@ validation.
 prop_wordOnBoard :: Property 

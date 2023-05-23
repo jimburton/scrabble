@@ -34,7 +34,7 @@ wordToString = fmap letterToChar
 
 -- | Convert a @String@ to @Word@.
 stringToWord :: String -> Maybe Word
-stringToWord s = sequence $ letterFromChar <$> s
+stringToWord = mapM letterFromChar
 
 -- | Convert a @Text@ to @Word@
 textToWord :: Text -> Word

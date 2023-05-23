@@ -1,3 +1,11 @@
+-- |
+-- Module      : Test.Chapter4
+-- Description : Tests relating to CHapter 4.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+--
 module Test.Chapter4
   ( prop_pass
   , prop_swap
@@ -8,7 +16,7 @@ import Test.QuickCheck (Property)
 import Test.QuickCheck.Monadic (assert, monadicIO, pick)
 import Control.Monad.IO.Class (liftIO)
 import System.Random (getStdGen)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Data.List (isInfixOf)
 import Scrabble.Types
   ( Evaluator(..)
@@ -26,7 +34,7 @@ import Test.Gen
   ( genGame
   , p1Word )
 
--- ========= Tests for Chapter 4 ========== --
+-- * Tests for Chapter 4
 
 -- | Test @pass@.
 prop_pass :: Property 

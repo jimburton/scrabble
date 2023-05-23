@@ -1,3 +1,12 @@
+-- |
+-- Module      : Scrabble.Announce
+-- Description : Functions for sending messages ("announcements") to players connected
+--               to the game server.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
 module ScrabbleWeb.Announce
   ( announce
   , msgOpponent
@@ -14,8 +23,9 @@ module ScrabbleWeb.Announce
 
 import Prelude hiding (Word)
 import Control.Lens ((^.))
+import Control.Monad ( unless )
 import qualified Network.WebSockets as WS
-import Data.Aeson
+import Data.Aeson ( encode )
 import Data.Text (Text)
 import Scrabble.Types
   ( Player
@@ -38,14 +48,14 @@ import ScrabbleWeb.Types
   , JoinAck(..)
   , MoveAck(..)
   , Client)
-  
--- ====== Sending messages to clients =========== --
+
+-- * Sending messages to clients.
 
 -- | Send a message if the player is not AI
 send :: Player -> Client -> Msg -> IO ()
 send p (_,conn) m =
   let o = encode m in
-    if not (p ^. isAI) then WS.sendTextData conn o else pure ()
+    (unless (p ^. isAI) $ WS.sendTextData conn o)
 
 -- | Send a message to both players.
 msg :: WebGame -> Msg -> IO ()
@@ -63,7 +73,7 @@ msgOne wg t m = do
 
 -- | Send a message to the player whose turn it currently is.
 msgCurrent :: WebGame -> Msg -> IO ()
-msgCurrent wg = msgOne wg (wg ^. (theGame . turn)) 
+msgCurrent wg = msgOne wg (wg ^. (theGame . turn))
 
 -- | Send a messsage to the player whose turn it currently is not.
 msgOpponent :: WebGame -> Msg -> IO ()

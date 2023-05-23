@@ -1,4 +1,13 @@
 {-# Language OverloadedStrings, ApplicativeDo #-}
+-- |
+-- Module      : ScrabbleWeb.Conf
+-- Description : Handling config for the game server.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
+
 module ScrabbleWeb.Conf (parseConf, defaultConf)
   where
 
@@ -6,8 +15,16 @@ import System.Log (Priority(..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Maybe (fromMaybe)
-import Config
+import Config ( parse )
 import Config.Schema
+    ( Alt((<!>)),
+      generateDocs,
+      loadValue,
+      atomSpec,
+      optSection,
+      sectionsSpec,
+      HasSpec(..),
+      ValueSpec )
 import ScrabbleWeb.Types (Conf(..))
 
 -- ======== Config parser =========== --

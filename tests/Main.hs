@@ -1,8 +1,16 @@
+-- |
+-- Module      : Main.hs
+-- Description : Entry point for test suite.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
 module Main
     where
 
-import Test.Framework
-import Test.Framework.Providers.QuickCheck2
+import Test.Framework ( defaultMain, Test )
+import Test.Framework.Providers.QuickCheck2 ( testProperty )
 
 import Test.Chapter1
   ( prop_updateSquare
@@ -11,7 +19,7 @@ import Test.Chapter2
   ( prop_fillRack1
   , prop_fillRack2 )
   
--- ============= Tests ================ --
+-- * Tests
 
 
 main :: IO ()

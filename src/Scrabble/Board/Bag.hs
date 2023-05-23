@@ -23,7 +23,7 @@ import Scrabble.Types
   , Rack
   , Word
   , Letter(..) )
-import Scrabble.Evaluator (Evaluator)
+import Scrabble.Evaluator ( Evaluator )
 
 -- * Functions relating to a bag of tiles.
 

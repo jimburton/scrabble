@@ -1,3 +1,13 @@
+-- |
+-- Module      : ScrabbleCLI.Game
+-- Description : Functions for conducting a game between one or two players in
+--               the CLI interface.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
+
 module ScrabbleCLI.Game ( startGame, startGameAI ) 
 where
 
@@ -7,8 +17,9 @@ import qualified Data.Text.IO as T
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromJust)
 import Data.Char (toUpper)
-import Control.Lens
+import Control.Lens ( (^.) )
 import System.Console.Haskeline
+    ( defaultSettings, getInputLine, runInputT, InputT )
 import System.Random (getStdGen)
 import Scrabble.Lang.Search (makeWords)
 import Scrabble.Lang.Word (stringToWord)
@@ -41,7 +52,7 @@ import ScrabbleCLI.Out
 import ScrabbleCLI.Blanks (replaceBlanks)
 import Data.Functor (($>))
 
--- =========== Playing a CLI game =============== --
+-- * Playing a CLI game
 
 -- | Start a new game.
 startGame :: Text -- ^ Name of Player 1

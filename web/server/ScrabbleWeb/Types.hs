@@ -1,4 +1,13 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass, StandaloneDeriving, TemplateHaskell #-}
+-- |
+-- Module      : ScrabbleWeb.Types
+-- Description : Types for the game server.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
+
 module ScrabbleWeb.Types
   ( Move(..)
   , MoveAck(..)
@@ -15,11 +24,11 @@ module ScrabbleWeb.Types
 
 import Prelude hiding (Word)
 import System.Log (Priority)
-import Data.Aeson
-import GHC.Generics
+import Data.Aeson ( FromJSON, ToJSON )
+import GHC.Generics ( Generic )
 import qualified Network.WebSockets as WS
 import Data.Text (Text)
-import Control.Lens
+import Control.Lens ( makeLenses )
 import Scrabble.Types
   ( WordPut
   , Rack
@@ -31,11 +40,11 @@ import Scrabble.Types
   , MoveResult(..))
 import Scrabble.Game.Internal() -- for instances.
 
--- ======== Types for ScrabbleWeb ========== --
+-- * Types for ScrabbleWeb
 
--- ==== Make types from Scrabble.Types serialisable in JSON ========== --
--- Make MakeResult serialisable in JSON
+-- ** Make types from Scrabble.Types serialisable in JSON
 
+-- | Make MoveResult serialisable in JSON
 deriving instance Generic  MoveResult
 deriving instance FromJSON MoveResult
 deriving instance ToJSON   MoveResult

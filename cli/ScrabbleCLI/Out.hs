@@ -1,3 +1,12 @@
+-- |
+-- Module      : ScrabbleCLI.Out
+-- Description : Outputting messages to the user in the CLI interface.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
+
 module ScrabbleCLI.Out
   ( printBoard
   , printPlayer
@@ -17,7 +26,7 @@ import Scrabble.Board.Pretty
   ( showPlayer 
   , showBoard )
        
--- ========= Output for CLI Scrabble games ========== --  
+-- * Output for CLI Scrabble games 
 
 -- | Print the board.
 printBoard :: Bool -> Board -> Maybe Text -> IO ()

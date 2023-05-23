@@ -1,26 +1,41 @@
 {-# Language OverloadedStrings #-}
+-- |
+-- Module      : Main.hs
+-- Description : Entry point for game server.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
 module Main where
 
 import Data.Aeson (decode)
 import Control.Concurrent (forkIO, threadDelay)
 import qualified Network.WebSockets as WS
 import Control.Concurrent.BoundedChan
+    ( newBoundedChan, writeChan, BoundedChan )
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as B
-import System.Log.Logger 
-import System.Log.Handler.Simple
+import System.Log.Logger
+    ( addHandler, infoM, setLevel, updateGlobalLogger ) 
+import System.Log.Handler.Simple ( fileHandler )
 import System.Log.Handler (setFormatter)
-import System.Log.Formatter
+import System.Log.Formatter ( simpleLogFormatter )
 import System.Console.GetOpt
-import System.IO
-import System.Exit
-import System.Environment
+    ( getOpt,
+      usageInfo,
+      ArgDescr(NoArg, ReqArg),
+      ArgOrder(RequireOrder),
+      OptDescr(..) )
+import System.IO ( hPutStrLn, stderr )
+import System.Exit ( exitSuccess )
+import System.Environment ( getArgs, getProgName )
 
 import ScrabbleWeb.Game (gameStarter, aiGame)
 import ScrabbleWeb.Conf (parseConf, defaultConf)
 import ScrabbleWeb.Types (Msg(MsgJoin), Client, Conf(..))
 
--- =========== Entry point for the web server ========= --
+-- * Entry point for the game server.
 
 -- | Command-line options for the server
 newtype Options = Options {

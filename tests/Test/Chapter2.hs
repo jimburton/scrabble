@@ -1,3 +1,11 @@
+-- |
+-- Module      : Test.Chapter2
+-- Description : Tests relating to Chapter 2.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+--
 module Test.Chapter2
   where
 
@@ -13,7 +21,7 @@ import Scrabble.Board.Bag
   , fillRack )
 import Scrabble.Board.Pretty() -- for the Show instance of Game
 
--- ============= Tests for Chapter 2 =========== --
+-- * Tests for Chapter 2
 
 -- | Test that using @fillRack@ takes the tiles
 --   from the bag and puts them in the rack.

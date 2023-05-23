@@ -1,4 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- |
+-- Module      : ScrabbleWeb.Game
+-- Description : Functions for conducting a game between one or two clients.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
 module ScrabbleWeb.Game
   ( gameStarter
   , playGame
@@ -12,10 +20,10 @@ import Data.Maybe (fromJust)
 import Data.List (find)
 import qualified Network.WebSockets as WS
 import Control.Concurrent (forkIO)
-import Control.Concurrent.BoundedChan
+import Control.Concurrent.BoundedChan ( readChan, BoundedChan )
 import Control.Lens ((^.),(.~),(&))
 import System.Log.Logger (infoM, errorM)
-import Data.Aeson
+import Data.Aeson ( decode )
 import System.Random (getStdGen)
 import ScrabbleWeb.Types
   ( WebGame(..)
@@ -57,7 +65,7 @@ import ScrabbleWeb.Announce
   , msgEog )
 import Data.Functor (($>))
 
--- ========== Playing a game on the web ================ --
+-- * Playing a game on the web
 
 -- | Watch the Channel of connections and start a game in a
 --   new thread when there are two clients waiting.
@@ -72,15 +80,19 @@ gameStarter state = loop
           d <- englishDictionary
           theGen <- getStdGen
           let ig = G.newGame n1' n2' theGen d
-          (forkIO $ playGame (newGame (n1',c1) (n2',c2) ig)) >> loop
+          forkIO (playGame (newGame (n1',c1) (n2',c2) ig)) >> loop
 
+-- Given the names of two players, make sure they are distinct from each other
+-- by adding chars to the second name as necessary.
 distinctNames :: (Text,Text) -> (Text,Text)
 distinctNames (n1,n2) =
   (n1, fromJust $ find (/=n1) (n2 : map ((\n i -> n <> T.pack (show (i :: Int))) n2) [1..]))
-  
+
+-- | Start a new gane between two clients.
 newGame :: Client -> Client -> Game -> WebGame
 newGame = WebGame
 
+-- | Conduct a game by allowing the players to take moves in turn.
 playGame :: WebGame -> IO ()
 playGame wg = sendJoinAcks wg >> takeTurn wg $> ()
 
@@ -113,7 +125,7 @@ takeTurnAI wg = do
   case moveAI g of
     Ev (Right (g',mv)) -> do
       msgMoveAck wg mv
-      let wg' = wg & theGame .~ g' 
+      let wg' = wg & theGame .~ g'
       sendRackOpponent wg'
       takeTurn wg'
     Ev (Left e)       -> do
@@ -128,18 +140,18 @@ takeTurnManual wg = do
   case o of
     Nothing  -> takeTurnManual wg
     Just msg -> case msg of
-      MsgHint _         -> doHints wg >> takeTurn wg 
-      MsgPass           -> doPass wg >>= takeTurn 
-      MsgSwap w         -> doSwap wg w >>= takeTurn 
+      MsgHint _         -> doHints wg >> takeTurn wg
+      MsgPass           -> doPass wg >>= takeTurn
+      MsgSwap w         -> doSwap wg w >>= takeTurn
       MsgMove (Move wp bs) -> do
         case G.move valGameRules (wg ^. theGame) wp bs of
           Ev (Left e)        -> do msgCurrent wg (MsgMoveAck (MoveAck (Left e)))
-                                   takeTurn wg 
+                                   takeTurn wg
           Ev (Right (g',mv)) -> do msgMoveAck wg mv
                                    let wg' = wg & theGame .~ g'
                                    sendRackOpponent wg'
                                    takeTurn wg'
-      _                 -> takeTurn wg 
+      _                 -> takeTurn wg
 
 -- | Handle the situation when the game ends.
 doGameOver :: WebGame -> IO WebGame
@@ -147,7 +159,7 @@ doGameOver wg = do
   let g      = wg ^. theGame
       pl1    = g ^. player1
       pl2    = g ^. player2
-      draw   = pl1 ^. score == pl2 ^. score 
+      draw   = pl1 ^. score == pl2 ^. score
       winner = if pl1 ^. score > pl2 ^. score
                then pl1 else pl2
   infoM "Scrabble.Game" ("[End game] "<>T.unpack (pl1 ^. name)

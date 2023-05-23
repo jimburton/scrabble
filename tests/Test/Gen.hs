@@ -12,12 +12,17 @@ module Test.Gen
   where
 
 import Test.QuickCheck
-import Test.QuickCheck.Gen (Gen)
+    ( choose,
+      chooseEnum,
+      elements,
+      Arbitrary(arbitrary),
+      Gen,
+      PrintableString(getPrintableString) )
 import qualified Data.Text as T
 import Data.Text (Text)
 import System.Random (StdGen)
 import Data.Bifunctor (first)
-import Lens.Simple ((^.))
+import Control.Lens ((^.))
 import Scrabble.Types
   ( Game
   , player1, rack

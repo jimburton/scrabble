@@ -1,4 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- |
+-- Module      : Main.hs
+-- Description : Entry point for web server.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+--
 module Main where
 
 import Happstack.Server
@@ -8,7 +16,7 @@ import Happstack.Server
   , simpleHTTP
   )
 
--- ================= the client web app just serves static files ================= --
+-- * The client web app just serves static files.
 
 -- | Serves the static files in html/ on port 8000
 main :: IO ()

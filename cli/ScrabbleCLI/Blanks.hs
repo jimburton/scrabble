@@ -1,10 +1,19 @@
+-- |
+-- Module      : ScrabbleCLI.Blanks
+-- Description : Functions for dealing with blanks in the CLI interface.
+-- Maintainer  : jimburton1@gmail.com
+-- Stability   : experimental
+-- Portability : POSIX
+-- 
+-- 
 module ScrabbleCLI.Blanks ( replaceBlanks )
   where
 
 import System.Console.Haskeline
+    ( defaultSettings, getInputLine, runInputT )
 import Control.Monad.IO.Class (liftIO)
 
--- =========== Handling blanks in the input =========== --
+-- * Handling blanks in the input
 
 -- | Interactively query for the value of blanks that have been played.
 replaceBlanks :: String             -- ^ The string with blanks in it
