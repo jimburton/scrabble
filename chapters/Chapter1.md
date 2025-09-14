@@ -15,7 +15,7 @@ used `cabal` a little bit.
 There is a notoriously big gap between learning the basics of Haskell
 listed above, which mostly means a lot of fiddling about with lists,
 and finding yourself making useful, nicely written and idiomatic
-software with Haskell. For beginners the language can seem academic
+software with Haskell. For beginners, the language can seem academic
 and far removed from the tasks we normally want to achieve with
 programming languages. When they look at Haskell code in the wild it
 bears little resemblance to their exercises.
@@ -115,9 +115,10 @@ $ cabal repl
 > :m + Scrabble
 ```
 
-The code includes `haddock` style comments, so one way to browse the code would 
-be to build the docs and view them in your browser. When you run `cabal haddock`
-it tells you where it has stored the output:
+The code includes `haddock` style comments, so one way to become
+familiar with the code would be to build the docs and view them in
+your browser. When you run `cabal haddock` it tells you where it has
+stored the output:
 
 ```
 $ cabal haddock
@@ -321,8 +322,8 @@ things tidy.
 -- | The datatype of bonuses on the board.
 data Bonus = W2 -- ^ Double-word bonus. 
            | W3 -- ^ Triple-word bonus.
-	   | L2 -- ^ Double-letter bonus.
-	   | L3 -- ^ Triple-letter bonus
+	       | L2 -- ^ Double-letter bonus.
+	       | L3 -- ^ Triple-letter bonus
   deriving Show
 
 -- in Scrabble.Bonus
@@ -789,7 +790,7 @@ prop_updateSquare = do
   import Debug.Trace
   
   add :: Int -> Int -> Int
-  add x y = trace ("Adding " ++ show x ++ " to " ++ show y) $ x + y
+  add x y = trace ("Adding " <> show x <> " to " <> show y) $ x + y
   ```
 
 + Write one or more tests for `makeWordPut` and add them to `Test.Chapter1`.

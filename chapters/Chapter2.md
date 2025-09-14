@@ -7,7 +7,7 @@ itself. A player has a **name**, a **rack**, a **score** and might
 be a human or an **AI** player. A game will have two players, a **board**, a 
 `StdGen` for pseudo-randomness requirements, of which more anon, and several Boolean fields 
 to keep track of the progress of the game. Most of this code is going 
-into a the module `Scrabble.Game`.
+into the module `Scrabble.Game`.
 
 We introduce two record types, `Player` and `Game`, that encapsulate 
 everything we need to know to manage the state of games. The types themselves
@@ -55,7 +55,7 @@ to that (it must touch the centre square). Here is the first version,
 which we'll need to add to as we uncover new requirements.
 
 ```haskell
-data Turn = P1 | P2 deriving (Show, Eq)
+data Turn = P1 | P2 deriving (Show, Eq, Enum)
 
 -- | A game is comprised of all the state that is needed to play a game. 
 data Game = Game { _board     :: Board    -- ^ The board
@@ -69,10 +69,15 @@ data Game = Game { _board     :: Board    -- ^ The board
                  }
 ```
 
-Note that the game includes a `StdGen`, or generator for pseudo-random
-numbers. We need this because we want to supply players with tiles
-taken at "random" from the bag, something that we'll come to in the
-next chapter.
+Making `Turn` into an instance of `Enum` will come in handy when we
+want to toggle the turn after a player takes a move. Instead of
+writing an `if` statement that chooses whether to make the new turn
+`P1` or `P2` we can just write `succ _turn`, which returns the next
+value in the `Enum`, "wrapping round" to the first value if we are
+currently on the last one. Note that the game includes a `StdGen`, or
+generator for pseudo-random numbers. We need this because we want to
+supply players with tiles taken at "random" from the bag, something
+that we'll come to in the next chapter.
 
 ## Records, their clumsiness, and lenses
 
@@ -304,10 +309,10 @@ seem difficult to understand at first, it's just types.
 
 ## Creating a game
 
-To start a fresh game we need to create a full bag then two players,
-each with a rack that has been filled with tiles taken at "random"
-from the bag. Then the two players and the depleted bag are added to
-the game state. Creating a full bag is easy enough.
+To start a fresh game we need to create a full bag followed by two
+players, each with a rack that has been filled with tiles taken at
+"random" from the bag. Then the two players and the depleted bag are
+added to the game state. Creating a full bag is easy enough.
 
 ```haskell
 -- in Scrabble.Bag

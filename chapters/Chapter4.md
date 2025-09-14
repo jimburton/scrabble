@@ -15,9 +15,10 @@ game given some starting conditions, and to produce a new game based
 on an existing one, i.e. by playing a move.
 
 We will deal first with the simplest way of playing a move, which is
-by *passing* (i.e. giving up your turn). Then we consider the almost equally simple case of
-taking a move by *swapping tiles*, before looking at the "normal" way
-of taking a move by *playing a word* on the board.
+by *passing* (i.e. giving up your turn). Then we consider the almost
+equally simple case of taking a move by *swapping tiles*, before
+looking at the normal way of taking a move by *playing a word* on the
+board.
 
 ## Passing a move
 
@@ -75,7 +76,7 @@ checkEndOfGame g =
 -- | Toggle the turn in the game (between P1 and P2)
 toggleTurn :: Game -- ^ The game in which to toggle the turn
            -> Evaluator Game
-toggleTurn g = pure (g & turn %~ \t -> if t == P1 then P2 else P1)
+toggleTurn g = pure (g & turn %~ succ)
 
 -- | Take a move by passing.
 pass :: Game -> Evaluator Game

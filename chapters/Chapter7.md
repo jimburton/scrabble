@@ -31,7 +31,7 @@ web/
 ## Serving websockets
 
 We will write the server using *websockets*. This is a modern protocol
-that allows full duplex communications (either side can send a message
+that allows full duplex communication (either side can send a message
 at any time) over TCP between clients and servers on a network such as
 the web. It is designed with web browsers in mind. It's particularly
 easy to communicate over websockets with Javascript, but we can write
@@ -86,24 +86,24 @@ Here is a client that runs in a browser.
     <head>
     <script type="text/javascript">
     function Client(socket) {
-	socket.onopen = function () {
-	}
-	socket.onclose = function () {
+	  socket.onopen = function () {
+	  }
+	  socket.onclose = function () {
 	    alert("closed web socket");
-	}
-	socket.onerror = function (event) {
+	  }
+	  socket.onerror = function (event) {
 	    alert(event);
-	}
-	socket.onmessage = function (event) {
+	  }
+	  socket.onmessage = function (event) {
 	    alert(event.data);
-	}
+	  }
     }
     var client;
     var socket;
     // Connect to the websocket server.
     function connect() {
-	socket = new WebSocket("ws://localhost:9160/")
-	client = new Client(socket);
+	  socket = new WebSocket("ws://localhost:9160/")
+	  client = new Client(socket);
     }
     </script>
     </head>

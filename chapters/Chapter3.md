@@ -48,7 +48,7 @@ Now that we can place words onto the board, we want to check whether
 doing so is valid. The rules about word placement are as follows:
 
 + Words are at least two letters long.
-+ Words must be actually on the board.
++ Words must be placed on the board.
 + A word must be continuous and either horizontal or vertical.
 + The first word must cross the centre square, while subsequent words
   must connect with an existing word.

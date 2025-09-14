@@ -97,7 +97,7 @@ $(makeLenses ''Player)
 -- | Which player's turn it is within the game. 
 data Turn = P1 -- ^ Player 1.
           | P2 -- ^ Player 2.
-          deriving (Show, Read, Eq)
+          deriving (Show, Read, Eq, Enum)
 
 -- | The bag is a list of letters.
 type Bag = [Letter]

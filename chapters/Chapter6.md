@@ -112,9 +112,7 @@ and providing users with the response.
 
 The first thing we need is to be able to start a game. This is dealt
 with in two functions, each of which creates a new `Game` object then
-calls the `playGame` function. (The result of the `playGame` action is
-bound to the wildcard identifier `_` just to suppress the warning about
-its result, which is of type `IO Game`, being discarded.)
+calls the `playGame` function. 
 
 
 ```haskell
@@ -195,7 +193,7 @@ doGameOver g = do
     else T.putStrLn ("Congratulations " <> winner ^. name) $> g
 ```
 
-## Taking a turn as the AI player
+## Taking a turn as the computer player
 
 Let's look first at the simpler case of `takeTurnAI`. It passes the game to
 `moveAI` and pattern matches on the result. If the result was `Ev (Left e)`
@@ -359,9 +357,10 @@ or send the new, updated game to `takeTurn`.
 
 ## Running the game
 
-We no longer need to call functions in the REPL. Now we can actually run the game.
-Here is the first couple of moves of an AI game in which the human player asks
-for hints and at one point plays a blank tile.
+We no longer need to call functions in the REPL. Now we can actually
+run the game.  Here is the first couple of moves of an One Player game
+in which the human player asks for hints and at one point plays a
+blank tile.
 
 ```
 $ cabal run scrabble
@@ -552,9 +551,9 @@ functions in the library that know how to take a move. We could easily
 extend this approach to clients with different (mor realistic) interfaces 
 written for, say, mobile devices or  the desktop.
 
-In the next chapter, however, we make a much more general interface
-for networked clients which is based on a web service, thus decoupling
-the library from clients altogether. From then on, clients can be written
+In the next chapter we make a much more general interface for
+networked clients which is based on a web service, thus decoupling the
+library from clients altogether. From then on, clients can be written
 in any language, and we'll write one in Javascript.
 
 ## Tests

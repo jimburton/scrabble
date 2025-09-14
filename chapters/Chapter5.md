@@ -2,8 +2,7 @@
 
 [Contents](../README.md)
 
-In this chapter a basic AI is added so that games can be played against
-the computer. 
+In this chapter a basic computer player is added.
 
 Most of the code in this chapter will go into a new module
 `Scrabble.Game.AI`.  This needs to share a lot of code with
@@ -43,8 +42,8 @@ src
 └── Scrabble.hs
 ```
 
-To accomodate the AI player, a list of *playable* positions
-is maintained. A playable position is one where the AI could play a
+To accomodate the computer player, a list of *playable* positions
+is maintained. A playable position is one where the computer could play a
 word, so we need to know the letter at that position, the amount of
 space around it and the direction of that space. Several new types are
 added to support this. We call that playable space a *freedom*.
@@ -71,12 +70,12 @@ Then we can create a map with the type `Map Pos (Letter, [Freedom])`,
 which is added to the game state and updated after each move is
 played.
 
-When the AI comes to make a move it needs to repeatedly take a
+When the library comes to make a move it needs to repeatedly take a
 playable position and try to create a word that can be played against
-it. If the direction of the freedom is `UpD` or `LeftD` the AI needs
+it. If the direction of the freedom is `UpD` or `LeftD` the library needs
 to find a word that *ends* with the letter in question. If the
 direction is `RightD` or `DownD` it needs to find a word that *begins*
-with the letter in question. In each case the freedom tells the AI the
+with the letter in question. In each case the freedom provides the
 maximum length of the word.
 	
 The freedoms map needs to be updated after each word is played -- each
@@ -92,7 +91,7 @@ playable positions have the same freedom.
 Note that it would be possible to make a legal move by extending the
 word with a prefix or suffix.  For instance, playing tiles to make the
 word `FOULED`, or `BEFOUL` or even putting tiles before and after the
-word to make `BEFOULED`. The AI currently makes no attempt to do
+word to make `BEFOULED`. The code currently makes no attempt to do
 this. Nor does it try to make sure it gets the highest possible score. As
 we will see, at the moment it just tries to play the longest word. We
 will talk about ways to improve this at the end of the chapter.
@@ -211,12 +210,12 @@ updatePlayables w g = do
 
 ## Finding a word
 
-Now we know where the AI might be able to play a word, we need to pick
-a word based on the contents of the AI player's rack. 
+Now we know where the library might be able to play a word, we need to pick
+a word based on the contents of the computer player's rack. 
 
 To make things easier for ourselves, we won't consider blanks for now,
 and we will start with the simplest case: looking for words made from
-tiles in the AI player's rack plus one tile from the board, where that
+tiles in the computer player's rack plus one tile from the board, where that
 tile is the first or the last letter in the word.
 
 We need to write functions to find all possible combinations of a list
@@ -388,13 +387,14 @@ writing the `moveAI` function we uncover a discrepancy with the way
 `move` works for human players. That function returns a pair with type
 `(Game, ([Word],Int))` in the `Evaluator` monad, where the list of
 words is the word played and all additional words and the int is the
-score. This won't quite do for the AI version. We need to return the
-word to play as a `WordPut`, so we know where to put it. Although we
-haven't handled blanks yet, when we do we will need to know which positions
-in the word were originally blank, so we will have to return a list of indices
-too. Taking the updated game and the score into account, this is an awful lot 
-to pack into a tuple. For readability we'll make a Record type, `MoveResult`, and
-refactor the `move` function to return the same type.
+score. This won't quite do for the computer player version. We need to
+return the word to play as a `WordPut`, so we know where to put
+it. Although we haven't handled blanks yet, when we do we will need to
+know which positions in the word were originally blank, so we will
+have to return a list of indices too. Taking the updated game and the
+score into account, this is an awful lot to pack into a tuple. For
+readability we'll make a Record type, `MoveResult`, and refactor the
+`move` function to return the same type.
 
 ```haskell
 data MoveResult = MoveResult { mvWord :: WordPut
@@ -404,7 +404,7 @@ data MoveResult = MoveResult { mvWord :: WordPut
                              }
                              deriving (Show)
 
--- | Play a word onto a board as the AI player, Returns the new game and the score of this move.
+-- | Play a word onto a board as the computer player, Returns the new game and the score of this move.
 --   Validation of the word is carried out when finding the word.
 --   Sets the new board, updates the current player's score, refills their rack with letters, then
 --   toggles the current turn.
@@ -427,9 +427,9 @@ moveAI g = do
                     >>= toggleTurn <&> (, MoveResult w (map wordPutToWord (w:aw)) [] i)
 ```
 
-Finally for the code in this chapter, we need to begin a new AI
-game. This is very similar to the previous `newGame` function but the
-second player is generated by the library.
+Finally for the code in this chapter, we need to begin a new game
+against the computer. This is very similar to the previous `newGame`
+function but the second player is generated by the library.
 
 
 ```haskell
@@ -509,7 +509,7 @@ Player
     }
 ```
 
-Now we'll take a move with Bob's rack and let the AI have a go.
+Now we'll take a move with Bob's rack and let the library have a go.
 
 ```
 > let w = [((7,7),(L,1)), ((8,7),(A,1)), ((9,7),(N,1)), ((10,7),(E,1))]
@@ -536,16 +536,16 @@ Now we'll take a move with Bob's rack and let the AI have a go.
 ------------------------------------------------
 "
 ```
-The AI played the word ALEPH. At least that's a beginning :-) 
+The library played the word ALEPH, which seems like a good place to start :-) 
 
 ## Tests
 
 There is just one new test for this chapter. It checks that we can
-create an AI game and play the first two moves. See `Test.Chapter5`.
+create a One Player game and play the first two moves. See `Test.Chapter5`.
 
 ## Exercises
 
-+ The AI would be much more effective if it were more flexible about
++ The library would be much more effective if it were more flexible about
   choosing where to play. At the moment it can only play perpendicular
   to an existing word.  It could play words that by adding letters to
   the beginning or end of existing ones, and could play words with the
@@ -554,17 +554,17 @@ create an AI game and play the first two moves. See `Test.Chapter5`.
   `findWord` function to include words of this type in the list of
   possible words for a playable position.
   
-+ The AI could put up more of a fight by searching for the best move,
++ The library could put up more of a fight by searching for the best move,
   but smarter strategies would be needed to do this in reasonable
   time. These strategies could include trying to make words using high
   value tiles and which are placed on bonus tiles. Add a weighting to
   the words returned by `findWord` that is based on the score of the
   word.
 
-+ The AI could also be more careful about pruning playable positions.
-  In the illustration given earlier in this chapter the position
-  `(7,7)` which has the letter 'F' on it *is* playable, but is
-  currently removed from the list for simplicity. Modify
++ The library could also be more careful about pruning playable
+  positions.  In the illustration given earlier in this chapter the
+  position `(7,7)` which has the letter 'F' on it *is* playable, but
+  is currently removed from the list for simplicity. Modify
   `updatePlayables` to reflect this.
  
 [Contents](../README.md) | [Chapter Six](Chapter6.md)
