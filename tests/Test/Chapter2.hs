@@ -6,7 +6,7 @@
 -- Portability : POSIX
 -- 
 --
-module Test.Chapter2
+module Test.Chapter2 (prop_fillRack1, prop_fillRack2)
   where
 
 import Test.QuickCheck (Property)

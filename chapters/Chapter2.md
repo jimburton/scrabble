@@ -55,7 +55,7 @@ to that (it must touch the centre square). Here is the first version,
 which we'll need to add to as we uncover new requirements.
 
 ```haskell
-data Turn = P1 | P2 deriving (Show, Eq, Enum)
+data Turn = P1 | P2 deriving (Show, Eq)
 
 -- | A game is comprised of all the state that is needed to play a game. 
 data Game = Game { _board     :: Board    -- ^ The board
@@ -69,15 +69,10 @@ data Game = Game { _board     :: Board    -- ^ The board
                  }
 ```
 
-Making `Turn` into an instance of `Enum` will come in handy when we
-want to toggle the turn after a player takes a move. Instead of
-writing an `if` statement that chooses whether to make the new turn
-`P1` or `P2` we can just write `succ _turn`, which returns the next
-value in the `Enum`, "wrapping round" to the first value if we are
-currently on the last one. Note that the game includes a `StdGen`, or
-generator for pseudo-random numbers. We need this because we want to
-supply players with tiles taken at "random" from the bag, something
-that we'll come to in the next chapter.
+Note that the game includes a `StdGen`, or generator for pseudo-random
+numbers. We need this because we want to supply players with tiles
+taken at "random" from the bag, something that we'll come to in the
+next chapter.
 
 ## Records, their clumsiness, and lenses
 

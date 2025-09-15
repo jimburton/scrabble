@@ -135,7 +135,7 @@ getPlayer g = if g ^. turn == P1 then player1 else player2
 -- | Toggle the turn in the game (between P1 and P2)
 toggleTurn :: Game -- ^ The game in which to toggle the turn
            -> Evaluator Game
-toggleTurn g = pure (g & turn %~ succ)
+toggleTurn g = pure (g & turn %~ \t -> if t == P1 then P2 else P1)
 
 -- | Checks whether this game has ended because the bag and one
 --   of the racks are empty, and calls endGame if so.

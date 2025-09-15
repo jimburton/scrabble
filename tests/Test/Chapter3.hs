@@ -7,12 +7,17 @@
 -- 
 --
 module Test.Chapter3
-  ( prop_straight
+  (prop_connects
+  , prop_fMCentre
+  , prop_lettersAvailable
+  , prop_straight
+  , prop_wordOnBoard
+  , prop_straight
   , prop_wordOnBoard
   , prop_fMCentre
   , prop_connects
   , prop_lettersAvailable)
-  where
+    where
 
 import Test.QuickCheck (Property)
 import Test.QuickCheck.Monadic (assert, monadicIO, pick)

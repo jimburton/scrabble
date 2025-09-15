@@ -6,7 +6,7 @@
 -- Portability : POSIX
 -- 
 -- 
-module Test.Chapter1
+module Test.Chapter1 (prop_updateBoard, prop_updateSquare)
   where
 
 import Test.QuickCheck (Property)
