@@ -683,7 +683,7 @@ statement) that pattern matches on messages in a very similar way to
 the one in `takeTurnManual` above, except that it is expecting a
 different set of messages.
 
-<img src="/chapters/images/webgame.png" alt="Playing Scrabble on the web" width="500px" />
+![Playing Scrabble online](images/webgame.png "Playing Scrabble online")
 
 At the top of the file `web/client/html/main.js` is a multiline comment
 that lists the data dictionary and gives the JSON equivalent of all

@@ -140,7 +140,7 @@ the problem in hand. When the problem is a board game, this is quite
 easy to begin with because the first things we need to model in the
 software correspond to real world objects.
 
-<img src="/chapters/images/scrabble.jpeg" alt="Scrabble board" width="500px" />
+![Scrabble board](images/scrabble.jpeg "Scrabble board")
 
 In the image above we can see many of the most basic objects we will
 need to handle:
@@ -159,7 +159,7 @@ also need to model the **rules** of the game and a **dictionary**.
 
 ## Letters and tiles
 
-<img src="/chapters/images/tile.jpg" alt="Scrabble tile" width="100px" />
+![Scrabble tile](images/tile.jpg "Scrabble tile")
 
 A tile consists of a **letter** and a **value**. We could create a type alias such
 as

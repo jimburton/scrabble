@@ -85,8 +85,8 @@ spaces entirely. The figure below shows the freedoms on the board
 after the first move. The freedom of one of the positions with a tile
 on it is shown: `[(LeftD, 7), (RightD, 7)]`. In this case, all of the
 playable positions have the same freedom.
-	
-<img src="/chapters/images/freedoms0.png" alt="Scrabble board" width="500px" />
+
+![Freedoms on a Scrabble board](images/freedoms0.png "Freedoms on a Scrabble board")
 	
 Note that it would be possible to make a legal move by extending the
 word with a prefix or suffix.  For instance, playing tiles to make the
@@ -96,7 +96,7 @@ this. Nor does it try to make sure it gets the highest possible score. As
 we will see, at the moment it just tries to play the longest word. We
 will talk about ways to improve this at the end of the chapter.
 	
-<img src="/chapters/images/freedoms1.png" alt="Scrabble board" width="500px" />
+![Freedoms on a Scrabble board](images/freedoms1.png "Freedoms on a Scrabble board")
 	
 The figure above shows what happens after more tiles are placed on the
 board. Several freedoms have been removed (too many, in fact -- see
